@@ -3,121 +3,232 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sinf boshqaruvi</title>
+<title>Sinf paneli · Dilshod ustoz</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--pri:#ea580c;--ok:#15803d;--okb:#f0fdf4;--bad:#dc2626;--badb:#fef2f2;--warn:#b45309;--warnb:#fffbeb}
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0b1120;--card:#111827;--ink:#e5e7eb;--muted:#94a3b8;--line:#1f2937;--okb:#052e16;--badb:#450a0a;--warnb:#422006}}
+  /* Mac'dagi panel dizayni (MINIMAL DIZAYN 2026-10-27) asosida */
+  :root{--primary:#E8590C;--ink:#18181B;--bg:#F6F6F4;--card:#FFFFFF;--border:#E7E7E4;--border-strong:#D6D6D1;--text:#27272A;--muted:#71717A;--faint:#A1A1AA;
+    --green:#15803D;--green-bg:#F0FDF4;--red:#DC2626;--red-bg:#FEF2F2;--amber:#B45309;--amber-bg:#FFFBEB;--blue:#2563EB;--blue-bg:#EFF6FF;--radius:14px}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,sans-serif}
-  header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
-  header b{font-size:17px}
-  main{max-width:1100px;margin:0 auto;padding:16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-  label{font-size:13px;color:var(--muted)}
-  select,input{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)}
-  button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:9px 14px;cursor:pointer;background:#e2e8f0;color:#0f172a}
-  button.pri{background:var(--pri);color:#fff}
-  button.ok{background:var(--ok);color:#fff}
-  button.bad{background:var(--bad);color:#fff}
-  button:disabled{opacity:.45;cursor:default}
-  .muted{color:var(--muted);font-size:13px}
-  .msg{white-space:pre-line;margin-top:10px;font-size:14px}
-  #timer{font:700 40px/1 ui-monospace,Menlo,monospace;letter-spacing:1px}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
-  th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
-  .p-ok{background:var(--okb);color:var(--ok)} .p-bad{background:var(--badb);color:var(--bad)} .p-warn{background:var(--warnb);color:var(--warn)} .p-mut{background:var(--line);color:var(--muted)}
-  .stats{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
-  .stats div{font-size:13px;color:var(--muted)} .stats b{font-size:20px;color:var(--ink);display:block}
-  details summary{cursor:pointer;font-weight:600}
-  code{background:var(--line);padding:2px 6px;border-radius:6px;user-select:all;word-break:break-all}
+  body{margin:0;background:var(--bg);color:var(--text);font:14.5px/1.45 'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  button,select,input{font:inherit}
   .hide{display:none!important}
-  @media (max-width:640px){#timer{font-size:32px} th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){display:none}}
+  /* yuqori qator */
+  header.topbar{position:sticky;top:0;z-index:60;min-height:60px;padding:8px 20px;gap:16px;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.4) blur(8px);
+    border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .tb-left{display:flex;align-items:center;gap:22px;min-width:0;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand img{height:30px;width:auto;display:block}
+  .brand h1{font-size:.95rem;font-weight:700;letter-spacing:-.01em;margin:0;white-space:nowrap;color:var(--ink)}
+  .brand p{font-size:.7rem;font-weight:500;color:var(--muted);margin:1px 0 0}
+  .nav-tabs{display:flex;gap:2px}
+  .tab-btn{padding:7px 13px;border:0;border-radius:8px;font-size:.9rem;font-weight:600;color:var(--muted);background:transparent;cursor:pointer;white-space:nowrap}
+  .tab-btn:hover{color:var(--ink);background:#F1F1EF}
+  .tab-btn.active{color:var(--ink);background:#EDEDEA}
+  .tab-btn .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-left:6px;vertical-align:middle}
+  .tb-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .seg{display:flex;background:#F1F1EF;padding:3px;border-radius:9px;gap:2px}
+  .seg button{padding:5px 12px;font-size:.82rem;font-weight:600;border-radius:7px;border:0;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+  .seg button.active{background:#FFF;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .who{font-size:.78rem;font-weight:600;padding:5px 10px;border-radius:999px;background:#F4F4F2;color:var(--muted);white-space:nowrap}
+  /* asosiy maydon */
+  .container{max-width:1240px;margin:0 auto;padding:28px 24px 48px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px}
+  .card-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .card-title{font-size:.98rem;font-weight:650;color:var(--ink);margin:0}
+  .card-title small{font-weight:500;color:var(--muted);font-size:.78rem;margin-left:6px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .field-label{display:block;font-weight:600;font-size:.72rem;color:var(--faint);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+  .field{padding:8px 11px;border:1px solid var(--border-strong);border-radius:9px;background:#FFF;color:var(--ink);font-size:.88rem;min-height:38px}
+  select.field{padding-right:28px}
+  .muted{color:var(--muted);font-size:.8rem}
+  .msg{white-space:pre-line;margin-top:10px;font-size:.86rem}
+  .divider{border:0;border-top:1px dashed var(--border);margin:16px 0}
+  /* tugmalar */
+  .btn{padding:8px 14px;border-radius:9px;font-size:.85rem;font-weight:600;border:1px solid transparent;cursor:pointer;white-space:nowrap;line-height:1.2}
+  .btn-primary{background:var(--ink);color:#FFF}.btn-primary:hover{background:#3F3F46}
+  .btn-success{background:var(--green);color:#FFF}.btn-success:hover{background:#166534}
+  .btn-danger{background:#FFF;color:var(--red);border-color:#F5C2C2}.btn-danger:hover{background:var(--red);color:#FFF}
+  .btn-warning{background:#FFF;color:var(--amber);border-color:#F3D9A4}.btn-warning:hover{background:#FEF3C7}
+  .btn-secondary{background:#FFF;color:var(--text);border-color:var(--border-strong)}.btn-secondary:hover{background:#F4F4F2}
+  .btn-orange{background:var(--primary);color:#FFF}.btn-orange:hover{background:#C2410C}
+  .btn-sm{padding:5px 10px;font-size:.78rem;border-radius:7px}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .opt{padding:8px 14px;border-radius:9px;font-size:.85rem;font-weight:600;border:1px solid var(--border-strong);background:#FFF;color:var(--text);cursor:pointer}
+  .opt.active{background:var(--ink);color:#FFF;border-color:var(--ink)}
+  /* taymer */
+  .clock{font:600 2.6rem/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:-.02em;color:var(--ink)}
+  .badge{display:inline-block;font-weight:600;padding:3px 9px;font-size:.74rem;border-radius:999px;white-space:nowrap}
+  .b-ok{background:var(--green-bg);color:var(--green)}.b-bad{background:var(--red-bg);color:var(--red)}.b-warn{background:var(--amber-bg);color:var(--amber)}
+  .b-mut{background:#F1F1EF;color:var(--muted)}.b-blue{background:var(--blue-bg);color:var(--blue)}
+  .state::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:6px}
+  .live-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .aud{margin-top:16px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:#FAFAF9}
+  .aud b{color:var(--ink)}
+  /* qadamlar */
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:16px}
+  .step{display:flex;gap:10px;align-items:center;background:#FFF;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+  .step .n{width:26px;height:26px;border-radius:50%;background:#F1F1EF;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0}
+  .step h4{margin:0;font-size:.86rem;font-weight:650;color:var(--ink)}.step p{margin:0;font-size:.74rem;color:var(--muted)}
+  .step.on{border-color:var(--ink);background:#F4F4F2;box-shadow:0 0 0 1px var(--ink) inset}.step.on .n{background:var(--ink);color:#FFF}
+  .step.done .n{background:var(--green);color:#FFF}
+  /* statistika va jadval */
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .stat{background:#FAFAF9;border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:.76rem;color:var(--muted)}
+  .stat b{display:block;font-size:1.15rem;font-weight:650;color:var(--ink)}
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.86rem}
+  th{font-size:.72rem;font-weight:600;letter-spacing:.03em;padding:10px 12px;color:var(--faint);text-align:left;text-transform:uppercase;border-bottom:1px solid var(--border)}
+  td{padding:10px 12px;border-bottom:1px solid #F0F0EE;white-space:nowrap}
+  td:nth-child(2){white-space:normal;min-width:170px;font-weight:600;color:var(--ink)}
+  tr:hover td{background:#FAFAF9}
+  code{background:#F1F1EF;padding:2px 6px;border-radius:6px;user-select:all;word-break:break-all;font-family:'JetBrains Mono',monospace;font-size:.8rem}
+  .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px dashed var(--border-strong);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;color:var(--muted)}
+  .login{max-width:420px;margin:12vh auto;text-align:center}
+  .login img{height:48px;margin-bottom:10px}
+  @media (max-width:760px){.container{padding:18px 12px 40px}.clock{font-size:2rem}header.topbar{padding:8px 12px}.brand p{display:none}
+    th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){display:none}}
 </style>
 </head>
 <body>
-<header><b>🏫 Sinf boshqaruvi</b><span class="muted" id="who"></span></header>
-<main>
-  <div class="card" id="login">
-    <p>Boshqaruv sahifasiga faqat ustoz kiradi.</p>
-    <button class="pri" id="btnLogin">Google bilan kirish</button>
-    <div class="msg" id="loginMsg"></div>
+<header class="topbar">
+  <div class="tb-left">
+    <div class="brand"><img src="logo.png" alt=""><div><h1>Dilshod ustoz</h1><p>Sinf paneli · Mac'siz</p></div></div>
+    <nav class="nav-tabs hide" id="tabs">
+      <button class="tab-btn active" data-tab="reading">Reading</button>
+      <button class="tab-btn" data-tab="listening">Listening</button>
+      <button class="tab-btn" data-tab="setup">Sozlash</button>
+    </nav>
   </div>
+  <div class="tb-right hide" id="tbRight">
+    <div class="seg" id="grpSeg" title="Barcha bo'limlar shu guruh bilan ishlaydi"></div>
+    <span class="who" id="who"></span>
+  </div>
+</header>
 
-  <div id="app" class="hide">
-    <div class="card" id="setupCard">
-      <details id="setupDet"><summary>⚙️ Sozlash</summary>
-        <div style="margin-top:10px" id="secretBox"></div>
-        <div class="row" style="margin-top:10px">
-          <button id="btnPing">Aloqani tekshirish</button>
-          <button id="btnRoster">O'quvchilar ro'yxatini yangilash</button>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <label>Doimiy tugmani yuborish<br><select id="btnGroup"></select></label>
-          <button id="btnButtons">Tugmalarni yuborish</button>
-        </div>
-        <div class="muted" style="margin-top:6px">Doimiy tugma har o'quvchining topic'iga bir marta yuboriladi. Keyin har darsda o'quvchi shu tugmani bosadi va siz ochgan test o'zi ochiladi.</div>
-        <div class="msg" id="setupMsg"></div>
-      </details>
-    </div>
+<div class="card login" id="login">
+  <img src="logo.png" alt="">
+  <h2 class="card-title" style="font-size:1.1rem;margin-bottom:6px">Sinf paneli</h2>
+  <p class="muted" style="margin:0 0 16px">Boshqaruv sahifasiga faqat ustoz kiradi.</p>
+  <button class="btn btn-primary" id="btnLogin">Google bilan kirish</button>
+  <div class="msg" id="loginMsg"></div>
+</div>
 
-    <div class="card" id="openCard">
+<main class="container hide" id="app">
+  <!-- boshqa bo'limda dars ochiq bo'lsa -->
+  <div class="notice hide" id="otherNotice"><span id="otherText"></span><button class="btn btn-secondary btn-sm" id="otherGo">O'tish</button></div>
+
+  <!-- Reading: darsni ochish -->
+  <section data-pane="reading">
+    <div class="card" id="rdOpen">
+      <div class="card-header"><h3 class="card-title">Reading darsini ochish</h3><span class="badge b-mut state">Dars ochilmagan</span></div>
       <div class="row">
-        <label>Guruh<br><select id="selGroup"></select></label>
-        <label>Test<br><select id="selTest"></select></label>
-        <label>Daqiqa<br><input id="selMin" type="number" min="5" max="120" value="60" style="width:80px"></label>
-        <label id="modeWrap" class="hide">Audio<br><select id="selMode">
-          <option value="phone">🎧 Telefonda (quloqchin)</option>
-          <option value="speaker">🔈 Kolonkadan (shu sahifadan)</option>
-          <option value="mixed">🔀 Aralash (o'quvchi tanlaydi)</option>
-        </select></label>
-        <button class="pri" id="btnOpen">Darsni ochish</button>
+        <label><span class="field-label">Test</span><select class="field" id="rdTest"></select></label>
+        <label><span class="field-label">Daqiqa</span><input class="field" id="rdMin" type="number" min="5" max="120" value="60" style="width:90px"></label>
+        <button class="btn btn-primary" id="rdOpenBtn" style="min-height:38px">Darsni ochish</button>
       </div>
-      <div class="msg" id="openMsg"></div>
+      <div class="msg" id="rdMsg"></div>
     </div>
+  </section>
 
-    <div class="card hide" id="liveCard">
-      <div class="row" style="justify-content:space-between;align-items:center">
+  <!-- Listening: darsni ochish -->
+  <section data-pane="listening" class="hide">
+    <div class="card" id="lsOpen">
+      <div class="card-header"><h3 class="card-title">Listening darsini ochish</h3><span class="badge b-mut state">Dars ochilmagan</span></div>
+      <div class="row">
+        <label><span class="field-label">Test</span><select class="field" id="lsTest"></select></label>
+        <label><span class="field-label">Daqiqa</span><input class="field" id="lsMin" type="number" min="5" max="120" value="40" style="width:90px"></label>
+        <button class="btn btn-primary" id="lsOpenBtn" style="min-height:38px">Darsni ochish</button>
+      </div>
+      <hr class="divider">
+      <div class="row" style="align-items:center">
+        <b style="font-size:.88rem;color:var(--ink)">Audio qayerda eshitiladi:</b>
+        <button class="opt" data-mode="phone">🎧 O'quvchi telefonida</button>
+        <button class="opt" data-mode="speaker">🔈 Sinfda kolonkadan</button>
+        <button class="opt" data-mode="mixed">🔀 Aralash</button>
+      </div>
+      <div class="muted" id="modeHint" style="margin-top:8px"></div>
+      <div class="msg" id="lsMsg"></div>
+    </div>
+  </section>
+
+  <!-- jonli dars (Reading va Listening uchun bitta) -->
+  <section id="liveSec" class="hide">
+    <div class="card">
+      <div class="live-head">
         <div>
-          <div class="muted" id="liveTitle"></div>
-          <div id="timer">60:00</div>
-          <div class="muted" id="liveState"></div>
+          <div class="muted" id="liveTitle" style="font-weight:600"></div>
+          <div class="clock" id="timer">--:--</div>
         </div>
-        <div class="row">
-          <button class="ok" id="btnStart">▶ Boshlash</button>
-          <button id="btnPause">⏸ Pauza</button>
-          <button class="bad" id="btnStop">⏹ To'xtatish</button>
-          <button class="pri" id="btnGrade">📤 Natijalarni yuborish</button>
-          <button id="btnClose">Darsni yopish</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+          <span class="badge state" id="liveState"></span>
+          <div class="controls">
+            <button class="btn btn-success" id="btnStart">Boshlash</button>
+            <button class="btn btn-warning" id="btnPause">Pauza</button>
+            <button class="btn btn-danger" id="btnStop">To'xtatish va yig'ish</button>
+            <button class="btn btn-primary" id="btnGrade">Natijalarni yuborish</button>
+            <button class="btn btn-secondary" id="btnClose">Darsni yopish</button>
+          </div>
         </div>
       </div>
-      <div id="audCard" class="hide" style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px">
+      <div class="aud hide" id="audCard">
         <div class="row" style="align-items:center;justify-content:space-between">
           <div>
             <div class="muted" id="audMode"></div>
-            <div style="font-weight:700" id="audPos">—</div>
+            <b id="audPos">—</b>
           </div>
-          <div class="row" style="align-items:center">
-            <button id="btnBack" title="10 soniya orqaga (hammada)">⏪ 10s</button>
-            <button id="btnFwd" title="10 soniya oldinga (hammada)">⏩ 10s</button>
-            <button id="btnSound">🔊 Ovozni sinash</button>
-            <button class="pri hide" id="btnUnlock">▶ Ovozni yoqish</button>
-            <select id="liveMode" title="Audio rejimi"></select>
+          <div class="controls" style="align-items:center">
+            <button class="btn btn-secondary btn-sm" id="btnBack" title="10 soniya orqaga (hammada)">⏪ 10s</button>
+            <button class="btn btn-secondary btn-sm" id="btnFwd" title="10 soniya oldinga (hammada)">⏩ 10s</button>
+            <button class="btn btn-secondary btn-sm" id="btnSound">🔊 Ovozni sinash</button>
+            <button class="btn btn-orange btn-sm hide" id="btnUnlock">▶ Ovozni yoqish</button>
+            <select class="field" id="liveMode" title="Audio rejimi" style="min-height:30px;padding:4px 8px;font-size:.8rem"></select>
           </div>
         </div>
         <div class="muted" id="audHint" style="margin-top:6px"></div>
         <audio id="tAudio" preload="auto"></audio>
       </div>
+    </div>
+
+    <div class="steps">
+      <div class="step" id="st1"><span class="n">1</span><div><h4>O'quvchilar kiradi</h4><p>Telegram'dagi doimiy tugma orqali</p></div></div>
+      <div class="step" id="st2"><span class="n">2</span><div><h4>Test ketmoqda</h4><p>Javoblar, chiqishlar jonli</p></div></div>
+      <div class="step" id="st3"><span class="n">3</span><div><h4>To'xtatish va yig'ish</h4><p>Hamma javobi avtomatik topshiriladi</p></div></div>
+      <div class="step" id="st4"><span class="n">4</span><div><h4>Natijalar</h4><p>Ball, ✓/✗ topic'larga yuboriladi</p></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Jonli natijalar <small>sahifa o'zi yangilanadi</small></h3></div>
       <div class="stats" id="stats"></div>
-      <div class="msg" id="liveMsg"></div>
-      <div style="overflow-x:auto"><table>
+      <div class="msg" id="liveMsg" style="margin:0 0 10px"></div>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>Javob</th><th>Chiqish</th><th>Natija</th><th></th></tr></thead>
         <tbody id="tbody"></tbody>
       </table></div>
     </div>
-  </div>
+  </section>
+
+  <!-- Sozlash -->
+  <section data-pane="setup" class="hide">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Apps Script bilan aloqa</h3></div>
+      <div id="secretBox"></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn btn-secondary" id="btnPing">Aloqani tekshirish</button>
+        <button class="btn btn-secondary" id="btnRoster">O'quvchilar ro'yxatini yangilash</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Doimiy tugma <small id="btnGroupName"></small></h3></div>
+      <p class="muted" style="margin:0 0 12px">Har o'quvchining topic'iga bir marta yuboriladi. Keyin har darsda o'quvchi shu tugmani bosadi va siz ochgan test o'zi ochiladi. Guruh tepada tanlanadi.</p>
+      <button class="btn btn-primary" id="btnButtons">O'quvchilarga tugma yuborish</button>
+    </div>
+    <div class="msg" id="setupMsg"></div>
+  </section>
 </main>
 <script src="../fb/firebase-app-compat.js"></script>
 <script src="../fb/firebase-auth-compat.js"></script>
@@ -131,7 +242,7 @@
   const db = CLS.db, auth = firebase.auth();
   const DEFAULT_API = "https://script.google.com/macros/s/AKfycbyG1ztRvvg2zdwdel1FhDjUytbhkZ0BGjITPkUAo_DNSddF23lbtlVMvbvex6CsG1ZGDw/exec";
   const STUDENT_URL = "https://dilshodustoz.github.io/hometask/class/";
-  let admin = {}, roster = {}, group = null, sid = null, sess = null, live = {}, offS = null, offL = null;
+  let admin = {}, roster = {}, group = null, sid = null, sess = null, live = {}, offS = null, offL = null, tab = "reading", mode = "phone";
 
   // ---------- kirish ----------
   $("btnLogin").onclick = () => {
@@ -139,11 +250,11 @@
     auth.signInWithPopup(p).catch(e => { $("loginMsg").textContent = "Kirib bo'lmadi: " + e.message; });
   };
   auth.onAuthStateChanged(u => {
-    if (!u) { $("login").classList.remove("hide"); $("app").classList.add("hide"); return; }
+    if (!u) { $("login").classList.remove("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.add("hide")); return; }
     $("who").textContent = u.email;
     db.ref("admin").get().then(s => {
       admin = s.val() || {};
-      $("login").classList.add("hide"); $("app").classList.remove("hide");
+      $("login").classList.add("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.remove("hide"));
       start();
     }).catch(() => {
       $("loginMsg").textContent = "Bu akkauntga ruxsat yo'q (" + u.email + ").";
@@ -160,28 +271,64 @@
   function drawSecret() {
     $("secretBox").innerHTML = admin.verified
       ? "✅ Apps Script bilan aloqa sozlangan."
-      : `<b>Bir martalik sozlash.</b> Apps Script "Hometask Reading" → Project Settings → Script Properties → Add script property: nomi <code>CLASS_SECRET</code>, qiymati <code>${CLS.esc(admin.secret)}</code>. Keyin "Aloqani tekshirish" ni bosing.`;
-    $("setupDet").open = !admin.verified;
+      : `⚠️ <b>Bir martalik sozlash.</b> Apps Script "Hometask Reading" → Project Settings → Script Properties → Add script property: nomi <code>CLASS_SECRET</code>, qiymati <code>${CLS.esc(admin.secret)}</code>. Keyin "Aloqani tekshirish" ni bosing.`;
+    if (!admin.verified) showTab("setup");
   }
 
   function start() {
     if (!admin.secret) { admin.secret = randKey(28); db.ref("admin/secret").set(admin.secret); }
-    drawSecret();
-    for (const g in CLS.GROUPS) { $("selGroup").add(new Option(CLS.GROUPS[g].name, g)); $("btnGroup").add(new Option(CLS.GROUPS[g].name, g)); }
+    try { group = localStorage.getItem("cls_group"); mode = localStorage.getItem("cls_mode") || mode; } catch (e) {}
+    if (!CLS.GROUPS[group]) group = "test";
+    for (const g in CLS.GROUPS) {
+      const b = document.createElement("button"); b.textContent = CLS.GROUPS[g].name; b.dataset.g = g;
+      b.onclick = () => setGroup(g); $("grpSeg").appendChild(b);
+    }
     ["reading", "listening"].forEach(sk => {
-      const og = document.createElement("optgroup"); og.label = sk === "reading" ? "Reading" : "Listening";
-      window.CLASS_TESTS.filter(t => t.skill === sk).forEach(t => og.appendChild(new Option(t.title, sk + "/" + t.key)));
-      $("selTest").appendChild(og);
+      const sel = $(sk === "reading" ? "rdTest" : "lsTest");
+      window.CLASS_TESTS.filter(t => t.skill === sk).forEach(t => sel.add(new Option(t.title.replace(/ · (Reading|Listening)$/, ""), t.key)));
+      try { const v = localStorage.getItem("cls_test_" + sk); if (v && testOf(sk + "/" + v)) sel.value = v; } catch (e) {}
+      sel.onchange = () => { try { localStorage.setItem("cls_test_" + sk, sel.value); } catch (e) {} };
     });
-    try { const t = localStorage.getItem("cls_test"); if (t && testOf(t)) $("selTest").value = t; const m = localStorage.getItem("cls_mode"); if (m) $("selMode").value = m; } catch (e) {}
-    $("selTest").onchange = () => { try { localStorage.setItem("cls_test", $("selTest").value); } catch (e) {} testChanged(); };
-    $("selMode").onchange = () => { try { localStorage.setItem("cls_mode", $("selMode").value); } catch (e) {} };
-    testChanged();
-    try { const g = localStorage.getItem("cls_group"); if (g) $("selGroup").value = g; } catch (e) {}
+    document.querySelectorAll(".opt[data-mode]").forEach(b => b.onclick = () => { mode = b.dataset.mode; try { localStorage.setItem("cls_mode", mode); } catch (e) {} drawMode(); });
+    drawMode();
+    document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+    try { const t = localStorage.getItem("cls_tab"); if (t) showTab(t); } catch (e) {}
+    drawSecret();
     db.ref("roster").on("value", s => { roster = s.val() || {}; drawTable(); });
-    $("selGroup").onchange = () => { try { localStorage.setItem("cls_group", $("selGroup").value); } catch (e) {} watchGroup(); };
+    setGroup(group);
+  }
+  function setGroup(g) {
+    group = g;
+    try { localStorage.setItem("cls_group", g); } catch (e) {}
+    document.querySelectorAll("#grpSeg button").forEach(b => b.classList.toggle("active", b.dataset.g === g));
+    $("btnGroupName").textContent = "· " + CLS.GROUPS[g].name;
     watchGroup();
   }
+  function showTab(t) {
+    tab = t;
+    try { localStorage.setItem("cls_tab", t); } catch (e) {}
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
+    document.querySelectorAll("[data-pane]").forEach(p => p.classList.toggle("hide", p.dataset.pane !== t));
+    layout();
+  }
+  // jonli dars qaysi bo'limda ko'rinadi
+  function layout() {
+    const open = !!(sid && sess), here = open && sess.skill === tab;
+    $("liveSec").classList.toggle("hide", !here);
+    $("rdOpen").classList.toggle("hide", open);
+    $("lsOpen").classList.toggle("hide", open);
+    const other = open && !here && tab !== "setup";
+    $("otherNotice").classList.toggle("hide", !other);
+    if (other) { $("otherText").textContent = `Hozir ${CLS.GROUPS[sess.group].name} guruhida ochiq dars bor: ${sess.title}. Yangi dars ochish uchun avval uni yoping.`; }
+    document.querySelectorAll(".tab-btn").forEach(b => { const d = b.querySelector(".dot"); if (d) d.remove(); if (open && b.dataset.tab === sess.skill) b.insertAdjacentHTML("beforeend", '<span class="dot"></span>'); });
+  }
+  function drawMode() {
+    document.querySelectorAll(".opt[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+    $("modeHint").textContent = { phone: "Har kim o'z quloqchinida eshitadi. Vaqti o'z audiosi boshlangandan hisoblanadi.",
+      speaker: "Audio shu sahifadan kolonkaga chalinadi, o'quvchilarda audio o'chadi. Hammada bitta umumiy vaqt.",
+      mixed: "Kolonka ham chaladi, naushnikli o'quvchilar telefonda eshitadi (o'quvchi o'zi tanlaydi). Hammada bitta umumiy vaqt." }[mode];
+  }
+  $("otherGo").onclick = () => showTab(sess.skill);
 
   $("btnPing").onclick = () => {
     $("setupMsg").textContent = "Tekshirilmoqda…";
@@ -203,7 +350,7 @@
     }).catch(e => { $("setupMsg").textContent = "⚠️ " + e.message; });
   };
   $("btnButtons").onclick = () => {
-    const g = $("btnGroup").value;
+    const g = group;
     if (!confirm(`${CLS.GROUPS[g].name}: har bir o'quvchining topic'iga doimiy "Sinf testini ochish" tugmasi yuborilsinmi?`)) return;
     $("setupMsg").textContent = "Yuborilmoqda… (har xabar orasida 3 soniya)";
     api({ admin: "class_buttons", chat: CLS.GROUPS[g].chat, url: STUDENT_URL }).then(r => {
@@ -213,14 +360,9 @@
 
   // ---------- dars ----------
   function testOf(v) { const [sk, key] = String(v).split("/"); return window.CLASS_TESTS.find(x => x.skill === sk && x.key === key); }
-  function testChanged() {
-    const t = testOf($("selTest").value); if (!t) return;
-    $("modeWrap").classList.toggle("hide", t.skill !== "listening");
-    $("selMin").value = t.skill === "listening" ? 40 : 60;
-  }
   function watchGroup() {
-    group = $("selGroup").value;
     if (offS) offS(); if (offL) offL();
+    offS = offL = null;
     db.ref("current/" + group).once("value").then(c => {
       const cur = c.val();
       if (cur && cur.sid) return db.ref("sessions/" + cur.sid).get().then(s => {
@@ -230,26 +372,30 @@
       detach();
     });
   }
-  function detach() { sid = null; sess = null; $("liveCard").classList.add("hide"); $("openCard").classList.remove("hide"); }
+  function detach() { sid = null; sess = null; live = {}; layout(); }
   function attach(id) {
     sid = id;
-    $("openCard").classList.add("hide"); $("liveCard").classList.remove("hide");
+    let first = true;
     const sr = db.ref("sessions/" + sid), lr = db.ref("live/" + sid);
-    const f1 = sr.on("value", s => { sess = s.val(); if (!sess) { detach(); return; } drawLive(); });
+    const f1 = sr.on("value", s => { sess = s.val(); if (!sess) { detach(); return; } if (first) { first = false; showTab(sess.skill); } drawLive(); });
     const f2 = lr.on("value", s => { live = s.val() || {}; drawTable(); });
     offS = () => sr.off("value", f1); offL = () => lr.off("value", f2);
   }
-  $("btnOpen").onclick = () => {
-    const t = testOf($("selTest").value), min = Math.max(5, Math.min(120, parseInt($("selMin").value, 10) || 60));
+  function openLesson(sk) {
+    const p = sk === "reading" ? "rd" : "ls";
+    const t = testOf(sk + "/" + $(p + "Test").value), min = Math.max(5, Math.min(120, parseInt($(p + "Min").value, 10) || 60));
     const n = Object.values(roster).filter(r => r.group === group).length;
-    if (!n) { $("openMsg").textContent = "⚠️ Bu guruhda o'quvchi yo'q. Avval Sozlash → ro'yxatni yangilang."; return; }
+    if (!n) { $(p + "Msg").textContent = "⚠️ " + CLS.GROUPS[group].name + " guruhida o'quvchi yo'q. Avval Sozlash → ro'yxatni yangilang."; return; }
+    $(p + "Msg").textContent = "";
     const d = new Date(CLS.now());
     const id = `${t.key}_${group}_${d.toISOString().slice(0, 10).replace(/-/g, "")}_${randKey(5)}`;
     const s = { skill: t.skill, test: t.key, title: t.title, group: group, minutes: min, state: "wait", created: CLS.TS };
-    if (t.skill === "listening") Object.assign(s, { mode: $("selMode").value, durs: t.durs, shift: 0 });
+    if (t.skill === "listening") Object.assign(s, { mode: mode, durs: t.durs, shift: 0 });
     db.ref("sessions/" + id).set(s).then(() => db.ref("current/" + group).set({ sid: id, skill: t.skill, test: t.key }))
-      .then(() => attach(id)).catch(e => { $("openMsg").textContent = "⚠️ " + e.message; });
-  };
+      .then(() => attach(id)).catch(e => { $(p + "Msg").textContent = "⚠️ " + e.message; });
+  }
+  $("rdOpenBtn").onclick = () => openLesson("reading");
+  $("lsOpenBtn").onclick = () => openLesson("listening");
   function upd(o) { return db.ref("sessions/" + sid).update(o).catch(e => alert(e.message)); }
   $("btnStart").onclick = () => {
     const now = CLS.now();
@@ -292,11 +438,16 @@
   function drawLive() {
     if (!sess) return;
     $("liveTitle").textContent = `${sess.title} · ${CLS.GROUPS[sess.group].name} · ${sess.minutes} daqiqa`;
-    const lab = { wait: "Kutish: o'quvchilar kirmoqda", run: "Test ketmoqda", paused: "⏸ Pauza", stopped: "To'xtatildi: natijalarni yuboring", closed: "Yopilgan" };
-    $("liveState").textContent = lab[sess.state] + (sess.graded ? " · natijalar yuborilgan" : "");
+    const lab = { wait: "Kutish: o'quvchilar kirmoqda", run: "Test ketmoqda", paused: "Pauza", stopped: "To'xtatildi: natijalarni yuboring", closed: "Yopilgan" };
+    const cls = { wait: "b-blue", run: "b-ok", paused: "b-warn", stopped: "b-bad", closed: "b-mut" };
+    $("liveState").textContent = sess.graded ? "Natijalar yuborilgan" : lab[sess.state];
+    $("liveState").className = "badge state " + (sess.graded ? "b-ok" : cls[sess.state]);
+    const stepOn = sess.graded ? 5 : { wait: 1, run: 2, paused: 2, stopped: 4, closed: 5 }[sess.state];
+    [1, 2, 3, 4].forEach(i => { $("st" + i).classList.toggle("on", i === stepOn); $("st" + i).classList.toggle("done", i < stepOn && !(stepOn === 4 && i === 3 && false)); });
+    layout();
     $("btnStart").classList.toggle("hide", sess.state !== "wait");
     $("btnPause").classList.toggle("hide", !(sess.state === "run" || sess.state === "paused"));
-    $("btnPause").textContent = sess.state === "paused" ? "▶ Davom ettirish" : "⏸ Pauza";
+    $("btnPause").textContent = sess.state === "paused" ? "Davom ettirish" : "Pauza";
     $("btnStop").classList.toggle("hide", !(sess.state === "run" || sess.state === "paused"));
     $("btnGrade").classList.toggle("hide", sess.state !== "stopped");
     drawTable();
@@ -308,17 +459,17 @@
     $("tbody").innerHTML = rows.map((k, i) => {
       const v = live[k] || {}, nA = Object.keys(v.ans || {}).length;
       let st;
-      if (v.result) st = `<span class="pill p-ok">✅ ${v.result.raw}/40</span>`;
-      else if (v.submitted) { st = `<span class="pill p-ok">topshirdi</span>`; subm++; }
-      else if (!v.joined) st = `<span class="pill p-mut">kirmagan</span>`;
-      else if (v.online === false || v.away) { st = `<span class="pill p-bad">chiqib ketgan</span>`; away++; }
-      else { st = `<span class="pill p-warn">ishlamoqda</span>`; inn++; }
-      if (sess.skill === "listening" && v.choice === "speaker" && !v.result) st += ` <span class="pill p-mut" title="Kolonkadan eshitadi">🔈</span>`;
+      if (v.result) st = `<span class="badge b-ok">✅ ${v.result.raw}/40</span>`;
+      else if (v.submitted) { st = `<span class="badge b-ok">topshirdi</span>`; subm++; }
+      else if (!v.joined) st = `<span class="badge b-mut">kirmagan</span>`;
+      else if (v.online === false || v.away) { st = `<span class="badge b-bad">chiqib ketgan</span>`; away++; }
+      else { st = `<span class="badge b-warn">ishlamoqda</span>`; inn++; }
+      if (sess.skill === "listening" && v.choice === "speaker" && !v.result) st += ` <span class="badge b-mut" title="Kolonkadan eshitadi">🔈</span>`;
       if (v.result) subm++;
       return `<tr><td>${i + 1}</td><td>${CLS.esc(roster[k].name)}</td><td>${st}</td><td>${nA}/40</td><td>${v.leaves || 0}</td><td>${v.result ? "Band " + v.result.band : ""}</td>
-        <td>${v.joined && !v.result ? `<button data-k="${k}" class="rst" title="Qayta kirishga ruxsat" style="padding:4px 8px">↺</button>` : ""}</td></tr>`;
+        <td>${v.joined && !v.result ? `<button data-k="${k}" class="btn btn-secondary btn-sm rst" title="Qayta kirishga ruxsat">↺</button>` : ""}</td></tr>`;
     }).join("");
-    $("stats").innerHTML = `<div><b>${rows.length}</b>ro'yxatda</div><div><b>${inn}</b>ishlamoqda</div><div><b>${away}</b>chiqib ketgan</div><div><b>${subm}</b>topshirdi</div>`;
+    $("stats").innerHTML = `<div class="stat"><b>${rows.length}</b>ro'yxatda</div><div class="stat"><b>${inn}</b>ishlamoqda</div><div class="stat"><b>${away}</b>chiqib ketgan</div><div class="stat"><b>${subm}</b>topshirdi</div>`;
     document.querySelectorAll(".rst").forEach(b => b.onclick = () => {
       const k = b.dataset.k;
       if (confirm(`${roster[k].name}: javoblari o'chirilib, testni boshidan ishlashiga ruxsat berilsinmi?`)) db.ref("live/" + sid + "/" + k).remove();
