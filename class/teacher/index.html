@@ -77,6 +77,7 @@
   .tl-tip{position:absolute;top:-30px;transform:translateX(-50%);background:var(--ink);color:#FFF;font:600 .72rem 'JetBrains Mono',monospace;padding:3px 7px;border-radius:6px;white-space:nowrap;pointer-events:none}
   .tl-lbl{position:relative;height:16px;margin-top:6px;font-size:.7rem;font-weight:600;color:var(--muted)}
   .tl-lbl span{position:absolute;padding-left:4px}
+  .tl-off .tl-bar{cursor:default;opacity:.75}
   /* qadamlar */
   .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:16px}
   .step{display:flex;gap:10px;align-items:center;background:#FFF;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
@@ -665,9 +666,9 @@
     $("btnBack").classList.toggle("hide", !(st === "run" || st === "paused"));
     $("btnFwd").classList.toggle("hide", !(st === "run" || st === "paused"));
     const live = st === "run" || st === "paused";
-    $("partSeg").classList.toggle("hide", !(live && common));
+    $("partSeg").classList.toggle("hide", !live);
     document.querySelectorAll("#partSeg button").forEach(b => b.classList.toggle("active", live && common && pos < T && Number(b.dataset.p) === s));
-    drawTimeline(live && common, pos, T);
+    drawTimeline(T > 0, live && common ? pos : null, T);
     const ms = $("liveMode"), allowed = st === "wait" || live ? ["phone", "speaker", "mixed"] : [];
     if (ms.dataset.k !== allowed.join() + sess.mode) {
       ms.dataset.k = allowed.join() + sess.mode; ms.innerHTML = "";
@@ -712,6 +713,7 @@
     upd({ mode: m });
   };
   // audio lentasi: butun audio (4 Part), bosilgan joydan davom etadi
+  // pos === null: dars boshlanmagan yoki har o'quvchida o'z vaqti (bitta umumiy joy yo'q)
   function drawTimeline(on, pos, T) {
     $("tl").classList.toggle("hide", !on);
     if (!on || !T) return;
@@ -726,8 +728,10 @@
       });
       $("tlLbl").innerHTML = lbl;
     }
-    const p = Math.max(0, Math.min(1, pos / T)) * 100;
+    const p = pos === null ? 0 : Math.max(0, Math.min(1, pos / T)) * 100;
     $("tlFill").style.width = p + "%"; $("tlHead").style.left = p + "%";
+    $("tlHead").classList.toggle("hide", pos === null);
+    $("tl").classList.toggle("tl-off", !(sess.state === "run" || sess.state === "paused"));
   }
   function tlAt(e) { const r = $("tlBar").getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * total(); }
   $("tlBar").onmousemove = e => {
@@ -735,11 +739,22 @@
     tip.textContent = `Part ${s} · ${CLS.mmss(off)}`; tip.style.left = (t / total() * 100) + "%"; tip.classList.remove("hide");
   };
   $("tlBar").onmouseleave = () => $("tlTip").classList.add("hide");
-  $("tlBar").onclick = e => seek(tlAt(e) - sharedPos());
+  // t soniyaga o'tish (hammada). Telefon rejimida har kimda o'z vaqti bo'lsa, hamma shu joydan bitta umumiy vaqtga o'tadi
+  function goTo(t) {
+    if (!(sess.state === "run" || sess.state === "paused")) { alert("Lenta dars boshlangandan keyin ishlaydi (Boshlash)."); return; }
+    if (sess.mode === "phone" && !sess.common) {
+      const [s, off] = locate(t);
+      if (!confirm(`Hamma o'quvchining telefonida audio Part ${s} · ${CLS.mmss(off)} dan davom etadi va bundan keyin hammada bitta umumiy vaqt bo'ladi. Davom etamizmi?`)) return;
+      const raw = sharedPos() - (sess.shift || 0);
+      upd({ common: true, shift: Math.max(0, Math.min(t, total())) - raw }); return;
+    }
+    seek(t - sharedPos());
+  }
+  $("tlBar").onclick = e => goTo(tlAt(e));
   document.querySelectorAll("#partSeg button").forEach(b => b.onclick = () => {
     const D = durs(); let at = 0;
     for (let i = 1; i < Number(b.dataset.p); i++) at += D[i - 1] || 0;
-    seek(at - sharedPos());
+    goTo(at);
   });
 })();
 </script>
