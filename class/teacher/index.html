@@ -88,6 +88,7 @@
   tr:hover td{background:#FAFAF9}
   code{background:#F1F1EF;padding:2px 6px;border-radius:6px;user-select:all;word-break:break-all;font-family:'JetBrains Mono',monospace;font-size:.8rem}
   .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px dashed var(--border-strong);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;color:var(--muted)}
+  .tgmsg{white-space:pre-wrap;background:#FAFAF9;border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:.86rem;max-width:560px}
   .login{max-width:420px;margin:12vh auto;text-align:center}
   .login img{height:48px;margin-bottom:10px}
   @media (max-width:760px){.container{padding:18px 12px 40px}.clock{font-size:2rem}header.topbar{padding:8px 12px}.brand p{display:none}
@@ -101,6 +102,7 @@
     <nav class="nav-tabs hide" id="tabs">
       <button class="tab-btn active" data-tab="reading">Reading</button>
       <button class="tab-btn" data-tab="listening">Listening</button>
+      <button class="tab-btn" data-tab="hw">Uy vazifasi</button>
       <button class="tab-btn" data-tab="setup">Sozlash</button>
     </nav>
   </div>
@@ -212,6 +214,43 @@
     </div>
   </section>
 
+  <!-- Uy vazifasi (Reading) -->
+  <section data-pane="hw" class="hide">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Reading uy vazifasini yuborish <small id="hwGroupName"></small></h3></div>
+      <div class="row">
+        <label><span class="field-label">Test</span><select class="field" id="hwTest"></select></label>
+        <label><span class="field-label">Muddat: sana</span><input class="field" id="hwDate" type="date"></label>
+        <label><span class="field-label">Soat</span><input class="field" id="hwTime" type="time" value="20:00" style="width:110px"></label>
+        <button class="btn btn-secondary" id="hwPreview" style="min-height:38px">Xabarni ko'rish</button>
+      </div>
+      <div class="hide" id="hwPrevBox" style="margin-top:14px">
+        <div class="muted" id="hwPrevInfo" style="margin-bottom:8px"></div>
+        <div class="tgmsg" id="hwPrevText"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn btn-orange" id="hwSend">Yuborish</button>
+          <span class="muted">Har o'quvchining topic'iga shaxsiy tugma bilan boradi (taxminan 3 soniyada bittadan).</span>
+        </div>
+      </div>
+      <div class="msg" id="hwMsg"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Yuborilgan vazifalar</h3><button class="btn btn-secondary btn-sm" id="hwReload">Yangilash</button></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>Test</th><th>Muddat</th><th>Yuborildi</th><th>Topshirdi</th><th></th></tr></thead>
+        <tbody id="hwList"><tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr></tbody>
+      </table></div>
+    </div>
+    <div class="card hide" id="hwStCard">
+      <div class="card-header"><h3 class="card-title" id="hwStTitle"></h3><button class="btn btn-secondary btn-sm" id="hwStReload">Yangilash</button></div>
+      <div class="stats" id="hwStats"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>Ball</th><th>Band</th><th>Daqiqa</th><th>Qachon</th></tr></thead>
+        <tbody id="hwStBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
   <!-- Sozlash -->
   <section data-pane="setup" class="hide">
     <div class="card">
@@ -273,6 +312,7 @@
       ? "✅ Apps Script bilan aloqa sozlangan."
       : `⚠️ <b>Bir martalik sozlash.</b> Apps Script "Hometask Reading" → Project Settings → Script Properties → Add script property: nomi <code>CLASS_SECRET</code>, qiymati <code>${CLS.esc(admin.secret)}</code>. Keyin "Aloqani tekshirish" ni bosing.`;
     if (!admin.verified) showTab("setup");
+    else if (tab === "hw" && !hwLog) hwLoad();
   }
 
   function start() {
@@ -291,6 +331,7 @@
     });
     document.querySelectorAll(".opt[data-mode]").forEach(b => b.onclick = () => { mode = b.dataset.mode; try { localStorage.setItem("cls_mode", mode); } catch (e) {} drawMode(); });
     drawMode();
+    hwInit();
     document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => showTab(b.dataset.tab));
     try { const t = localStorage.getItem("cls_tab"); if (t) showTab(t); } catch (e) {}
     drawSecret();
@@ -302,6 +343,9 @@
     try { localStorage.setItem("cls_group", g); } catch (e) {}
     document.querySelectorAll("#grpSeg button").forEach(b => b.classList.toggle("active", b.dataset.g === g));
     $("btnGroupName").textContent = "· " + CLS.GROUPS[g].name;
+    $("hwGroupName").textContent = "· " + CLS.GROUPS[g].name;
+    $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
+    hwShowList();
     watchGroup();
   }
   function showTab(t) {
@@ -310,6 +354,7 @@
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
     document.querySelectorAll("[data-pane]").forEach(p => p.classList.toggle("hide", p.dataset.pane !== t));
     layout();
+    if (t === "hw" && !hwLog && admin.verified) hwLoad();
   }
   // jonli dars qaysi bo'limda ko'rinadi
   function layout() {
@@ -317,7 +362,7 @@
     $("liveSec").classList.toggle("hide", !here);
     $("rdOpen").classList.toggle("hide", open);
     $("lsOpen").classList.toggle("hide", open);
-    const other = open && !here && tab !== "setup";
+    const other = open && !here && (tab === "reading" || tab === "listening");
     $("otherNotice").classList.toggle("hide", !other);
     if (other) { $("otherText").textContent = `Hozir ${CLS.GROUPS[sess.group].name} guruhida ochiq dars bor: ${sess.title}. Yangi dars ochish uchun avval uni yoping.`; }
     document.querySelectorAll(".tab-btn").forEach(b => { const d = b.querySelector(".dot"); if (d) d.remove(); if (open && b.dataset.tab === sess.skill) b.insertAdjacentHTML("beforeend", '<span class="dot"></span>'); });
@@ -329,6 +374,98 @@
       mixed: "Kolonka ham chaladi, naushnikli o'quvchilar telefonda eshitadi (o'quvchi o'zi tanlaydi). Hammada bitta umumiy vaqt." }[mode];
   }
   $("otherGo").onclick = () => showTab(sess.skill);
+
+  // ---------- Uy vazifasi (Reading) ----------
+  let hwLog = null, hwCur = null;
+  const OY = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"];
+  const fmtAt = iso => { if (!iso) return "—"; const d = new Date(iso); return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5); };
+  function hwInit() {
+    const sel = $("hwTest");
+    window.CLASS_TESTS.filter(t => t.skill === "reading").forEach(t => sel.add(new Option(t.title.replace(/ · Reading$/, ""), t.key)));
+    try { const v = localStorage.getItem("cls_hw_test"); if (v) sel.value = v; } catch (e) {}
+    const d = new Date(CLS.now() + 2 * 864e5);
+    $("hwDate").value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    [sel, $("hwDate"), $("hwTime")].forEach(el => el.onchange = () => {
+      $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
+      try { localStorage.setItem("cls_hw_test", sel.value); } catch (e) {}
+    });
+  }
+  function hwBody() { return { t: $("hwTest").value, chat: CLS.GROUPS[group].chat, date: $("hwDate").value, time: $("hwTime").value }; }
+  $("hwPreview").onclick = () => {
+    const b = hwBody();
+    if (!b.date || !b.time) { $("hwMsg").textContent = "⚠️ Muddatni tanlang"; return; }
+    if (new Date(b.date + "T" + b.time + ":00+05:00").getTime() < CLS.now()) { $("hwMsg").textContent = "⚠️ Muddat o'tib ketgan vaqt"; return; }
+    $("hwMsg").textContent = "Tayyorlanmoqda…"; $("hwPrevBox").classList.add("hide");
+    api(Object.assign({ admin: "hw_send", dry: true }, b)).then(r => {
+      if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
+      $("hwMsg").textContent = "";
+      const was = ((hwLog || {})["reading_" + b.t] || { chats: {} }).chats[String(b.chat)];
+      $("hwPrevInfo").innerHTML = `<b>${CLS.esc(CLS.GROUPS[group].name)}</b> guruhidagi <b>${r.n}</b> o'quvchiga boradi. Namuna (birinchi o'quvchi uchun):` +
+        (was ? `<br>⚠️ Bu test shu guruhga ${fmtAt(was.at)} da yuborilgan. Qayta yuborsangiz, muddat yangilanadi va xabar yana boradi.` : "");
+      $("hwPrevText").innerHTML = r.sample;
+      $("hwSend").textContent = `Yuborish (${r.n} o'quvchi)`;
+      $("hwPrevBox").classList.remove("hide");
+    }).catch(e => { $("hwMsg").textContent = "⚠️ " + e.message; });
+  };
+  $("hwSend").onclick = () => {
+    const b = hwBody(), btn = $("hwSend");
+    if (!confirm(`${CLS.GROUPS[group].name} guruhiga yuborilsinmi?`)) return;
+    btn.disabled = true; $("hwMsg").textContent = "Yuborilmoqda… (sahifani yopmang, 1-2 daqiqa)";
+    api(Object.assign({ admin: "hw_send" }, b)).then(r => {
+      btn.disabled = false;
+      if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
+      $("hwPrevBox").classList.add("hide");
+      $("hwMsg").textContent = `✅ ${r.sent} ta o'quvchiga yuborildi. Muddat: ${r.deadline_text}.` +
+        (r.fail.length ? "\n⚠️ Bormadi: " + r.fail.map(f => f.name + " (" + f.error + ")").join(", ") : "");
+      hwLoad();
+    }).catch(e => { btn.disabled = false; $("hwMsg").textContent = "⚠️ " + e.message + "\nYuborish davom etgan bo'lishi mumkin: bir daqiqadan keyin \"Yangilash\" ni bosing."; });
+  };
+  let hwBusy = false;
+  function hwLoad() {
+    if (hwBusy) return; hwBusy = true;
+    return api({ admin: "hw_list" }).finally(() => { hwBusy = false; }).then(r => { if (r.ok) { hwLog = r.log; hwShowList(); } else $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; })
+      .catch(e => { $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
+  }
+  function hwShowList() {
+    if (!hwLog) return;
+    const chat = String(CLS.GROUPS[group].chat);
+    const rows = Object.values(hwLog).filter(h => h.chats[chat]).map(h => Object.assign({ t: h.t, title: h.title }, h.chats[chat]))
+      .sort((a, b) => (b.at || "").localeCompare(a.at || ""));
+    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(h.title)}</td><td>${CLS.esc(h.deadline_text)}</td>
+      <td>${fmtAt(h.at)} · ${h.sent.length} ta${h.fail && h.fail.length ? ` <span class="badge b-bad">${h.fail.length} bormadi</span>` : ""}</td>
+      <td id="hwc_${h.t}">—</td><td><button class="btn btn-secondary btn-sm" data-t="${h.t}">Kim topshirdi</button></td></tr>`).join("")
+      : `<tr><td colspan="6" class="muted">Bu guruhga hali uy vazifasi yuborilmagan.</td></tr>`;
+    $("hwList").querySelectorAll("button[data-t]").forEach(b => b.onclick = () => hwStatus(b.dataset.t));
+    if (hwCur && !rows.some(h => h.t === hwCur)) { hwCur = null; $("hwStCard").classList.add("hide"); }
+    if (hwCur) hwStatus(hwCur);
+  }
+  $("hwReload").onclick = () => { $("hwList").innerHTML = `<tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr>`; hwLoad(); };
+  $("hwStReload").onclick = () => hwCur && hwStatus(hwCur);
+  function hwStatus(t) {
+    hwCur = t;
+    const h = hwLog["reading_" + t], chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
+    $("hwStCard").classList.remove("hide");
+    $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
+    $("hwStBody").innerHTML = `<tr><td colspan="7" class="muted">Yuklanmoqda…</td></tr>`;
+    api({ admin: "status", t: t }).then(r => {
+      if (!r.ok) { $("hwStBody").innerHTML = `<tr><td colspan="7">⚠️ ${CLS.esc(r.error)}</td></tr>`; return; }
+      const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
+      const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
+        .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
+      const late = CLS.now() > new Date(info.deadline).getTime();
+      let n = 0, sum = 0;
+      $("hwStBody").innerHTML = keys.map((k, i) => {
+        const x = sub[k], nm = (roster[k] || {}).name || (x && x.name) || k;
+        if (x) { n++; sum += Number(x.band) || 0; }
+        const st = x ? `<span class="badge b-ok">Topshirdi</span>` + (x.timeUp ? ` <span class="badge b-warn">vaqt tugadi</span>` : "")
+          : late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`;
+        return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${x ? x.raw + "/40" : "—"}</td><td>${x ? CLS.esc(x.band) : "—"}</td><td>${x ? x.minutes : "—"}</td><td>${x ? fmtAt(x.at) : "—"}</td></tr>`;
+      }).join("");
+      $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div><div class="stat"><b>${n ? (sum / n).toFixed(1) : "—"}</b>o'rtacha band</div>` +
+        `<div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
+      const c = $("hwc_" + t); if (c) c.textContent = n + " / " + keys.length;
+    }).catch(e => { $("hwStBody").innerHTML = `<tr><td colspan="7">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
+  }
 
   $("btnPing").onclick = () => {
     $("setupMsg").textContent = "Tekshirilmoqda…";
