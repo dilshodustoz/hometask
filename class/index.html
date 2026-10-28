@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sinf testi · Dilshod ustoz</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;font:16px/1.5 system-ui,sans-serif;padding:16px;box-sizing:border-box}
+  .card{background:#fff;color:#0f172a;max-width:440px;width:100%;border-radius:14px;padding:24px;text-align:center}
+  h2{margin:0 0 8px;font-size:21px}
+  .muted{color:#64748b;font-size:14px}
+</style>
+</head>
+<body>
+<div class="card"><h2 id="t">⏳ Yuklanmoqda…</h2><div id="b" class="muted"></div></div>
+<script src="fb/firebase-app-compat.js"></script>
+<script src="fb/firebase-database-compat.js"></script>
+<script src="fb/config.js"></script>
+<script src="fb/cls.js"></script>
+<script>
+// O'quvchining doimiy havolasi: ?k=<kalit>. Ustoz darsni ochganda shu guruhning joriy testiga o'tkazadi.
+(function () {
+  const K = CLS.P.get("k") || "";
+  const t = document.getElementById("t"), b = document.getElementById("b");
+  function say(title, body) { t.innerHTML = title; b.innerHTML = body || ""; }
+  if (!/^[A-Za-z0-9_-]{6,20}$/.test(K)) { say("⛔ Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  CLS.db.ref("roster/" + K).get().then(s => {
+    const me = s.val();
+    if (!me) { say("⛔ Havola noto'g'ri", "Bu havola ro'yxatda yo'q. Ustozga ayting."); return; }
+    say(`Assalomu alaykum, ${CLS.esc(me.name)}!`, "Ustoz testni ochishini kuting. Sahifani yopmang: test ochilganda o'zi o'tadi.");
+    CLS.db.ref("current/" + me.group).on("value", c => {
+      const cur = c.val();
+      if (!cur || !cur.sid) return;
+      CLS.db.ref("sessions/" + cur.sid + "/state").get().then(st => {
+        if (st.val() && st.val() !== "closed")
+          location.replace(`${cur.skill}/${cur.test}/?k=${encodeURIComponent(K)}&s=${encodeURIComponent(cur.sid)}${CLS.emu}`);
+      });
+    });
+  }).catch(() => say("⚠️ Internet xatosi", "Ulanishni tekshirib, sahifani yangilang."));
+})();
+</script>
+</body>
+</html>
