@@ -1163,6 +1163,7 @@ async function afterSubmit() {
   function accepted(why) {
     if (done) return;
     done = true; submitted = true; clearInterval(timerId);
+    keepAwake();
     closeModals();
     bar.innerHTML = `✅ <b>${CLS.esc(me.name)}</b> · javoblaringiz ustozga yetib bordi`;
     show("✅ Javoblaringiz qabul qilindi", (why ? why + "<br>" : "") + "Natija Telegram topic'ingizga keladi.");
@@ -1179,6 +1180,16 @@ async function afterSubmit() {
     if (st === "stopped") { finish("Ustoz testni yakunladi."); return; }
     hide();
   }
+  // Ekran uxlamasin: test ketayotganda telefon ekrani o'chmaydi (aks holda uxlash "chiqib ketish" deb sanalardi)
+  let wl = null;
+  function keepAwake() {
+    const need = !done && sess && sess.state === "run" && !document.hidden;
+    if (!need) { if (wl) { wl.release().catch(() => {}); wl = null; } return; }
+    if (wl || !("wakeLock" in navigator)) return;
+    navigator.wakeLock.request("screen").then(l => { wl = l; l.addEventListener("release", () => { if (wl === l) wl = null; }); }).catch(() => {});
+  }
+  document.addEventListener("click", keepAwake, true);
+  document.addEventListener("touchend", keepAwake, true);
   function loop() {
     if (done || !sess) return;
     timeLeft = Math.round(remaining()); drawTimer();
@@ -1212,13 +1223,13 @@ async function afterSubmit() {
         Object.assign(answers, remote); lastSent = j; switchPart(curPart);
       });
       L.child("submitted").on("value", s => { if (s.val()) accepted(""); });
-      S.on("value", s => { sess = s.val(); render(); loop(); });
+      S.on("value", s => { sess = s.val(); render(); loop(); keepAwake(); });
       loopId = setInterval(loop, 1000);
       setInterval(() => sync(false), 2000);
       document.addEventListener("visibilitychange", () => {
         if (done || !sess || sess.state !== "run") return;
         if (document.hidden) { L.child("away").set(true); L.child("leaves").transaction(n => (n || 0) + 1); sync(false); }
-        else L.child("away").set(false);
+        else { L.child("away").set(false); keepAwake(); }
       });
     });
   }).catch(() => show("⚠️ Internet xatosi", "Ulanishni tekshirib, sahifani yangilang."));
