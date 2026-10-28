@@ -186,6 +186,7 @@
           <div class="controls" style="align-items:center">
             <button class="btn btn-secondary btn-sm" id="btnBack" title="10 soniya orqaga (hammada)">⏪ 10s</button>
             <button class="btn btn-secondary btn-sm" id="btnFwd" title="10 soniya oldinga (hammada)">⏩ 10s</button>
+            <span class="seg hide" id="partSeg" title="Shu Part boshiga o'tish (hammada)"><button data-p="1">P1</button><button data-p="2">P2</button><button data-p="3">P3</button><button data-p="4">P4</button></span>
             <button class="btn btn-secondary btn-sm" id="btnSound">🔊 Ovozni sinash</button>
             <button class="btn btn-orange btn-sm hide" id="btnUnlock">▶ Ovozni yoqish</button>
             <select class="field" id="liveMode" title="Audio rejimi" style="min-height:30px;padding:4px 8px;font-size:.8rem"></select>
@@ -651,7 +652,11 @@
     $("btnSound").classList.toggle("hide", !(speaker && st === "wait"));
     $("btnBack").classList.toggle("hide", !(st === "run" || st === "paused"));
     $("btnFwd").classList.toggle("hide", !(st === "run" || st === "paused"));
-    const ms = $("liveMode"), allowed = st === "wait" ? ["phone", "speaker", "mixed"] : (st === "run" || st === "paused") && speaker ? ["speaker", "mixed"] : [];
+    const live = st === "run" || st === "paused";
+    $("partSeg").classList.toggle("hide", !(live && speaker));
+    document.querySelectorAll("#partSeg button").forEach(b => b.classList.toggle("active", live && speaker && pos < T && Number(b.dataset.p) === s));
+    // test ketayotganda telefondan kolonka/aralashga o'tish mumkin; kolonkadan telefonga qaytib bo'lmaydi (o'quvchilarda o'z vaqti yo'q)
+    const ms = $("liveMode"), allowed = st === "wait" || (live && !speaker) ? ["phone", "speaker", "mixed"] : live ? ["speaker", "mixed"] : [];
     if (ms.dataset.k !== allowed.join() + sess.mode) {
       ms.dataset.k = allowed.join() + sess.mode; ms.innerHTML = "";
       allowed.forEach(m => ms.add(new Option(MODES[m], m)));
@@ -683,7 +688,18 @@
   }
   $("btnBack").onclick = () => seek(-10);
   $("btnFwd").onclick = () => seek(10);
-  $("liveMode").onchange = () => upd({ mode: $("liveMode").value });
+  $("liveMode").onchange = () => {
+    const m = $("liveMode").value;
+    if (sess.mode === "phone" && sess.state !== "wait" && !confirm(m === "speaker"
+      ? "Audio hammaning telefonida o'chadi va shu kompyuterdan kolonkaga chalinadi. Davom etamizmi?"
+      : "Aralash rejim: naushnikdagilar telefonda davom etadi, xohlagan o'quvchi \"Kolonkadan eshitaman\" ga o'tadi, kolonka shu kompyuterdan chaladi. Davom etamizmi?")) { $("liveMode").value = sess.mode; return; }
+    upd({ mode: m });
+  };
+  document.querySelectorAll("#partSeg button").forEach(b => b.onclick = () => {
+    const D = durs(); let at = 0;
+    for (let i = 1; i < Number(b.dataset.p); i++) at += D[i - 1] || 0;
+    seek(at - sharedPos());
+  });
 })();
 </script>
 </body>

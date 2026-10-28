@@ -2721,7 +2721,10 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     }
     // run yoki paused
     if (!LO.started) { LO.started = true; isTestRunning = true; if (LO.soundTest) loSoundStop(); }
-    if (m === "mixed" && !LO.choice) { show("🎧 Test boshlandi. Naushnigingiz bormi?<br>" + choiceHtml()); return; }
+    if (m === "mixed" && !LO.choice) {
+      if (LO.aStart != null) { LO.choice = "phone"; try { localStorage.setItem("lo_choice_" + K, "phone"); } catch (e) {} L.child("choice").set("phone").catch(() => {}); }   // telefon rejimidan aralashga o'tildi: naushnikda davom etadi
+      else { show("🎧 Test boshlandi. Naushnigingiz bormi?<br>" + choiceHtml()); return; }
+    }
     if (!document.getElementById("lo-play")) hide();
     if (s.state === "paused") { try { testAudio.pause(); } catch (e) {} flushStall(); return; }
     wdLast = null;
