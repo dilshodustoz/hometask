@@ -1,0 +1,2810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sinf testi · Cambridge 17 Test 1 Listening</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f8;
+      --panel-bg: #ffffff;
+      --text-color: #2b2b2b;
+      --border-color: #d1d5db;
+      --primary-color: #006699;
+      --primary-dark: #004d73;
+      --highlight: #ffff80;
+      --flag-color: #ea580c;
+      --success: #16a34a;
+      --error: #dc2626;
+      --font-size: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      user-select: text;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-size: var(--font-size);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background: #1f2937;
+      color: #ffffff;
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .test-badge {
+      background: #0284c7;
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+
+    .tg-channel-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #0088cc;
+      color: #ffffff;
+      padding: 4px 10px;
+      border-radius: 16px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .tg-channel-badge:hover {
+      background-color: #006699;
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+        .audio-cd-box {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 20px;
+      padding: 4px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .exam-waveform-container {
+      width: 140px;
+      height: 24px;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+    }
+
+    .exam-waveform-progress {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      background: rgba(16, 185, 129, 0.25);
+      border-right: 2px solid #10b981;
+      pointer-events: none;
+      transition: width 0.05s linear;
+    }
+
+    .exam-waveform-bars {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1px;
+      pointer-events: none;
+    }
+
+    .exam-wave-col {
+      flex: 1;
+      max-width: 3px;
+      background: #64748b;
+      opacity: 0.55;
+      border-radius: 1px;
+      transition: background 0.08s, opacity 0.08s;
+    }
+
+    .exam-wave-col.active {
+      background: #10b981;
+      opacity: 1;
+    }
+
+    .tab-audio-icon {
+      font-size: 0.85rem;
+      margin-left: 4px;
+      animation: audioSpeakerPulse 1.2s infinite alternate;
+    }
+
+    @keyframes audioSpeakerPulse {
+      0% { opacity: 0.6; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1.15); }
+    }
+
+    .audio-start-btn {
+      background: #10b981;
+      color: #ffffff;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 14px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .audio-start-btn:hover {
+      background: #059669;
+    }
+
+    .audio-start-btn:disabled {
+      background: #475569;
+      cursor: not-allowed;
+    }
+
+    .audio-pulse-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .audio-pulse-indicator.playing {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+      animation: pulseAnim 1.5s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .audio-time {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .timer-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #f8fafc;
+      background: rgba(0,0,0,0.3);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .btn-top {
+      background: #374151;
+      color: #ffffff;
+      border: 1px solid #4b5563;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .btn-top:hover {
+      background: #4b5563;
+    }
+
+    .btn-submit {
+      background: #dc2626;
+      border-color: #b91c1c;
+    }
+
+    .btn-submit:hover {
+      background: #b91c1c;
+    }
+
+    /* Main Container */
+    .main-wrapper {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Section Tabs */
+    .section-nav-tabs {
+      display: flex;
+      background: #e2e8f0;
+      border-bottom: 2px solid #cbd5e1;
+      padding: 0 16px;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .sec-tab-btn {
+      padding: 10px 20px;
+      border: none;
+      background: #cbd5e1;
+      color: #475569;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .sec-tab-btn:hover {
+      background: #94a3b8;
+      color: #ffffff;
+    }
+
+    .sec-tab-btn.active {
+      background: #ffffff;
+      color: #006699;
+      border-bottom: 2px solid #ffffff;
+      margin-bottom: -2px;
+    }
+
+    /* Section Content Body */
+    .test-content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background: #f1f5f9;
+    }
+
+    .section-container {
+      display: none;
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--panel-bg);
+      border-radius: 8px;
+      padding: 28px 36px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+    }
+
+    .section-container.active {
+      display: block;
+    }
+
+    .part-title-box {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .part-title-box h2 {
+      font-size: 1.35rem;
+      color: #0f172a;
+    }
+
+    .part-sub {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .instructions-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary-color);
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .instructions-box strong {
+      color: #0f172a;
+    }
+
+    /* Note Completion Form */
+    .form-table-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .form-heading {
+      font-size: 1.15rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 16px;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .notes-list {
+      list-style: none;
+    }
+
+    .notes-list li {
+      margin-bottom: 14px;
+      line-height: 1.6;
+      color: #1e293b;
+    }
+
+    .notes-sublist {
+      list-style: disc;
+      margin-left: 28px;
+      margin-top: 8px;
+    }
+
+    .notes-sublist li {
+      margin-bottom: 10px;
+    }
+
+    .q-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-weight: bold;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      margin: 0 4px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .cd-input {
+      border: 1px solid #94a3b8;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 0.95rem;
+      width: 170px;
+      background: #f8fafc;
+      transition: all 0.15s;
+    }
+
+    .cd-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0,102,153,0.15);
+    }
+
+    /* Multiple Choice Questions */
+    .mc-question-card {
+      margin-bottom: 24px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+
+    .mc-q-text {
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #0f172a;
+      line-height: 1.5;
+    }
+
+    .mc-options-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mc-option-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .mc-option-label:hover {
+      background: #f8fafc;
+    }
+
+    .mc-option-label input {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    /* Map Box */
+    .map-display-box {
+      text-align: center;
+      margin: 20px 0;
+      background: #ffffff;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+    }
+
+    .map-img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    /* Matching Box */
+    .matching-options-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+
+    .matching-options-box h4 {
+      margin-bottom: 10px;
+      color: #0f172a;
+      font-size: 0.95rem;
+    }
+
+    .matching-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 8px 16px;
+      font-size: 0.9rem;
+      color: #334155;
+    }
+
+    .matching-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .matching-row:last-child {
+      border-bottom: none;
+    }
+
+    .matching-select {
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid #94a3b8;
+      font-weight: bold;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    /* Bottom Navigator Bar */
+    .bottom-nav-bar {
+      background: #ffffff;
+      border-top: 1px solid #cbd5e1;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.05);
+    }
+
+    .palette-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .q-bubble {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      transition: all 0.15s;
+    }
+
+    .q-bubble:hover {
+      background: #cbd5e1;
+    }
+
+    .q-bubble.answered {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0369a1;
+    }
+
+    .q-bubble.flagged {
+      background: var(--flag-color);
+      color: #ffffff;
+      border-color: #c2410c;
+    }
+
+    .q-bubble.active {
+      outline: 2px solid #0f172a;
+      outline-offset: 1px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-flag {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-flag.flagged {
+      background: #ffedd5;
+      color: #c2410c;
+      border-color: #fb923c;
+    }
+
+    /* Result Modal */
+    .result-modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(3px);
+    }
+
+    .result-modal-card {
+      background: #ffffff;
+      width: 90%;
+      max-width: 850px;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      background: #1f2937;
+      color: #ffffff;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-size: 1.25rem;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-close-btn:hover {
+      color: #ffffff;
+    }
+
+    .modal-body-scroll {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .score-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .score-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .score-label {
+      font-size: 0.85rem;
+      color: #64748b;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .score-val {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #0f172a;
+      margin-top: 4px;
+    }
+
+    .score-card.band-score {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .score-card.band-score .score-val {
+      color: #16a34a;
+    }
+
+    .modal-tabs {
+      display: flex;
+      gap: 12px;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 16px;
+    }
+
+    .modal-tab-btn {
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #64748b;
+      cursor: pointer;
+      margin-bottom: -2px;
+    }
+
+    .modal-tab-btn.active {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .review-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .review-table th, .review-table td {
+      padding: 10px 14px;
+      border: 1px solid #e2e8f0;
+      text-align: left;
+    }
+
+    .review-table th {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .review-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.75rem;
+    }
+
+    .badge-correct {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge-incorrect {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+        /* Full Audioscript & Analysis Modal Styles */
+    .script-tabs-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: 8px;
+    }
+
+    .script-tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .script-tab-btn.active {
+      background: #ffffff;
+      color: #1e3a8a;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .script-sec-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .script-sec-header {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .transcript-dialogue p, .transcript-talk p, .transcript-lecture p {
+      margin-bottom: 12px;
+      line-height: 1.7;
+      color: #1e293b;
+      font-size: 0.92rem;
+    }
+
+    .speaker {
+      font-weight: 700;
+      color: #0369a1;
+      margin-right: 6px;
+    }
+
+    .script-ans-hl {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      border: 1px solid #facc15;
+      display: inline-block;
+      margin: 1px 0;
+    }
+
+    .script-q-badge {
+      background: #16a34a;
+      color: #ffffff;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+
+    /* Question Analysis & Traps Cards */
+    .analysis-header-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 24px;
+      margin-bottom: 14px;
+      padding-top: 16px;
+      border-top: 2px dashed #cbd5e1;
+    }
+
+    .evidence-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 5px solid #3b82f6;
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+    }
+
+    .evidence-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      align-items: center;
+    }
+
+    .evidence-q {
+      color: #0f172a;
+    }
+
+    .evidence-key {
+      background: #16a34a;
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .evidence-quote {
+      font-style: italic;
+      color: #1e293b;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 0.88rem;
+    }
+
+    .evidence-expl {
+      color: #334155;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      margin-bottom: 8px;
+    }
+
+    /* Options Breakdown for MC */
+    .analysis-options-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .analysis-opt-row {
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.86rem;
+    }
+
+    .analysis-opt-row.is-correct {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid #16a34a;
+    }
+
+    .analysis-opt-row.is-distractor {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-left: 4px solid #dc2626;
+    }
+
+    .analysis-opt-badge {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 0.76rem;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+
+    .badge-correct {
+      background: #16a34a;
+      color: #ffffff;
+    }
+
+    .badge-distractor {
+      background: #dc2626;
+      color: #ffffff;
+    }
+
+    .analysis-opt-text {
+      color: #0f172a;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .analysis-opt-quote {
+      font-style: italic;
+      color: #475569;
+      font-size: 0.82rem;
+      margin-bottom: 2px;
+    }
+
+    .analysis-opt-reason {
+      color: #334155;
+      font-size: 0.84rem;
+    }
+
+    /* Traps Row */
+    .analysis-traps-row {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 4px solid #d97706;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-top: 6px;
+    }
+
+    .analysis-traps-tag {
+      font-weight: 700;
+      color: #b45309;
+      font-size: 0.84rem;
+      margin-bottom: 2px;
+    }
+
+    .analysis-traps-desc {
+      color: #78350f;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    /* === USER HIGHLIGHT & CONTEXT TOOLBAR === */
+    .user-highlight {
+      background-color: #fef08a !important;
+      color: #0f172a !important;
+      border-radius: 2px;
+      padding: 1px 3px;
+      cursor: pointer;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+      box-shadow: inset 0 -1px 0 rgba(0,0,0,0.12);
+      transition: background-color 0.15s ease;
+    }
+    .user-highlight:hover {
+      background-color: #fde047 !important;
+    }
+
+    .highlight-tooltip {
+      position: absolute;
+      z-index: 999999;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 5px 8px;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+      font-size: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      pointer-events: auto;
+      user-select: none;
+      animation: hlFadeIn 0.12s ease-out;
+    }
+    @keyframes hlFadeIn {
+      from { opacity: 0; transform: translateY(4px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .highlight-tooltip button {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+    .highlight-tooltip button:hover {
+      background: #1d4ed8;
+    }
+    .highlight-tooltip button.btn-remove {
+      background: #dc2626;
+    }
+    .highlight-tooltip button.btn-remove:hover {
+      background: #b91c1c;
+    }
+    .highlight-tooltip button.btn-clear-all {
+      background: #475569;
+    }
+    .highlight-tooltip button.btn-clear-all:hover {
+      background: #334155;
+    }
+    .highlight-tooltip button.btn-close-hl {
+      background: transparent;
+      color: #94a3b8;
+      padding: 3px 6px;
+    }
+    .highlight-tooltip button.btn-close-hl:hover {
+      color: #ffffff;
+    }
+
+    .q-group-heading { text-align: center; font-weight: 700; font-size: 1.15rem; margin: 14px 0 10px; color: #1e293b; }
+    .notes-list li.notes-plain, .notes-sublist li.notes-plain { list-style: none; }
+    .notes-subhead { font-weight: 500; }
+    .q-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    .q-table th, .q-table td { border: 1px solid #94a3b8; padding: 8px 10px; vertical-align: top; text-align: left; line-height: 1.9; }
+    .q-table th { background: #f1f5f9; }
+    .q-table .q-table-title { text-align: center; font-size: 1.05rem; background: #e2e8f0; }
+    .q-form { display: flex; flex-direction: column; gap: 6px; }
+    .q-form-head { font-weight: 700; margin-top: 10px; }
+    .q-form-row { display: grid; grid-template-columns: minmax(180px, 42%) 1fr; gap: 10px; align-items: start; line-height: 1.9; }
+    .q-flow { display: flex; flex-direction: column; align-items: stretch; }
+    .q-flow-box { border: 1px solid #94a3b8; border-radius: 6px; padding: 8px 12px; text-align: center; line-height: 1.9; background: #fff; }
+    .q-flow-arrow { text-align: center; font-size: 1.2rem; color: #475569; line-height: 1.4; }
+    @media (max-width: 640px) { .q-form-row { grid-template-columns: 1fr; gap: 2px; } }
+  /* mobile-fit v1 */
+    body { height: 100vh; height: 100dvh; }
+    @media (max-width: 760px) {
+      header { flex-wrap: wrap; gap: 6px 8px; padding: 6px 10px; }
+      .header-left { flex-wrap: wrap; gap: 6px; flex: 1 1 auto; min-width: 0; }
+      .brand-title { font-size: 0.85rem; flex: 1 1 100%; }
+      .test-badge, .badge-teacher, .tg-channel-badge, .tg-channel-link { font-size: 0.68rem !important; padding: 2px 7px !important; }
+      .timer-badge { padding: 3px 8px; font-size: 0.85rem; }
+      .btn-top { padding: 5px 10px; font-size: 0.8rem; }
+      .audio-start-btn { padding: 5px 12px; font-size: 0.8rem; }
+      .audio-btn-circle { width: 34px; height: 34px; }
+      .audio-ctrl-btn { padding: 4px 8px; font-size: 0.78rem; }
+      .time-display, .audio-time { font-size: 0.78rem; }
+      .speed-select { padding: 3px 4px; width: auto; }
+      .header-right { flex-wrap: wrap; gap: 6px; flex: 0 0 auto; margin-left: auto; }
+      .header-center { order: 3; flex: 1 1 100%; min-width: 0; }
+      .audio-cd-box { width: 100%; flex-wrap: wrap; gap: 6px 8px; padding: 4px 8px; border-radius: 12px; }
+      .exam-waveform-container { flex: 1 1 60px; width: auto; min-width: 50px; }
+      .btn-hdr { padding: 4px 7px; font-size: 0.72rem; }
+      .audio-bar-panel { flex-wrap: wrap; padding: 6px 10px; gap: 6px 8px; }
+      .waveform-container { order: 10; flex: 1 1 100%; width: auto !important; height: 34px !important; }
+      .section-nav-tabs { padding: 0 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .sec-tab-btn { padding: 6px 4px; font-size: 0.74rem; white-space: normal; flex: 1 1 0; min-width: 0; line-height: 1.25; }
+      .section-nav-tabs { gap: 3px; }
+      .test-content-scroll { padding: 10px; }
+      .section-container { padding: 16px 14px; }
+      .bottom-nav-bar { padding: 6px 8px; gap: 8px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+      .palette-container { flex-wrap: nowrap; overflow-x: auto; flex: 1 1 auto; min-width: 0; padding: 3px 2px; -webkit-overflow-scrolling: touch; }
+      .q-bubble { flex: 0 0 auto; width: 32px; height: 32px; }
+      .btn-flag { padding: 6px 8px; font-size: 0.8rem; white-space: nowrap; }
+      .result-modal-card, .modal-card { width: 100%; max-width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+      .modal-header { padding: 10px 12px; gap: 8px; }
+      .modal-header h3 { font-size: 1rem; }
+      .modal-body-scroll { padding: 12px; }
+      .score-summary-grid { gap: 6px; margin-bottom: 14px; }
+      .score-card { padding: 8px 4px; }
+      .score-val { font-size: 1.3rem; }
+      .modal-tabs { overflow-x: auto; }
+      .modal-tab-btn { white-space: nowrap; }
+      .modal-body-scroll table { font-size: 0.85rem; }
+      .modal-body-scroll th, .modal-body-scroll td { padding: 6px; word-break: break-word; }
+      .modal-body-scroll img { max-width: 100%; height: auto; }
+      input[type="text"], select, textarea { font-size: 16px; }
+    }
+  /* mobile-fit v2 */
+    @media (max-width: 760px) {
+      .form-table-box { padding: 12px 8px; overflow-x: auto; }
+      .q-table th, .q-table td { padding: 6px; line-height: 1.6; }
+      .q-table .cd-input { width: 100%; min-width: 0; }
+      .cd-input { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Audio element -->
+  <audio id="testAudio" preload="auto"></audio>
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <span class="brand-title">Dilshod ustoz • IELTS Listening</span>
+      <span class="test-badge">Cambridge 17 Test 1</span>
+      <a href="https://t.me/dilshod_english" target="_blank" class="tg-channel-badge">✈ @dilshod_english</a>
+    </div>
+
+    <div class="header-center">
+      <div class="audio-cd-box">
+        <button id="audioControlBtn" class="audio-start-btn" onclick="startListeningTest()">
+          <span>▶</span> Start Audio
+        </button>
+        <div id="audioPulseIndicator" class="audio-pulse-indicator"></div>
+        <span id="audioTrackLabel" style="font-size:0.8rem; color:#e2e8f0; font-weight:bold;">Part 1</span>
+        <div class="exam-waveform-container" title="Audio frequency & progress">
+          <div id="examWaveProgress" class="exam-waveform-progress"></div>
+          <div id="examWaveformBars" class="exam-waveform-bars"></div>
+        </div>
+        <span id="audioTimeDisplay" class="audio-time">00:00 / 00:00</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="timer-badge">
+        <span>⏱</span> <span id="testTimerDisplay">40:00</span>
+      </div>
+      <button class="btn-top btn-submit" onclick="submitListeningTest()">Finish Test</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="main-wrapper">
+    <!-- Section Tabs -->
+    <div class="section-nav-tabs">
+      <button class="sec-tab-btn active" onclick="switchSection(1)">Part 1 (Q1-10) <span id="tabAudioIcon_1" class="tab-audio-icon" style="display:none;">🔊</span></button>
+      <button class="sec-tab-btn" onclick="switchSection(2)">Part 2 (Q11-20) <span id="tabAudioIcon_2" class="tab-audio-icon" style="display:none;">🔊</span></button>
+      <button class="sec-tab-btn" onclick="switchSection(3)">Part 3 (Q21-30) <span id="tabAudioIcon_3" class="tab-audio-icon" style="display:none;">🔊</span></button>
+      <button class="sec-tab-btn" onclick="switchSection(4)">Part 4 (Q31-40) <span id="tabAudioIcon_4" class="tab-audio-icon" style="display:none;">🔊</span></button>
+    </div>
+
+    <!-- Section Content -->
+    <div class="test-content-scroll">
+
+      <!-- SECTION 1 -->
+      <div id="sec1_container" class="section-container active">
+        <div class="part-title-box">
+          <h2>SECTION 1 · Questions 1–10</h2>
+          <div class="part-sub">Buckworth Conservation Group</div>
+        </div>
+
+        <div class="instructions-box">
+          <strong>Questions 1–10:</strong> Complete the notes below.<br>Write <strong>ONE WORD AND/OR A NUMBER</strong> for each answer.
+        </div>
+
+        <div class="form-table-box">
+          <div class="form-heading">Buckworth Conservation Group</div>
+          <ul class="notes-list">
+            <li class="notes-head"><strong>Regular activities</strong></li>
+            <li class="notes-head"><span class="notes-subhead">Beach</span>
+              <ul class="notes-sublist">
+                <li>making sure the beach does not have <span class="q-number">1</span> <input type="text" class="cd-input" id="q1" oninput="handleInput(1)"> on it</li>
+                <li>no <span class="q-number">2</span> <input type="text" class="cd-input" id="q2" oninput="handleInput(2)"></li>
+              </ul>
+            </li>
+            <li class="notes-head"><span class="notes-subhead">Nature reserve</span>
+              <ul class="notes-sublist">
+                <li>maintaining paths</li>
+                <li>nesting boxes for birds installed</li>
+                <li>next task is taking action to attract <span class="q-number">3</span> <input type="text" class="cd-input" id="q3" oninput="handleInput(3)"> to the place</li>
+                <li>identifying types of <span class="q-number">4</span> <input type="text" class="cd-input" id="q4" oninput="handleInput(4)"></li>
+                <li>building a new <span class="q-number">5</span> <input type="text" class="cd-input" id="q5" oninput="handleInput(5)"></li>
+              </ul>
+            </li>
+            <li class="notes-head"><strong>Forthcoming events</strong></li>
+            <li class="notes-head"><span class="notes-subhead">Saturday</span>
+              <ul class="notes-sublist">
+                <li>meet at Dunsmore Beach car park</li>
+                <li>walk across the sands and reach the <span class="q-number">6</span> <input type="text" class="cd-input" id="q6" oninput="handleInput(6)"></li>
+                <li>take a picnic</li>
+                <li>wear appropriate <span class="q-number">7</span> <input type="text" class="cd-input" id="q7" oninput="handleInput(7)"></li>
+              </ul>
+            </li>
+            <li class="notes-head"><span class="notes-subhead">Woodwork session</span>
+              <ul class="notes-sublist">
+                <li>suitable for <span class="q-number">8</span> <input type="text" class="cd-input" id="q8" oninput="handleInput(8)"> to participate in</li>
+                <li>making <span class="q-number">9</span> <input type="text" class="cd-input" id="q9" oninput="handleInput(9)"> out of wood</li>
+                <li>17th, from 10 a.m. to 3 p.m.</li>
+                <li>cost of session (no camping): <span class="q-number">10</span> <input type="text" class="cd-input" id="q10" oninput="handleInput(10)"> £</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- SECTION 2 -->
+      <div id="sec2_container" class="section-container">
+        <div class="part-title-box">
+          <h2>SECTION 2 · Questions 11–20</h2>
+          <div class="part-sub">Boat trip round Tasmania</div>
+        </div>
+
+        <div class="instructions-box">
+          <strong>Questions 11–14:</strong> Choose the correct letter, <strong>A, B or C</strong>.
+        </div>
+
+        <div class="q-group-heading">Boat trip round Tasmania</div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">11</span> What is the maximum number of people who can stand on each side of the boat?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q11_opt" value="A" onchange="handleRadio(11, 'A')"> <strong>A</strong> 9</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q11_opt" value="B" onchange="handleRadio(11, 'B')"> <strong>B</strong> 15</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q11_opt" value="C" onchange="handleRadio(11, 'C')"> <strong>C</strong> 18</label></li>
+          </ul>
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">12</span> What colour are the tour boats?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q12_opt" value="A" onchange="handleRadio(12, 'A')"> <strong>A</strong> dark red</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q12_opt" value="B" onchange="handleRadio(12, 'B')"> <strong>B</strong> jet black</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q12_opt" value="C" onchange="handleRadio(12, 'C')"> <strong>C</strong> light green</label></li>
+          </ul>
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">13</span> Which lunchbox is suitable for someone who doesn’t eat meat or fish?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q13_opt" value="A" onchange="handleRadio(13, 'A')"> <strong>A</strong> Lunchbox 1</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q13_opt" value="B" onchange="handleRadio(13, 'B')"> <strong>B</strong> Lunchbox 2</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q13_opt" value="C" onchange="handleRadio(13, 'C')"> <strong>C</strong> Lunchbox 3</label></li>
+          </ul>
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">14</span> What should people do with their litter?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q14_opt" value="A" onchange="handleRadio(14, 'A')"> <strong>A</strong> take it home</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q14_opt" value="B" onchange="handleRadio(14, 'B')"> <strong>B</strong> hand it to a member of staff</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q14_opt" value="C" onchange="handleRadio(14, 'C')"> <strong>C</strong> put it in the bins provided on the boat</label></li>
+          </ul>
+        </div>
+
+        <div class="instructions-box">
+          <strong>Questions 15 and 16:</strong> Choose <strong>TWO</strong> letters, <strong>A–E</strong>.
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">15</span> &amp; <span class="q-number">16</span> Which <strong>TWO</strong> features of the lighthouse does Lou mention?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="checkbox" name="q15_16" value="A" onchange="onMultiCheck(15, 16, this)"> <strong>A</strong> why it was built</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q15_16" value="B" onchange="onMultiCheck(15, 16, this)"> <strong>B</strong> who built it</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q15_16" value="C" onchange="onMultiCheck(15, 16, this)"> <strong>C</strong> how long it took to build</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q15_16" value="D" onchange="onMultiCheck(15, 16, this)"> <strong>D</strong> who staffed it</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q15_16" value="E" onchange="onMultiCheck(15, 16, this)"> <strong>E</strong> what it was built with</label></li>
+          </ul>
+        </div>
+
+        <div class="instructions-box">
+          <strong>Questions 17 and 18:</strong> Choose <strong>TWO</strong> letters, <strong>A–E</strong>.
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">17</span> &amp; <span class="q-number">18</span> Which <strong>TWO</strong> types of creature might come close to the boat?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="checkbox" name="q17_18" value="A" onchange="onMultiCheck(17, 18, this)"> <strong>A</strong> sea eagles</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q17_18" value="B" onchange="onMultiCheck(17, 18, this)"> <strong>B</strong> fur seals</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q17_18" value="C" onchange="onMultiCheck(17, 18, this)"> <strong>C</strong> dolphins</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q17_18" value="D" onchange="onMultiCheck(17, 18, this)"> <strong>D</strong> whales</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q17_18" value="E" onchange="onMultiCheck(17, 18, this)"> <strong>E</strong> penguins</label></li>
+          </ul>
+        </div>
+
+        <div class="instructions-box">
+          <strong>Questions 19 and 20:</strong> Choose <strong>TWO</strong> letters, <strong>A–E</strong>.
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">19</span> &amp; <span class="q-number">20</span> Which <strong>TWO</strong> points does Lou make about the caves?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="checkbox" name="q19_20" value="A" onchange="onMultiCheck(19, 20, this)"> <strong>A</strong> Only large tourist boats can visit them.</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q19_20" value="B" onchange="onMultiCheck(19, 20, this)"> <strong>B</strong> The entrances to them are often blocked.</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q19_20" value="C" onchange="onMultiCheck(19, 20, this)"> <strong>C</strong> It is too dangerous for individuals to go near them.</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q19_20" value="D" onchange="onMultiCheck(19, 20, this)"> <strong>D</strong> Someone will explain what is inside them.</label></li>
+            <li><label class="mc-option-label"><input type="checkbox" name="q19_20" value="E" onchange="onMultiCheck(19, 20, this)"> <strong>E</strong> They cannot be reached on foot.</label></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- SECTION 3 -->
+      <div id="sec3_container" class="section-container">
+        <div class="part-title-box">
+          <h2>SECTION 3 · Questions 21–30</h2>
+          <div class="part-sub">Work experience for veterinary science students</div>
+        </div>
+
+        <div class="instructions-box">
+          <strong>Questions 21–26:</strong> Choose the correct letter, <strong>A, B or C</strong>.
+        </div>
+
+        <div class="q-group-heading">Work experience for veterinary science students</div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">21</span> What problem did both Diana and Tim have when arranging their work experience?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q21_opt" value="A" onchange="handleRadio(21, 'A')"> <strong>A</strong> making initial contact with suitable farms</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q21_opt" value="B" onchange="handleRadio(21, 'B')"> <strong>B</strong> organising transport to and from the farm</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q21_opt" value="C" onchange="handleRadio(21, 'C')"> <strong>C</strong> finding a placement for the required length of time</label></li>
+          </ul>
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">22</span> Tim was pleased to be able to help</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q22_opt" value="A" onchange="handleRadio(22, 'A')"> <strong>A</strong> a lamb that had a broken leg.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q22_opt" value="B" onchange="handleRadio(22, 'B')"> <strong>B</strong> a sheep that was having difficulty giving birth.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q22_opt" value="C" onchange="handleRadio(22, 'C')"> <strong>C</strong> a newly born lamb that was having trouble feeding.</label></li>
+          </ul>
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">23</span> Diana says the sheep on her farm</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q23_opt" value="A" onchange="handleRadio(23, 'A')"> <strong>A</strong> were of various different varieties.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q23_opt" value="B" onchange="handleRadio(23, 'B')"> <strong>B</strong> were mainly reared for their meat.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q23_opt" value="C" onchange="handleRadio(23, 'C')"> <strong>C</strong> had better quality wool than sheep on the hills.</label></li>
+          </ul>
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">24</span> What did the students learn about adding supplements to chicken feed?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q24_opt" value="A" onchange="handleRadio(24, 'A')"> <strong>A</strong> These should only be given if specially needed.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q24_opt" value="B" onchange="handleRadio(24, 'B')"> <strong>B</strong> It is worth paying extra for the most effective ones.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q24_opt" value="C" onchange="handleRadio(24, 'C')"> <strong>C</strong> The amount given at one time should be limited.</label></li>
+          </ul>
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">25</span> What happened when Diana was working with dairy cows?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q25_opt" value="A" onchange="handleRadio(25, 'A')"> <strong>A</strong> She identified some cows incorrectly.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q25_opt" value="B" onchange="handleRadio(25, 'B')"> <strong>B</strong> She accidentally threw some milk away.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q25_opt" value="C" onchange="handleRadio(25, 'C')"> <strong>C</strong> She made a mistake when storing milk.</label></li>
+          </ul>
+        </div>
+
+        <div class="mc-question-card">
+          <div class="mc-q-text"><span class="q-number">26</span> What did both farmers mention about vets and farming?</div>
+          <ul class="mc-options-list">
+            <li><label class="mc-option-label"><input type="radio" name="q26_opt" value="A" onchange="handleRadio(26, 'A')"> <strong>A</strong> Vets are failing to cope with some aspects of animal health.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q26_opt" value="B" onchange="handleRadio(26, 'B')"> <strong>B</strong> There needs to be a fundamental change in the training of vets.</label></li>
+            <li><label class="mc-option-label"><input type="radio" name="q26_opt" value="C" onchange="handleRadio(26, 'C')"> <strong>C</strong> Some jobs could be done by the farmer rather than by a vet.</label></li>
+          </ul>
+        </div>
+
+        <div class="instructions-box">
+          <strong>Questions 27–30:</strong> What opinion do the students give about each of the following modules on their veterinary science course?<br>Choose <strong>FOUR</strong> answers from the box and write the correct letter, <strong>A–F</strong>, next to Questions 27–30.
+        </div>
+
+        <div class="matching-options-box">
+          <h4>Opinions</h4>
+          <div class="matching-grid">
+            <div><strong>A</strong> Tim found this easier than expected.</div>
+            <div><strong>B</strong> Tim thought this was not very clearly organised.</div>
+            <div><strong>C</strong> Diana may do some further study on this.</div>
+            <div><strong>D</strong> They both found the reading required for this was difficult.</div>
+            <div><strong>E</strong> Tim was shocked at something he learned on this module.</div>
+            <div><strong>F</strong> They were both surprised how little is known about some aspects of this.</div>
+          </div>
+        </div>
+
+        <div class="form-table-box">
+          <div class="form-heading">Modules on Veterinary Science course</div>
+          <div class="matching-row">
+            <span><span class="q-number">27</span> Medical terminology</span>
+            <select class="matching-select" id="q27" onchange="handleInput(27)">
+              <option value="">Select...</option>
+              <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option>
+            </select>
+          </div>
+          <div class="matching-row">
+            <span><span class="q-number">28</span> Diet and nutrition</span>
+            <select class="matching-select" id="q28" onchange="handleInput(28)">
+              <option value="">Select...</option>
+              <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option>
+            </select>
+          </div>
+          <div class="matching-row">
+            <span><span class="q-number">29</span> Animal disease</span>
+            <select class="matching-select" id="q29" onchange="handleInput(29)">
+              <option value="">Select...</option>
+              <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option>
+            </select>
+          </div>
+          <div class="matching-row">
+            <span><span class="q-number">30</span> Wildlife medication</span>
+            <select class="matching-select" id="q30" onchange="handleInput(30)">
+              <option value="">Select...</option>
+              <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SECTION 4 -->
+      <div id="sec4_container" class="section-container">
+        <div class="part-title-box">
+          <h2>SECTION 4 · Questions 31–40</h2>
+          <div class="part-sub">Labyrinths</div>
+        </div>
+
+        <div class="instructions-box">
+          <strong>Questions 31–40:</strong> Complete the notes below.<br>Write <strong>ONE WORD ONLY</strong> for each answer.
+        </div>
+
+        <div class="form-table-box">
+          <div class="form-heading">Labyrinths</div>
+          <ul class="notes-list">
+            <li class="notes-head"><strong>Definition</strong>
+              <ul class="notes-sublist">
+                <li>a winding spiral path leading to a central area</li>
+              </ul>
+            </li>
+            <li class="notes-head"><strong>Labyrinths compared with mazes</strong>
+              <ul class="notes-sublist">
+                <li>Mazes are a type of <span class="q-number">31</span> <input type="text" class="cd-input" id="q31" oninput="handleInput(31)"></li>
+                <li class="notes-plain">– <span class="q-number">32</span> <input type="text" class="cd-input" id="q32" oninput="handleInput(32)"> is needed to navigate through a maze</li>
+                <li class="notes-plain">– the word ‘maze’ is derived from a word meaning a feeling of <span class="q-number">33</span> <input type="text" class="cd-input" id="q33" oninput="handleInput(33)"></li>
+                <li>Labyrinths represent a journey through life</li>
+                <li class="notes-plain">– they have frequently been used in <span class="q-number">34</span> <input type="text" class="cd-input" id="q34" oninput="handleInput(34)"> and prayer</li>
+              </ul>
+            </li>
+            <li class="notes-head"><strong>Early examples of the labyrinth spiral</strong>
+              <ul class="notes-sublist">
+                <li>Ancient carvings on <span class="q-number">35</span> <input type="text" class="cd-input" id="q35" oninput="handleInput(35)"> have been found across many cultures</li>
+                <li>The Pima, a Native American tribe, wove the symbol on baskets</li>
+                <li>Ancient Greeks used the symbol on <span class="q-number">36</span> <input type="text" class="cd-input" id="q36" oninput="handleInput(36)"></li>
+              </ul>
+            </li>
+            <li class="notes-head"><strong>Walking labyrinths</strong>
+              <ul class="notes-sublist">
+                <li>The largest surviving example of a turf labyrinth once had a big <span class="q-number">37</span> <input type="text" class="cd-input" id="q37" oninput="handleInput(37)"> at its centre</li>
+              </ul>
+            </li>
+            <li class="notes-head"><strong>Labyrinths nowadays</strong>
+              <ul class="notes-sublist">
+                <li>Believed to have a beneficial impact on mental and physical health, e.g., walking a maze can reduce a person’s <span class="q-number">38</span> <input type="text" class="cd-input" id="q38" oninput="handleInput(38)"> rate</li>
+                <li>Used in medical and health and fitness settings and also prisons</li>
+                <li>Popular with patients, visitors and staff in hospitals</li>
+                <li class="notes-plain">– patients who can’t walk can use ‘finger labyrinths’ made from <span class="q-number">39</span> <input type="text" class="cd-input" id="q39" oninput="handleInput(39)"></li>
+                <li class="notes-plain">– research has shown that Alzheimer’s sufferers experience less <span class="q-number">40</span> <input type="text" class="cd-input" id="q40" oninput="handleInput(40)"></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bottom Question Navigation Palette -->
+    <div class="bottom-nav-bar">
+      <div class="palette-container" id="questionPaletteContainer"></div>
+      <div class="nav-actions">
+        <button id="flagReviewBtn" class="btn-flag" onclick="toggleFlagCurrentQuestion()">
+          <span>⚐</span> Flag Question
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div id="resultModal" class="result-modal-backdrop">
+    <div class="result-modal-card">
+      <div class="modal-header">
+        <h3>IELTS Listening Test Results — Cambridge 17 Test 1</h3>
+        <button class="modal-close-btn" onclick="closeResultModal()">&times;</button>
+      </div>
+      <div class="modal-body-scroll">
+        <div class="score-summary-grid">
+          <div class="score-card">
+            <div class="score-label">Raw Score</div>
+            <div class="score-val" id="rawScoreVal">0 / 40</div>
+          </div>
+          <div class="score-card">
+            <div class="score-label">Accuracy</div>
+            <div class="score-val" id="percentVal">0%</div>
+          </div>
+          <div class="score-card band-score">
+            <div class="score-label">IELTS Band Score</div>
+            <div class="score-val" id="bandScoreVal">0.0</div>
+          </div>
+        </div>
+
+        <div class="modal-tabs">
+          <button id="tabBtnReview" class="modal-tab-btn active" onclick="switchModalTab('review')">Question Review</button>
+          <button id="tabBtnAudioscript" class="modal-tab-btn" onclick="switchModalTab('audioscript')">Audioscript</button>
+        </div>
+
+        <div id="modalTabContentReview">
+          <table class="review-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">Q#</th>
+                <th>Your Answer</th>
+                <th>Correct Key</th>
+                <th style="width: 100px;">Result</th>
+              </tr>
+            </thead>
+            <tbody id="reviewTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="modalTabContentAudioscript" style="display: none;">
+          <div id="audioscriptEvidenceList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    const embeddedAudios = {"1": "../../../audio/listening/c17t1/1.m4a", "2": "../../../audio/listening/c17t1/2.m4a", "3": "../../../audio/listening/c17t1/3.m4a", "4": "../../../audio/listening/c17t1/4.m4a"};
+    let answerKeys = {};
+    let audioscriptEvidence = {};
+    let fullTranscripts = {};
+
+    const peaksData = {"1": [29.3, 24.2, 21.7, 24.7, 31.0, 26.8, 27.1, 26.2, 27.0, 26.7, 30.3, 27.2, 11.0, 15.8, 32.0, 27.6, 27.7, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 28.3, 18.3, 16.7, 13.5, 14.8, 21.1, 13.1, 15.8, 15.3, 22.8, 24.3, 22.0, 24.2, 24.4, 16.1, 16.4, 24.8, 24.9, 24.7, 28.0, 23.8, 26.2, 26.0, 27.3, 25.9, 24.8, 25.7, 24.1, 25.5, 20.4, 22.9, 18.3, 18.6, 24.1, 22.9, 24.1, 18.4, 17.1, 30.5, 20.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 19.0, 26.6, 11.0, 23.9, 17.5, 14.3, 13.5, 28.6, 25.5, 24.0, 23.9, 20.6, 20.8, 23.3, 21.7, 15.2, 23.4, 26.2, 25.1, 17.2, 18.6, 18.4, 28.3, 22.7, 16.3, 24.3, 24.6, 22.2, 20.4, 29.2, 28.4, 28.3, 17.1, 28.7, 25.6, 30.0, 15.5, 13.6, 4.2, 24.6, 29.7, 14.8, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1], "2": [21.4, 22.8, 21.7, 20.9, 19.2, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 12.6, 21.9, 4.2, 27.3, 22.5, 21.2, 24.8, 23.3, 25.2, 21.1, 24.3, 21.4, 26.5, 23.9, 24.1, 25.6, 25.6, 21.6, 24.1, 21.3, 25.9, 24.8, 22.2, 19.8, 24.7, 24.6, 21.8, 24.6, 20.5, 19.7, 25.4, 24.1, 23.7, 21.9, 20.4, 9.8, 24.7, 19.4, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 20.0, 18.1, 21.0, 24.7, 22.6, 24.4, 20.5, 24.0, 20.9, 16.5, 24.0, 20.4, 22.5, 25.4, 24.7, 23.6, 22.2, 26.2, 23.3, 25.2, 22.8, 25.5, 27.5, 23.2, 26.9, 22.5, 19.5, 27.7, 22.9, 26.5, 25.7, 28.9, 25.4, 24.8, 26.0, 18.0, 25.5, 28.1, 25.0, 25.7, 28.9, 27.8, 25.2, 26.5, 32.0, 24.5, 27.4, 23.9, 10.8, 18.8, 22.6, 7.5, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1], "3": [20.5, 22.5, 21.7, 20.4, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 19.1, 15.6, 24.3, 26.4, 29.2, 30.0, 24.8, 26.7, 26.7, 27.5, 22.5, 23.1, 29.9, 29.4, 28.0, 29.9, 26.0, 28.1, 22.7, 22.5, 28.4, 27.0, 26.9, 26.3, 28.7, 26.5, 24.5, 24.0, 25.8, 27.7, 24.1, 28.5, 25.5, 23.6, 24.3, 27.8, 25.5, 28.7, 23.1, 25.7, 24.2, 27.5, 20.4, 26.4, 22.6, 29.1, 22.0, 26.4, 32.0, 26.0, 20.0, 26.7, 25.8, 27.0, 22.9, 24.9, 26.2, 28.6, 21.5, 19.4, 24.2, 12.1, 3.1, 3.1, 3.1, 3.1, 15.6, 18.6, 18.2, 25.4, 25.4, 28.1, 23.9, 29.3, 24.6, 26.1, 27.6, 24.6, 22.1, 25.6, 21.9, 29.5, 26.4, 24.0, 23.0, 23.7, 26.8, 21.4, 26.4, 27.0, 22.7, 21.7, 16.5, 3.3, 20.9, 19.7, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1], "4": [28.0, 27.9, 26.8, 22.9, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 5.7, 28.3, 6.9, 26.4, 24.5, 28.1, 23.2, 31.8, 26.7, 23.0, 25.4, 30.0, 25.0, 24.8, 27.6, 29.6, 26.2, 25.1, 27.5, 27.8, 22.7, 22.5, 29.3, 31.1, 21.0, 27.4, 31.9, 26.2, 16.9, 26.5, 31.0, 23.7, 26.7, 25.8, 26.5, 28.6, 25.1, 29.6, 28.6, 26.8, 27.6, 29.2, 25.8, 29.4, 29.1, 28.5, 29.7, 26.8, 29.2, 27.3, 29.1, 24.4, 25.2, 32.0, 27.6, 26.6, 27.8, 28.0, 14.3, 22.3, 30.2, 30.9, 29.1, 25.7, 24.5, 29.1, 22.5, 26.7, 31.9, 25.4, 27.0, 27.9, 26.3, 26.7, 29.2, 27.0, 28.1, 25.9, 29.4, 26.4, 19.7, 5.7, 17.7, 29.7, 14.9, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 3.1, 23.0, 29.9, 24.9, 3.1]};
+
+    const pairGroups = [[15, 16], [17, 18], [19, 20]];
+
+    let currentViewSec = 1;
+    let currentAudioSec = 1;
+    let currentQ = 1;
+    let userAnswers = {};
+    let flaggedQuestions = new Set();
+    let isTestRunning = false;
+    let testTimeRemaining = 40 * 60; // 40 minutes
+    let timerInterval = null;
+
+    const testAudio = document.getElementById("testAudio");
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    // Section Switching (View Only - does NOT interrupt or change audio)
+    function switchSection(secNum) {
+      currentViewSec = secNum;
+      for (let s = 1; s <= 4; s++) {
+        const el = document.getElementById(`sec${s}_container`);
+        if (el) el.classList.toggle("active", s === secNum);
+      }
+      document.querySelectorAll(".sec-tab-btn").forEach((btn, idx) => {
+        btn.classList.toggle("active", (idx + 1) === secNum);
+      });
+    }
+
+    // Palette Generation
+    function initPalette() {
+      const container = document.getElementById("questionPaletteContainer");
+      container.innerHTML = "";
+      for (let q = 1; q <= 40; q++) {
+        const bubble = document.createElement("div");
+        bubble.className = "q-bubble";
+        bubble.id = `palette_q${q}`;
+        bubble.innerText = q;
+        bubble.onclick = () => jumpToQuestion(q);
+        container.appendChild(bubble);
+      }
+      updatePaletteBubbles();
+    }
+
+    function jumpToQuestion(qNum) {
+      currentQ = qNum;
+      let targetSec = 1;
+      if (qNum >= 31) targetSec = 4;
+      else if (qNum >= 21) targetSec = 3;
+      else if (qNum >= 11) targetSec = 2;
+
+      if (currentViewSec !== targetSec) {
+        switchSection(targetSec);
+      }
+
+      setTimeout(() => {
+        let el = document.getElementById(`q${qNum}`);
+        if (!el) {
+          const radioOrCheck = document.querySelector(`input[name*="q${qNum}"], input[name*="_${qNum}"]`);
+          if (radioOrCheck) {
+            el = radioOrCheck.closest('.mc-question-card, .question-card, .form-row, .ms-question-card') || radioOrCheck;
+          }
+        }
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          if (typeof el.focus === 'function' && el.tagName !== 'DIV') {
+            el.focus();
+          }
+        }
+      }, 100);
+
+      updatePaletteBubbles();
+      updateFlagButtonState();
+    }
+
+    function updatePaletteBubbles() {
+      for (let q = 1; q <= 40; q++) {
+        const bubble = document.getElementById(`palette_q${q}`);
+        if (!bubble) continue;
+
+        const hasVal = userAnswers[q] && userAnswers[q].trim().length > 0;
+        const isFlag = flaggedQuestions.has(q);
+
+        bubble.className = "q-bubble";
+        if (hasVal) bubble.classList.add("answered");
+        if (isFlag) bubble.classList.add("flagged");
+        if (q === currentQ) bubble.classList.add("current");
+      }
+    }
+
+    function updateFlagButtonState() {
+      const flagBtn = document.getElementById("flagReviewBtn") || document.getElementById("btnFlagQuestion");
+      if (flagBtn) {
+        const isFlag = flaggedQuestions.has(currentQ);
+        flagBtn.classList.toggle("flagged", isFlag);
+        flagBtn.classList.toggle("active", isFlag);
+        flagBtn.innerHTML = isFlag ? "🚩 Flagged" : "⚐ Flag Question";
+      }
+    }
+
+    function toggleFlagCurrentQuestion() {
+      if (flaggedQuestions.has(currentQ)) {
+        flaggedQuestions.delete(currentQ);
+      } else {
+        flaggedQuestions.add(currentQ);
+      }
+      updatePaletteBubbles();
+      updateFlagButtonState();
+    }
+
+    function nextQuestion() {
+      if (currentQ < 40) jumpToQuestion(currentQ + 1);
+    }
+
+    function prevQuestion() {
+      if (currentQ > 1) jumpToQuestion(currentQ - 1);
+    }
+
+    function handleInput(qNum, val) {
+      if (val !== undefined && typeof val === 'string') {
+        userAnswers[qNum] = val.trim();
+      } else {
+        const el = document.getElementById(`q${qNum}`);
+        if (el) {
+          userAnswers[qNum] = el.value.trim();
+        }
+      }
+      currentQ = qNum;
+      updatePaletteBubbles();
+      updateFlagButtonState();
+    }
+
+    function handleRadio(qNum, val) {
+      userAnswers[qNum] = (val || "").toString().trim().toUpperCase();
+      currentQ = qNum;
+      updatePaletteBubbles();
+      updateFlagButtonState();
+    }
+
+    function onAnswerInput(qNum, value) {
+      handleInput(qNum, value);
+    }
+
+    function onRadioSelect(qNum, value) {
+      handleRadio(qNum, value);
+    }
+
+    function onMultiCheck(qNum1, qNum2, inputEl) {
+      const name = inputEl.name;
+      const checkedBoxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+      const selectedVals = Array.from(checkedBoxes).map(cb => cb.value);
+
+      if (selectedVals.length > 2) {
+        inputEl.checked = false;
+        alert("You can only select up to 2 options.");
+        return;
+      }
+
+      userAnswers[qNum1] = selectedVals[0] || "";
+      userAnswers[qNum2] = selectedVals[1] || "";
+      updatePaletteBubbles();
+    }
+
+    function renderExamWaveform(secNum) {
+      const container = document.getElementById("examWaveformBars");
+      if (!container) return;
+      container.innerHTML = "";
+      const peaks = peaksData[secNum] || [];
+      peaks.forEach(val => {
+        const bar = document.createElement("div");
+        bar.className = "exam-wave-col";
+        const h = Math.max(2, Math.min(20, Math.round(val * 0.62)));
+        bar.style.height = `${h}px`;
+        container.appendChild(bar);
+      });
+      const progressEl = document.getElementById("examWaveProgress");
+      if (progressEl) progressEl.style.width = "0%";
+    }
+
+    function updateAudioUI() {
+      const lbl = document.getElementById("audioTrackLabel");
+      if (lbl) {
+        lbl.innerText = `Part ${currentAudioSec}`;
+      }
+      for (let s = 1; s <= 4; s++) {
+        const icon = document.getElementById(`tabAudioIcon_${s}`);
+        if (icon) {
+          icon.style.display = (s === currentAudioSec && isTestRunning && !testAudio.paused) ? "inline" : "none";
+        }
+      }
+    }
+
+    // Play Audio Track
+    function playTrack(secNum) {
+      currentAudioSec = secNum;
+      const dataUrl = embeddedAudios[secNum];
+      const fallbackUrl = `Test 1 Section ${secNum}.mp3`;
+
+      if (isMobile) {
+        testAudio.src = dataUrl;
+      } else {
+        if (!testAudio.src || !testAudio.src.startsWith("data:")) {
+          testAudio.src = dataUrl;
+        } else if (testAudio.getAttribute("data-sec") !== secNum.toString()) {
+          testAudio.src = dataUrl;
+        }
+      }
+      testAudio.setAttribute("data-sec", secNum.toString());
+
+      testAudio.onerror = () => {
+        console.warn(`Base64 audio fallback to ${fallbackUrl}`);
+        testAudio.src = fallbackUrl;
+        testAudio.play().catch(e => console.error(e));
+      };
+
+      testAudio.play().then(() => {
+        document.getElementById("audioPulseIndicator").classList.add("playing");
+        document.getElementById("audioControlBtn").innerHTML = `<span>⏸</span> Pause`;
+        updateAudioUI();
+      }).catch(err => {
+        console.error("Audio playback error:", err);
+      });
+
+      renderExamWaveform(secNum);
+    }
+
+    // Audio Start / Pause Toggle
+    function startListeningTest() {
+      const btn = document.getElementById("audioControlBtn");
+      if (!isTestRunning) {
+        isTestRunning = true;
+        currentAudioSec = 1;
+        playTrack(1);
+        startTimer();
+      } else {
+        if (testAudio.paused) {
+          testAudio.play();
+          btn.innerHTML = `<span>⏸</span> Pause`;
+          document.getElementById("audioPulseIndicator").classList.add("playing");
+          updateAudioUI();
+        } else {
+          testAudio.pause();
+          btn.innerHTML = `<span>▶</span> Resume`;
+          document.getElementById("audioPulseIndicator").classList.remove("playing");
+          updateAudioUI();
+        }
+      }
+    }
+
+    // Timer logic
+    function startTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (testTimeRemaining > 0) {
+          testTimeRemaining--;
+          const mins = Math.floor(testTimeRemaining / 60);
+          const secs = testTimeRemaining % 60;
+          document.getElementById("testTimerDisplay").innerText = 
+            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        } else {
+          clearInterval(timerInterval);
+          submitListeningTest();
+        }
+      }, 1000);
+    }
+
+    testAudio.ontimeupdate = () => {
+      const cur = testAudio.currentTime || 0;
+      const dur = testAudio.duration || 0;
+      const curM = Math.floor(cur / 60).toString().padStart(2, '0');
+      const curS = Math.floor(cur % 60).toString().padStart(2, '0');
+      const durM = Math.floor(dur / 60).toString().padStart(2, '0');
+      const durS = Math.floor(dur % 60).toString().padStart(2, '0');
+      document.getElementById("audioTimeDisplay").innerText = `${curM}:${curS} / ${durM}:${durS}`;
+
+      if (dur > 0) {
+        const pct = (cur / dur) * 100;
+        const progressEl = document.getElementById("examWaveProgress");
+        if (progressEl) progressEl.style.width = `${pct}%`;
+        const peaks = peaksData[currentAudioSec] || [];
+        const barIdx = Math.floor((pct / 100) * peaks.length);
+        document.querySelectorAll('.exam-wave-col').forEach((col, idx) => {
+          if (idx <= barIdx) col.classList.add('active');
+          else col.classList.remove('active');
+        });
+      }
+    };
+
+    testAudio.onended = () => {
+      if (currentAudioSec < 4) {
+        const nextSec = currentAudioSec + 1;
+        if (currentViewSec === currentAudioSec) {
+          switchSection(nextSec);
+        }
+        playTrack(nextSec);
+      } else {
+        document.getElementById("audioPulseIndicator").classList.remove("playing");
+        document.getElementById("audioControlBtn").innerHTML = `<span>✔</span> Finished`;
+        document.getElementById("audioControlBtn").disabled = true;
+        updateAudioUI();
+      }
+    };
+
+    // Check Answers & Calculate IELTS Band
+    function calculateIeltsBand(raw) {
+      if (raw >= 39) return 9.0;
+      if (raw >= 37) return 8.5;
+      if (raw >= 35) return 8.0;
+      if (raw >= 32) return 7.5;
+      if (raw >= 30) return 7.0;
+      if (raw >= 26) return 6.5;
+      if (raw >= 23) return 6.0;
+      if (raw >= 18) return 5.5;
+      if (raw >= 16) return 5.0;
+      if (raw >= 13) return 4.5;
+      if (raw >= 10) return 4.0;
+      if (raw >= 8) return 3.5;
+      return 3.0;
+    }
+
+    function cleanStr(s) {
+      if (!s) return "";
+      return s
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[£$€]/g, "")
+        .replace(/['".,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function __localSubmitListening() {
+      if (testAudio) testAudio.pause();
+      if (timerInterval) clearInterval(timerInterval);
+
+      // DOM harvesting safety net
+      for (let q = 1; q <= 40; q++) {
+        const el = document.getElementById(`q${q}`);
+        if (el && el.value !== undefined && el.value.trim().length > 0) {
+          userAnswers[q] = el.value.trim();
+        }
+        const radioChecked = document.querySelector(`input[name="q${q}_opt"]:checked, input[name="q${q}"]:checked`);
+        if (radioChecked) {
+          userAnswers[q] = radioChecked.value.trim().toUpperCase();
+        }
+      }
+
+      pairGroups.forEach(([a, b]) => {
+        const chk = Array.from(document.querySelectorAll(`input[name="q${a}_${b}"]:checked`)).map(c => c.value.trim().toUpperCase());
+        if (chk.length > 0) { userAnswers[a] = chk[0] || ""; userAnswers[b] = chk[1] || ""; }
+      });
+
+      let rawScore = 0;
+      const tableBody = document.getElementById("reviewTableBody");
+      tableBody.innerHTML = "";
+
+      for (let q = 1; q <= 40; q++) {
+        const userAns = userAnswers[q] || "";
+        const uClean = cleanStr(userAns);
+        const correctList = answerKeys[q] || [];
+        let isCorrect = correctList.some(k => cleanStr(k) === uClean);
+        const pair = pairGroups.find(p => p.includes(q));
+        if (pair && q === pair[1] && uClean && cleanStr(userAnswers[pair[0]]) === uClean) isCorrect = false;
+
+        if (isCorrect) rawScore++;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><strong>${q}</strong></td>
+          <td>${userAns || '<em style="color:#94a3b8;">No Answer</em>'}</td>
+          <td><strong>${correctList.join(" / ")}</strong></td>
+          <td>
+            <span class="review-badge ${isCorrect ? 'badge-correct' : 'badge-incorrect'}">
+              ${isCorrect ? '✓ Correct' : '✗ Incorrect'}
+            </span>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      }
+
+      document.getElementById("rawScoreVal").innerText = `${rawScore} / 40`;
+      document.getElementById("percentVal").innerText = `${Math.round((rawScore / 40) * 100)}%`;
+      document.getElementById("bandScoreVal").innerText = calculateIeltsBand(rawScore).toFixed(1);
+
+      buildAudioscriptEvidence();
+      switchModalTab("review");
+      document.getElementById("resultModal").style.display = "flex";
+    }
+
+    let currentScriptSec = 1;
+
+    function buildAudioscriptEvidence() {
+      const container = document.getElementById("audioscriptEvidenceList");
+      if (!container) return;
+      container.innerHTML = "";
+
+      // Section Tabs bar
+      const tabsBar = document.createElement("div");
+      tabsBar.className = "script-tabs-bar";
+      for (let s = 1; s <= 4; s++) {
+        const btn = document.createElement("button");
+        btn.className = "script-tab-btn " + (s === currentScriptSec ? "active" : "");
+        btn.id = "scriptTabBtn_" + s;
+        btn.innerText = "Part " + s + " (Q" + (s === 1 ? "1-10" : s === 2 ? "11-20" : s === 3 ? "21-30" : "31-40") + ")";
+        btn.onclick = () => switchScriptSec(s);
+        tabsBar.appendChild(btn);
+      }
+      container.appendChild(tabsBar);
+
+      // Section Containers
+      for (let s = 1; s <= 4; s++) {
+        const secWrap = document.createElement("div");
+        secWrap.id = "scriptSecWrap_" + s;
+        secWrap.style.display = s === currentScriptSec ? "block" : "none";
+
+        // Full Audioscript Box
+        const scriptBox = document.createElement("div");
+        scriptBox.className = "script-sec-box";
+        scriptBox.innerHTML = `
+          <div class="script-sec-header">
+            <span>📜 Part ${s} · To‘liq Audioscript (Full Transcript)</span>
+            <small style="font-size:0.8rem; color:#64748b; font-weight:normal;">Javob kalitlari sariq rangda belgilangan</small>
+          </div>
+          ${fullTranscripts[s] || '<p>Audioscript mavjud emas.</p>'}
+        `;
+        secWrap.appendChild(scriptBox);
+
+        container.appendChild(secWrap);
+      }
+    }
+
+    function switchScriptSec(secNum) {
+      currentScriptSec = secNum;
+      for (let s = 1; s <= 4; s++) {
+        const wrap = document.getElementById("scriptSecWrap_" + s);
+        if (wrap) wrap.style.display = s === secNum ? "block" : "none";
+        const btn = document.getElementById("scriptTabBtn_" + s);
+        if (btn) btn.classList.toggle("active", s === secNum);
+      }
+    }
+
+    function switchModalTab(tabName) {
+      const isReview = tabName === "review";
+      document.getElementById("modalTabContentReview").style.display = isReview ? "block" : "none";
+      document.getElementById("modalTabContentAudioscript").style.display = isReview ? "none" : "block";
+      document.getElementById("tabBtnReview").classList.toggle("active", isReview);
+      document.getElementById("tabBtnAudioscript").classList.toggle("active", !isReview);
+    }
+
+    function closeResultModal() {
+      document.getElementById("resultModal").style.display = "none";
+    }
+
+    // === IELTS USER HIGHLIGHT SYSTEM ===
+    (function initHighlightSystem() {
+      let tooltip = null;
+      let savedRange = null;
+
+      function getTooltip() {
+        if (!tooltip) {
+          tooltip = document.createElement('div');
+          tooltip.className = 'highlight-tooltip';
+          document.body.appendChild(tooltip);
+
+          tooltip.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          });
+          tooltip.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+          }, { passive: true });
+        }
+        return tooltip;
+      }
+
+      function hideTooltip() {
+        if (tooltip) {
+          tooltip.style.display = 'none';
+          tooltip.innerHTML = '';
+        }
+        savedRange = null;
+      }
+
+      function positionTooltip(rect) {
+        const tt = getTooltip();
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        
+        let top = rect.top + scrollY - 40;
+        let left = rect.left + scrollX + (rect.width / 2);
+        
+        if (top < scrollY + 10) {
+          top = rect.bottom + scrollY + 8;
+        }
+        
+        tt.style.top = top + 'px';
+        tt.style.left = left + 'px';
+        tt.style.transform = 'translateX(-50%)';
+        tt.style.display = 'flex';
+      }
+
+      function highlightCurrentSelection() {
+        const selection = window.getSelection();
+        const range = savedRange || (selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null);
+        if (!range || range.collapsed) return;
+
+        try {
+          applyHighlight(range);
+        } catch (e) {
+          console.warn("Could not apply highlight:", e);
+        }
+
+        if (selection) selection.removeAllRanges();
+        hideTooltip();
+      }
+
+      function applyHighlight(range) {
+        if (range.startContainer === range.endContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
+          const node = range.startContainer;
+          const start = range.startOffset;
+          const end = range.endOffset;
+          if (start === end) return;
+
+          const sub = node.textContent.substring(start, end);
+          if (!sub.trim()) return;
+
+          const after = node.splitText(end);
+          const middle = node.splitText(start);
+          const mark = document.createElement('mark');
+          mark.className = 'user-highlight';
+          mark.textContent = middle.textContent;
+          middle.parentNode.replaceChild(mark, middle);
+          return;
+        }
+
+        const root = range.commonAncestorContainer;
+        const walker = document.createTreeWalker(
+          root.nodeType === Node.TEXT_NODE ? root.parentNode : root,
+          NodeFilter.SHOW_TEXT,
+          {
+            acceptNode: function(node) {
+              if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
+              const nr = document.createRange();
+              nr.selectNodeContents(node);
+              if (range.compareBoundaryPoints(Range.END_TO_START, nr) < 0 &&
+                  range.compareBoundaryPoints(Range.START_TO_END, nr) > 0) {
+                return NodeFilter.FILTER_ACCEPT;
+              }
+              return NodeFilter.FILTER_REJECT;
+            }
+          }
+        );
+
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+
+        nodes.forEach(node => {
+          let s = (node === range.startContainer) ? range.startOffset : 0;
+          let e = (node === range.endContainer) ? range.endOffset : node.textContent.length;
+          if (s >= e) return;
+
+          const sub = node.textContent.substring(s, e);
+          if (!sub.trim()) return;
+
+          const after = node.splitText(e);
+          const middle = node.splitText(s);
+          const mark = document.createElement('mark');
+          mark.className = 'user-highlight';
+          mark.textContent = middle.textContent;
+          middle.parentNode.replaceChild(mark, middle);
+        });
+      }
+
+      function removeHighlightNode(mark) {
+        if (!mark || !mark.parentNode) return;
+        const p = mark.parentNode;
+        while (mark.firstChild) p.insertBefore(mark.firstChild, mark);
+        p.removeChild(mark);
+        p.normalize();
+        hideTooltip();
+      }
+
+      function clearAllHighlights() {
+        const marks = document.querySelectorAll('mark.user-highlight');
+        marks.forEach(mark => {
+          const p = mark.parentNode;
+          while (mark.firstChild) p.insertBefore(mark.firstChild, mark);
+          p.removeChild(mark);
+          p.normalize();
+        });
+        hideTooltip();
+      }
+
+      // Handle selection mouseup
+      document.addEventListener('mouseup', (e) => {
+        if (tooltip && tooltip.contains(e.target)) return;
+
+        setTimeout(() => {
+          const selection = window.getSelection();
+          if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+            if (!e.target.closest('.user-highlight')) {
+              hideTooltip();
+            }
+            return;
+          }
+
+          if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(e.target.tagName)) {
+            hideTooltip();
+            return;
+          }
+
+          savedRange = selection.getRangeAt(0).cloneRange();
+          const rect = savedRange.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) {
+            hideTooltip();
+            return;
+          }
+
+          const tt = getTooltip();
+          tt.innerHTML = `
+            <button id="hl-btn-apply" title="Highlight (H)">🖍 Highlight</button>
+            <button id="hl-btn-close" class="btn-close-hl" title="Close">✕</button>
+          `;
+          positionTooltip(rect);
+
+          const btnApply = document.getElementById('hl-btn-apply');
+          const btnClose = document.getElementById('hl-btn-close');
+          if (btnApply) btnApply.onclick = highlightCurrentSelection;
+          if (btnClose) btnClose.onclick = () => {
+            selection.removeAllRanges();
+            hideTooltip();
+          };
+        }, 20);
+      });
+
+      // Touch support for mobile devices
+      document.addEventListener('touchend', (e) => {
+        if (tooltip && tooltip.contains(e.target)) return;
+
+        setTimeout(() => {
+          const selection = window.getSelection();
+          if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+            if (!e.target.closest('.user-highlight')) {
+              hideTooltip();
+            }
+            return;
+          }
+
+          if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(e.target.tagName)) {
+            hideTooltip();
+            return;
+          }
+
+          try {
+            savedRange = selection.getRangeAt(0).cloneRange();
+            const rect = savedRange.getBoundingClientRect();
+            if (rect.width === 0 && rect.height === 0) {
+              hideTooltip();
+              return;
+            }
+
+            const tt = getTooltip();
+            tt.innerHTML = `
+              <button id="hl-btn-apply-touch" title="Highlight">🖍 Highlight</button>
+              <button id="hl-btn-close-touch" class="btn-close-hl" title="Close">✕</button>
+            `;
+            positionTooltip(rect);
+
+            const btnApply = document.getElementById('hl-btn-apply-touch');
+            const btnClose = document.getElementById('hl-btn-close-touch');
+            if (btnApply) btnApply.onclick = highlightCurrentSelection;
+            if (btnClose) btnClose.onclick = () => {
+              selection.removeAllRanges();
+              hideTooltip();
+            };
+          } catch(err) {}
+        }, 100);
+      });
+
+      // Handle click on existing highlight
+      document.addEventListener('click', (e) => {
+        const mark = e.target.closest('.user-highlight');
+        if (mark) {
+          const rect = mark.getBoundingClientRect();
+          const tt = getTooltip();
+          tt.innerHTML = `
+            <button id="hl-btn-remove" class="btn-remove">⌫ Remove</button>
+            <button id="hl-btn-clear" class="btn-clear-all">🧹 Clear All</button>
+            <button id="hl-btn-close" class="btn-close-hl">✕</button>
+          `;
+          positionTooltip(rect);
+
+          const btnRem = document.getElementById('hl-btn-remove');
+          const btnClr = document.getElementById('hl-btn-clear');
+          const btnCls = document.getElementById('hl-btn-close');
+          if (btnRem) btnRem.onclick = () => removeHighlightNode(mark);
+          if (btnClr) btnClr.onclick = clearAllHighlights;
+          if (btnCls) btnCls.onclick = hideTooltip;
+          e.stopPropagation();
+        }
+      });
+
+      // Handle right click contextmenu
+      document.addEventListener('contextmenu', (e) => {
+        const selection = window.getSelection();
+        const mark = e.target.closest('.user-highlight');
+
+        if ((selection && !selection.isCollapsed && selection.toString().trim()) || mark) {
+          e.preventDefault();
+          const tt = getTooltip();
+          const rect = { top: e.clientY, bottom: e.clientY, left: e.clientX, width: 0, height: 0 };
+
+          if (mark) {
+            tt.innerHTML = `
+              <button id="hl-ctx-remove" class="btn-remove">⌫ Remove Highlight</button>
+              <button id="hl-ctx-clear" class="btn-clear-all">🧹 Clear All</button>
+              <button id="hl-ctx-close" class="btn-close-hl">✕</button>
+            `;
+            positionTooltip(rect);
+            const btnRem = document.getElementById('hl-ctx-remove');
+            const btnClr = document.getElementById('hl-ctx-clear');
+            const btnCls = document.getElementById('hl-ctx-close');
+            if (btnRem) btnRem.onclick = () => removeHighlightNode(mark);
+            if (btnClr) btnClr.onclick = clearAllHighlights;
+            if (btnCls) btnCls.onclick = hideTooltip;
+          } else {
+            savedRange = selection.getRangeAt(0).cloneRange();
+            tt.innerHTML = `
+              <button id="hl-ctx-apply">🖍 Highlight</button>
+              <button id="hl-ctx-close" class="btn-close-hl">✕</button>
+            `;
+            positionTooltip(rect);
+            const btnApply = document.getElementById('hl-ctx-apply');
+            const btnCls = document.getElementById('hl-ctx-close');
+            if (btnApply) btnApply.onclick = highlightCurrentSelection;
+            if (btnCls) btnCls.onclick = hideTooltip;
+          }
+        }
+      });
+
+      // Shortcut key H or Alt+H
+      document.addEventListener('keydown', (e) => {
+        if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+        if (e.key === 'h' || e.key === 'H' || (e.altKey && (e.key === 'h' || e.key === 'H'))) {
+          const sel = window.getSelection();
+          if (sel && !sel.isCollapsed && sel.toString().trim()) {
+            e.preventDefault();
+            highlightCurrentSelection();
+          }
+        }
+        if (e.key === 'Escape') {
+          hideTooltip();
+        }
+      });
+
+      window.addEventListener('scroll', hideTooltip, true);
+    })();
+
+    window.addEventListener("DOMContentLoaded", () => {
+      initPalette();
+      updateFlagButtonState();
+    });
+  </script>
+<script>window.LDURS = [415.17, 413.44, 444.26, 455.71];</script>
+<style>
+  #clBar{position:fixed;left:0;right:0;bottom:0;z-index:99990;background:#0f172a;color:#e2e8f0;font:13px/1.4 system-ui,sans-serif;padding:6px 14px;text-align:center;box-shadow:0 -2px 10px rgba(0,0,0,.25)}
+  #clBar b{color:#fff}
+  body{padding-bottom:34px}
+  #lo-done{position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,.88);display:none;align-items:center;justify-content:center;padding:16px}
+  #lo-done .lo-card{background:#fff;color:#0f172a;border-radius:14px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.35);font-family:system-ui,sans-serif}
+  #lo-done h2{font-size:1.15rem;margin:0 0 8px;color:#166534}
+  #lo-done p{font-size:.9rem;color:#475569;margin:0 0 12px;line-height:1.45}
+  #lo-done-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-bottom:14px}
+  #lo-done .lo-ans{border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;font-size:.85rem;background:#f8fafc;word-break:break-word}
+  #lo-done button{width:100%;padding:12px;font-size:1rem;font-weight:700;border:0;border-radius:8px;background:#0f172a;color:#fff;cursor:pointer}
+  #lo-student{display:inline-block;white-space:nowrap;margin-left:8px;padding:3px 10px;border-radius:999px;background:#fff7ed;color:#9a3412;font-weight:700;font-size:.78rem}
+</style>
+<div id="lv-toast" style="display:none;position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:100001;
+background:#b42318;color:#fff;padding:10px 16px;border-radius:10px;font:600 14px system-ui;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:92vw;text-align:center"></div>
+<div id="tm-wait" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.97);color:#fff;
+font:600 19px system-ui;align-items:center;justify-content:center;text-align:center;padding:24px;line-height:1.5"></div>
+<div id="lo-pause" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#d97706;color:#fff;
+font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16px rgba(0,0,0,.25)">⏸ Ustoz testni pauza qildi. Audio va vaqt to'xtab turibdi, javob yozishingiz mumkin.</div>
+<div id="lo-done"><div class="lo-card">
+  <h2 id="lo-done-msg"></h2><p id="lo-done-info"></p><div id="lo-done-list"></div>
+  <button onclick="document.getElementById('lo-done').style.display='none'">Yopish</button>
+</div></div>
+<div id="clBar">⏳ Yuklanmoqda…</div>
+<script src="../../fb/firebase-app-compat.js"></script>
+<script src="../../fb/firebase-database-compat.js"></script>
+<script src="../../fb/config.js"></script>
+<script src="../../fb/cls.js"></script>
+<script>
+// Sinfdagi Listening testi (Mac'siz). Boshlash/pauza/to'xtatish ustoz sahifasidan (Firebase).
+// Rejimlar: phone = har kim o'z quloqchinida (vaqti o'z audiosi boshlangandan), speaker = audio kolonkadan (umumiy vaqt),
+// mixed = o'quvchi o'zi tanlaydi (quloqchin bo'lsa ham audio kolonka bilan bir joyda turadi).
+(function () {
+  const K = CLS.P.get("k") || "", SID = CLS.P.get("s") || "";
+  const DURS = window.LDURS || [0, 0, 0, 0];
+  const L = CLS.db.ref("live/" + SID + "/" + K), S = CLS.db.ref("sessions/" + SID);
+  const bar = document.getElementById("clBar"), box = document.getElementById("tm-wait");
+  const LO = window.LO = {
+    me: null, sess: null, done: false, restored: false,
+    aStart: null, aPT: 0, stall: 0, stallPend: 0, choice: null,
+    speaker: false, speakerSelf: false, unlocked: false, soundTest: false, audioDone: false, started: false
+  };
+  try { LO.choice = localStorage.getItem("lo_choice_" + K); } catch (e) {}
+
+  function show(t) { box.innerHTML = "<div>" + t + "</div>"; box.style.display = "flex"; }
+  function hide() { box.style.display = "none"; }
+  function toast(t, ms) {
+    const el = document.getElementById("lv-toast");
+    el.textContent = t; el.style.display = "block";
+    clearTimeout(el._h); el._h = setTimeout(() => el.style.display = "none", ms || 5000);
+  }
+  function st() { return LO.sess ? LO.sess.state : null; }
+  function shared() { return LO.sess && LO.sess.mode !== "phone"; }
+  function refNow() { const s = LO.sess; return s.state === "paused" ? s.pausedAt : s.state === "stopped" ? s.stoppedAt : CLS.now(); }
+
+  // ---------- vaqt: sahifaning o'z 40 daqiqalik taymeri ishlamaydi ----------
+  window.startTimer = function () {};
+  function leftSec() {
+    const s = LO.sess;
+    if (!s || !s.start) return (s && s.minutes || 40) * 60;
+    if (!shared()) {   // telefon rejimi: har kimning vaqti o'z audiosi boshlangandan
+      if (LO.aStart == null) return s.minutes * 60;
+      return (LO.aStart + s.minutes * 60000 + ((s.pausedTotal || 0) - LO.aPT) + (LO.stall + LO.stallPend) * 1000 - refNow()) / 1000;
+    }
+    return (s.end - (s.grace || 0) - refNow()) / 1000;
+  }
+  function drawTimer() {
+    const el = document.getElementById("testTimerDisplay"); if (!el || !LO.sess) return;
+    const l = Math.round(leftSec()), a = Math.abs(l), t = String(Math.floor(a / 60)).padStart(2, "0") + ":" + String(a % 60).padStart(2, "0");
+    el.textContent = l < 0 ? "+" + t : t;
+    const b = el.closest(".timer-badge");
+    if (b) { b.style.background = l < 0 ? "#dc2626" : ""; b.style.color = l < 0 ? "#fff" : ""; b.title = l < 0 ? "Vaqt tugadi" : "Qolgan vaqt"; }
+  }
+
+  // ---------- javoblar (asl sahifadagi usul: matn, select, radio, juft checkbox) ----------
+  function collect() {
+    for (let q = 1; q <= 40; q++) {
+      const el = document.getElementById("q" + q);
+      if (el && el.value !== undefined && el.type !== "radio" && el.type !== "checkbox") userAnswers[q] = el.value.trim();
+      const rc = document.querySelector('input[name="q' + q + '_opt"]:checked, input[name="q' + q + '"]:checked');
+      if (rc) userAnswers[q] = rc.value.trim().toUpperCase();
+    }
+    (typeof pairGroups !== "undefined" ? pairGroups : []).forEach(([a, b]) => {
+      const chk = Array.from(document.querySelectorAll('input[name="q' + a + '_' + b + '"]:checked')).map(c => c.value.trim().toUpperCase());
+      userAnswers[a] = chk[0] || ""; userAnswers[b] = chk[1] || "";
+    });
+    const out = {};
+    for (let q = 1; q <= 40; q++) if (userAnswers[q] && String(userAnswers[q]).trim()) out[q] = String(userAnswers[q]).trim().slice(0, 80);
+    return out;
+  }
+  function restore(a) {
+    Object.keys(a).forEach(q => {
+      const v = a[q]; if (!v) return;
+      userAnswers[q] = v;
+      const el = document.getElementById("q" + q);
+      if (el && el.type !== "radio" && el.type !== "checkbox") el.value = v;
+      document.querySelectorAll('input[name="q' + q + '_opt"], input[name="q' + q + '"]').forEach(r => {
+        if (r.type === "radio" && r.value.trim().toUpperCase() === String(v).toUpperCase()) r.checked = true;
+      });
+    });
+    (typeof pairGroups !== "undefined" ? pairGroups : []).forEach(([x, y]) => {
+      const vals = [a[x], a[y]].filter(Boolean).map(s => String(s).toUpperCase());
+      document.querySelectorAll('input[name="q' + x + '_' + y + '"]').forEach(c => { if (vals.includes(c.value.trim().toUpperCase())) c.checked = true; });
+    });
+    try { updatePaletteBubbles(); } catch (e) {}
+  }
+  let lastSent = "";
+  function canWrite() { const s = st(); return !LO.done && LO.restored && (s === "run" || s === "paused" || s === "stopped"); }
+  function sync() {
+    if (!canWrite()) return Promise.resolve();
+    const a = collect(), j = JSON.stringify(a);
+    if (j === lastSent) return Promise.resolve();
+    lastSent = j;
+    return L.child("ans").set(a).catch(() => { lastSent = ""; });
+  }
+
+  // ---------- topshirish ----------
+  function finish(why) {
+    if (LO.done) return;
+    sync().then(() => L.child("submitted").set(CLS.TS)).then(() => accepted(why)).catch(() => {
+      L.child("submitted").get().then(s => {
+        if (s.val()) accepted(why); else bar.innerHTML = "⚠️ Javoblar yuborilmadi. Sahifani yopmang, ustozga ayting.";
+      });
+    });
+  }
+  function accepted(why) {
+    if (LO.done) return;
+    LO.done = true; isTestRunning = false;
+    try { testAudio.pause(); } catch (e) {}
+    keepAwake(); hide();
+    document.getElementById("lo-pause").style.display = "none";
+    const btn = document.getElementById("audioControlBtn");
+    if (btn) { btn.disabled = true; btn.innerHTML = "<span>✔</span> Topshirildi"; }
+    const a = collect();
+    let list = "";
+    for (let q = 1; q <= 40; q++) list += '<div class="lo-ans"><b>' + q + '.</b> ' + (CLS.esc(a[q]) || '<i style="color:#94a3b8;">—</i>') + "</div>";
+    document.getElementById("lo-done-msg").innerHTML = "✅ Javoblaringiz ustozga yetib bordi.";
+    document.getElementById("lo-done-info").innerHTML = (why ? why + " " : "") + "Javob berilgan: <b>" + Object.keys(a).length + " / 40</b>. Natija Telegram topic'ingizga keladi.";
+    document.getElementById("lo-done-list").innerHTML = list;
+    document.getElementById("lo-done").style.display = "flex";
+    bar.innerHTML = `✅ <b>${CLS.esc(LO.me.name)}</b> · javoblaringiz ustozga yetib bordi`;
+  }
+  window.submitListeningTest = function () {
+    if (LO.done) { document.getElementById("lo-done").style.display = "flex"; return; }
+    if (st() !== "run" && st() !== "paused") { toast("Ustoz testni hali boshlamadi."); return; }
+    const n = Object.keys(collect()).length;
+    if (!confirm("Testni topshirasizmi?\n40 ta savoldan " + n + " tasiga javob berdingiz.\nTopshirgandan keyin javoblarni o'zgartirib bo'lmaydi.")) return;
+    finish("");
+  };
+
+  // ---------- audio ----------
+  function totalDur() { return DURS.reduce((s, d) => s + (d || 0), 0); }
+  function locate(pos) {
+    for (let s = 1; s <= 4; s++) { const d = DURS[s - 1] || 0; if (pos < d || s === 4) return [s, Math.max(0, pos)]; pos -= d; }
+    return [4, 0];
+  }
+  // audio qayerda bo'lishi kerak (soniya, 4 qism bitta chiziqda)
+  function expectedPos() {
+    const s = LO.sess;
+    if (!s || !s.start) return 0;
+    if (shared()) return (refNow() - s.start - (s.pausedTotal || 0)) / 1000 + (s.shift || 0);
+    if (LO.aStart == null) return 0;
+    return (refNow() - LO.aStart - ((s.pausedTotal || 0) - LO.aPT)) / 1000 - LO.stall - LO.stallPend + (s.shift || 0);
+  }
+  function audioFinished() {
+    LO.audioDone = true;
+    try { testAudio.pause(); } catch (e) {}
+    const btn = document.getElementById("audioControlBtn");
+    if (btn) { btn.innerHTML = "<span>✔</span> Audio tugadi"; btn.disabled = true; }
+    document.getElementById("audioPulseIndicator")?.classList.remove("playing");
+    try { updateAudioUI(); } catch (e) {}
+  }
+  function audioBlocked() {
+    show("🎧 Audio boshlandi.<br><button id='lo-play' style='margin-top:16px;padding:14px 26px;font:700 18px system-ui;border:0;border-radius:10px;background:#ea580c;color:#fff'>▶ Eshitish uchun bosing</button>");
+    document.getElementById("lo-play").onclick = () => { LO.unlocked = true; hide(); startAudioAt(expectedPos()); };
+  }
+  let audioRetries = 0;
+  function startAudioAt(pos) {
+    if (LO.speaker || LO.done || !DURS[0]) return;
+    if (pos >= totalDur() - 0.5) { audioFinished(); return; }
+    LO.audioDone = false;
+    const [s, off] = locate(pos);
+    isTestRunning = true;
+    const prevSec = currentAudioSec;
+    currentAudioSec = s;
+    if (prevSec !== s && currentViewSec === prevSec) switchSection(s);
+    const sameSrc = testAudio.getAttribute("data-sec") === String(s) && testAudio.readyState >= 1;
+    if (!sameSrc) {
+      testAudio.src = embeddedAudios[s] + "#t=" + off.toFixed(1);
+      testAudio.setAttribute("data-sec", String(s));
+      testAudio.addEventListener("loadedmetadata", () => { try { if (Math.abs(testAudio.currentTime - off) > 1.5) testAudio.currentTime = off; } catch (e) {} }, { once: true });
+      // internet uzilsa qayta urinadi; to'xtab qolgan soniyalar qaytariladi (telefon rejimi)
+      testAudio.onerror = () => { if (++audioRetries <= 40) setTimeout(() => { if (st() === "run") startAudioAt(expectedPos()); }, 2000); };
+      try { renderExamWaveform(s); } catch (e) {}
+    } else if (Math.abs(testAudio.currentTime - off) > (shared() ? 1 : 2)) {
+      try { testAudio.currentTime = off; } catch (e) {}
+    }
+    testAudio.play().then(() => {
+      audioRetries = 0;
+      document.getElementById("audioPulseIndicator")?.classList.add("playing");
+      const btn = document.getElementById("audioControlBtn");
+      if (btn) { btn.innerHTML = "<span>🔊</span> Eshitilmoqda"; btn.disabled = false; }
+      try { updateAudioUI(); } catch (e) {}
+      if (!shared() && LO.aStart == null) {   // shu o'quvchining audiosi hozir boshlandi
+        LO.aStart = CLS.now(); LO.aPT = LO.sess.pausedTotal || 0;
+        L.update({ aStart: CLS.TS, aPT: LO.aPT }).catch(() => {});
+      }
+    }).catch(err => { if (err && err.name === "NotAllowedError") audioBlocked(); });
+  }
+  // Asl "Start Audio / Pause" tugmasi: pauza yo'q, bosilsa jonli joyga qaytadi
+  window.startListeningTest = function () {
+    if (st() !== "run") { toast(st() === "paused" ? "Ustoz pauza qilgan." : "Ustoz testni hali boshlamadi."); return; }
+    if (LO.speaker) return;
+    startAudioAt(expectedPos());
+  };
+  function syncAudio() {
+    if (LO.speaker || LO.done || st() !== "run" || LO.soundTest) return;
+    if (!shared() && LO.aStart == null) { if (testAudio.paused) startAudioAt(0); return; }
+    const exp = expectedPos();
+    if (exp >= totalDur()) { if (!LO.audioDone) audioFinished(); return; }
+    if (!testAudio.paused && testAudio.readyState < 3) return;   // yuklanyapti: kutamiz
+    const [s, off] = locate(exp);
+    const cur = testAudio.getAttribute("data-sec") === String(s) ? testAudio.currentTime : -99;
+    if (testAudio.paused || Math.abs(cur - off) > (shared() ? 1.5 : 6)) startAudioAt(exp);
+  }
+  function absPos() {
+    const sec = +testAudio.getAttribute("data-sec");
+    if (!sec || LO.audioDone) return null;
+    let p = 0;
+    for (let i = 1; i < sec; i++) p += DURS[i - 1] || 0;
+    return p + (testAudio.currentTime || 0);
+  }
+  // Sahifa ochiq turib audio oldinga yurmasa (internet sekin) - bu soniyalar o'quvchiga qaytariladi (telefon rejimi).
+  // Sahifadan chiqib ketgan vaqt qaytarilmaydi.
+  let wdLast = null, stallSending = false;
+  function flushStall() {
+    const sec = Math.floor(LO.stallPend);
+    if (sec < 1 || stallSending) return;
+    stallSending = true;
+    L.child("stall").transaction(n => (n || 0) + sec).then(r => { if (r.committed) LO.stallPend -= sec; }).catch(() => {}).finally(() => { stallSending = false; });
+  }
+  setInterval(() => {
+    const active = st() === "run" && !shared() && !LO.speaker && !LO.done && LO.aStart != null && !document.hidden && !LO.audioDone;
+    const cur = active ? absPos() : null;
+    if (cur == null) { wdLast = null; return; }
+    if (wdLast != null && cur - wdLast < 0.25) LO.stallPend += 1;
+    else if (LO.stallPend >= 1) flushStall();
+    wdLast = cur;
+  }, 1000);
+  function loOnEnded() {
+    if (LO.speaker || LO.done) return;
+    const sec = +testAudio.getAttribute("data-sec") || 1;
+    let next = 0;
+    for (let i = 1; i <= sec; i++) next += DURS[i - 1] || 0;
+    if (sec >= 4 || next >= totalDur() - 0.5) { audioFinished(); return; }
+    if (!shared()) { const exp = expectedPos(); if (exp < next) LO.stallPend -= (next - exp); }
+    startAudioAt(next);
+  }
+  testAudio.onended = loOnEnded;
+  // Ustoz boshlashidan oldin bir marta bosish: telefon brauzeri keyin audioni o'zi boshlashiga ruxsat beradi
+  function unlockAudio() {
+    try {
+      testAudio.muted = true;
+      testAudio.src = embeddedAudios[1]; testAudio.setAttribute("data-sec", "1");
+      testAudio.play().then(() => { testAudio.pause(); testAudio.currentTime = 0; testAudio.muted = false; }).catch(() => { testAudio.muted = false; });
+    } catch (e) {}
+    LO.unlocked = true;
+    render();
+  }
+  window.loUnlock = unlockAudio;
+  // Ovozni tekshirish: 1-qism boshidan 15 soniya
+  function loSoundTest() {
+    if (st() !== "wait" || LO.speaker) return;
+    clearTimeout(LO.soundT);
+    try { testAudio.muted = false; testAudio.volume = 1; testAudio.src = embeddedAudios[1]; testAudio.setAttribute("data-sec", "1"); testAudio.play().catch(() => {}); } catch (e) {}
+    LO.soundTest = true; LO.unlocked = true;
+    LO.soundT = setTimeout(loSoundStop, 15000);
+    render();
+  }
+  function loSoundStop() {
+    clearTimeout(LO.soundT);
+    LO.soundTest = false;
+    if (st() === "wait") { try { testAudio.pause(); testAudio.currentTime = 0; } catch (e) {} }
+    render();
+  }
+  window.loSoundTest = loSoundTest; window.loSoundStop = loSoundStop;
+  function soundTestHtml() {
+    return LO.soundTest
+      ? "<br><span style='display:inline-block;margin-top:12px'>🔊 Eshitilyaptimi? Eshitilmasa naushnik ulanganini va ovoz balandligini tekshiring.</span><br><button onclick='loSoundStop()' style='margin-top:10px;padding:10px 18px;border:0;border-radius:8px;background:#475569;color:#fff;font:600 15px system-ui'>⏹ To'xtatish</button>"
+      : "<br><button onclick='loSoundTest()' style='margin-top:12px;padding:12px 22px;border:0;border-radius:10px;background:#2563eb;color:#fff;font:700 16px system-ui'>🔊 Ovozni tekshirish</button>";
+  }
+
+  // ---------- kolonka rejimi ----------
+  function enterSpeakerMode(fromTeacher) {
+    if (LO.speaker) return;
+    LO.speaker = true; LO.speakerSelf = !fromTeacher;
+    try { testAudio.pause(); testAudio.removeAttribute("src"); testAudio.removeAttribute("data-sec"); testAudio.load(); } catch (e) {}
+    document.getElementById("audioPulseIndicator")?.classList.remove("playing");
+    const btn = document.getElementById("audioControlBtn");
+    if (btn) { btn.innerHTML = "<span>🔈</span> Audio kolonkadan"; btn.disabled = true; }
+    const lbl = document.getElementById("audioTrackLabel"); if (lbl) lbl.innerText = "🔈 Kolonka";
+    updateChoiceBtn();
+    if (fromTeacher && st() === "run" && !LO.done) toast("🔈 Audio sinfda kolonkadan eshittiriladi. Savollarni shu yerda ishlayvering.", 6000);
+  }
+  function exitSpeakerMode() {
+    if (!LO.speaker || LO.speakerSelf) return;
+    LO.speaker = false; wdLast = null;
+    testAudio.onended = loOnEnded;
+    const btn = document.getElementById("audioControlBtn");
+    if (btn) { btn.innerHTML = "<span>🔊</span> Eshitilmoqda"; btn.disabled = false; }
+    const lbl = document.getElementById("audioTrackLabel"); if (lbl) lbl.innerText = "🎧 Quloqchin";
+    updateChoiceBtn();
+    if (st() === "run" && !LO.done) { toast("🎧 Audio endi telefoningizda. Quloqchinni taqing.", 6000); syncAudio(); }
+  }
+  function addSpeakerButton() {
+    const bx = document.querySelector(".audio-cd-box");
+    if (!bx || document.getElementById("lo-speaker-btn")) return;
+    const b = document.createElement("button");
+    b.id = "lo-speaker-btn"; b.type = "button"; b.className = "audio-start-btn";
+    b.style.cssText = "background:#475569; font-size:.75rem; padding:5px 10px; white-space:nowrap;";
+    b.title = "Audio ishlamasa bosing: ustoz kolonkadan qo'yadi, siz savollarni ishlayverasiz";
+    bx.appendChild(b);
+    updateChoiceBtn();
+  }
+  function updateChoiceBtn() {
+    const b = document.getElementById("lo-speaker-btn"); if (!b) return;
+    const mixed = LO.sess && LO.sess.mode === "mixed";
+    if (mixed && LO.speaker) { b.style.display = ""; b.innerHTML = "🎧 Naushnikdan eshitish"; b.onclick = () => loChoose("phone"); }
+    else if (LO.speaker || (LO.sess && LO.sess.mode === "speaker")) b.style.display = "none";
+    else {
+      b.style.display = ""; b.innerHTML = "🔈 Audio ishlamayapti";
+      b.onclick = () => {
+        if (!confirm("Audio telefoningizda o'chiriladi va siz ustoz sinfda kolonkadan qo'ygan audioni tinglaysiz. Savollar ishlayveradi. Davom etasizmi?")) return;
+        if (mixed) loChoose("speaker"); else enterSpeakerMode(false);
+      };
+    }
+  }
+  // Aralash rejim: o'quvchi o'zi tanlaydi. Tanlov shu telefonda eslab qolinadi.
+  function loChoose(c) {
+    LO.choice = c;
+    try { localStorage.setItem("lo_choice_" + K, c); } catch (e) {}
+    L.child("choice").set(c).catch(() => {});
+    LO.speakerSelf = false;
+    if (c === "speaker") enterSpeakerMode(true);
+    else { if (LO.speaker) exitSpeakerMode(); if (st() === "wait") unlockAudio(); }
+    render();
+  }
+  window.loChoose = loChoose;
+  function choiceHtml() {
+    const s = "margin:10px 6px 0;padding:14px 20px;font:700 17px system-ui;border:0;border-radius:10px;color:#fff";
+    return "<button onclick=\"loChoose('phone')\" style='" + s + ";background:#16a34a'>🎧 Naushnik bor</button>" +
+           "<button onclick=\"loChoose('speaker')\" style='" + s + ";background:#475569'>🔈 Kolonkadan eshitaman</button>";
+  }
+  function applyMode() {
+    const m = LO.sess.mode;
+    if (m === "speaker" || (m === "mixed" && LO.choice === "speaker")) enterSpeakerMode(true);
+    else if (LO.speaker && !LO.speakerSelf) exitSpeakerMode();
+    updateChoiceBtn();
+  }
+
+  // ---------- holat ----------
+  function render() {
+    if (LO.done || !LO.sess) return;
+    const s = LO.sess, m = s.mode;
+    const pauseBar = document.getElementById("lo-pause");
+    pauseBar.style.display = s.state === "paused" ? "block" : "none";
+    if (s.state === "closed") { hide(); show("⏹ Test yopilgan.<br><small style='font-weight:400'>Bu test ustoz tomonidan yakunlangan.</small>"); return; }
+    if (s.state === "stopped") { hide(); finish("Ustoz testni yakunladi."); return; }
+    if (s.state === "wait") {
+      const mixed = m === "mixed";
+      const ready = (mixed && !LO.choice) ? "Naushnigingiz bormi? Tanlang:<br>" + choiceHtml()
+        : (mixed && LO.choice === "phone" && LO.unlocked) ? "✅ Naushnikdan eshitasiz. Ustoz boshlaganda audio o'zi boshlanadi." + soundTestHtml() + "<br><button onclick=\"loChoose('speaker')\" style='margin-top:12px;padding:8px 14px;border:0;border-radius:8px;background:#475569;color:#fff;font:600 14px system-ui'>🔈 Kolonkadan eshitaman</button>"
+        : (mixed && LO.choice === "phone") ? "🎧 Naushnikni taqing va bosing:<br>" + choiceHtml()
+        : LO.speaker ? "🔈 Audio sinfda kolonkadan eshittiriladi." + (mixed ? "<br><button onclick=\"loChoose('phone')\" style='margin-top:12px;padding:8px 14px;border:0;border-radius:8px;background:#16a34a;color:#fff;font:600 14px system-ui'>🎧 Naushnik bor</button>" : "")
+        : (LO.unlocked ? "✅ Tayyorsiz. Ustoz boshlaganda audio o'zi boshlanadi." + soundTestHtml()
+           : "🎧 Quloqchinni taqing va pastdagi tugmani bosing.<br><button onclick='loUnlock()' style='margin-top:16px;padding:14px 26px;font:700 18px system-ui;border:0;border-radius:10px;background:#16a34a;color:#fff'>🎧 Tayyorman</button>");
+      show(`Assalomu alaykum, ${CLS.esc(LO.me.name)}!<br>⏳ Ustoz testni hali boshlamadi.<br><small style='font-weight:400'>` + ready + "<br>Sahifani yopmang.</small>");
+      return;
+    }
+    // run yoki paused
+    if (!LO.started) { LO.started = true; isTestRunning = true; if (LO.soundTest) loSoundStop(); }
+    if (m === "mixed" && !LO.choice) { show("🎧 Test boshlandi. Naushnigingiz bormi?<br>" + choiceHtml()); return; }
+    if (!document.getElementById("lo-play")) hide();
+    if (s.state === "paused") { try { testAudio.pause(); } catch (e) {} flushStall(); return; }
+    wdLast = null;
+    if (!LO.speaker) syncAudio();
+  }
+
+  // Ekran uxlamasin: test ketayotganda telefon ekrani o'chmaydi (aks holda uxlash "chiqib ketish" deb sanalardi)
+  let wl = null;
+  function keepAwake() {
+    const need = !LO.done && st() === "run" && !document.hidden;
+    if (!need) { if (wl) { wl.release().catch(() => {}); wl = null; } return; }
+    if (wl || !("wakeLock" in navigator)) return;
+    navigator.wakeLock.request("screen").then(l => { wl = l; l.addEventListener("release", () => { if (wl === l) wl = null; }); }).catch(() => {});
+  }
+  document.addEventListener("click", keepAwake, true);
+  document.addEventListener("touchend", keepAwake, true);
+
+  function showName() {
+    const host = document.querySelector(".header-left");
+    if (!host) return;
+    let b = document.getElementById("lo-student");
+    if (!b) { b = document.createElement("span"); b.id = "lo-student"; host.appendChild(b); }
+    b.textContent = "👤 " + LO.me.name;
+  }
+
+  if (!K || !SID) { show("⛔ Havola noto'g'ri.<br><small style='font-weight:400'>Telegram'dagi o'zingizning tugmangiz orqali kiring.</small>"); return; }
+  show("Yuklanmoqda…");
+  CLS.db.ref("roster/" + K).get().then(r => {
+    LO.me = r.val();
+    if (!LO.me) { show("⛔ Havola noto'g'ri.<br><small style='font-weight:400'>Bu havola ro'yxatda yo'q. Ustozga ayting.</small>"); return; }
+    showName(); addSpeakerButton();
+    return L.get().then(l => {
+      const v = l.val() || {};
+      if (v.ans) restore(v.ans);
+      lastSent = JSON.stringify(collect());
+      if (v.aStart) { LO.aStart = v.aStart; LO.aPT = v.aPT || 0; }
+      LO.stall = v.stall || 0;
+      if (v.choice && !LO.choice) LO.choice = v.choice;
+      if (v.submitted) {
+        LO.done = true; isTestRunning = false;
+        show("✅ Siz bu testni topshirgansiz.<br><small style='font-weight:400'>Javoblaringiz ustozda. Natija topic'ingizga keladi.</small>");
+        bar.innerHTML = `✅ <b>${CLS.esc(LO.me.name)}</b> · topshirilgan`;
+        return;
+      }
+      LO.restored = true;
+      if (v.ans && Object.keys(v.ans).length) toast("✅ Oldin kiritgan javoblaringiz tiklandi (" + Object.keys(v.ans).length + " ta).");
+      if (!v.joined) L.child("joined").set(CLS.TS);
+      CLS.db.ref(".info/connected").on("value", c => {
+        if (!c.val() || LO.done) return;
+        L.child("online").onDisconnect().set(false);
+        L.child("leftAt").onDisconnect().set(CLS.TS);
+        L.update({ online: true, name: LO.me.name, seen: CLS.TS });
+      });
+      bar.innerHTML = `👤 <b>${CLS.esc(LO.me.name)}</b> · javoblaringiz avtomatik saqlanadi`;
+      // boshqa qurilmada kiritilgan javoblar shu yerga ham keladi
+      L.child("ans").on("value", s => {
+        const remote = s.val() || {}, j = JSON.stringify(remote);
+        if (j === lastSent || j === JSON.stringify(collect())) { lastSent = j; return; }
+        restore(remote); lastSent = JSON.stringify(collect());
+      });
+      L.child("submitted").on("value", s => { if (s.val()) accepted(""); });
+      L.child("aStart").on("value", s => { if (s.val()) LO.aStart = s.val(); });
+      L.child("aPT").on("value", s => { if (s.val() != null) LO.aPT = s.val(); });
+      L.child("stall").on("value", s => { LO.stall = s.val() || 0; });
+      S.on("value", s => {
+        LO.sess = s.val();
+        if (!LO.sess) { show("⛔ Test topilmadi."); return; }
+        applyMode(); render(); drawTimer(); keepAwake();
+      });
+      setInterval(() => { if (LO.sess && !LO.done) { drawTimer(); if (st() === "run" && !LO.speaker) syncAudio(); } }, 1000);
+      setInterval(sync, 2000);
+      document.addEventListener("visibilitychange", () => {
+        if (LO.done || st() !== "run") return;
+        if (document.hidden) { L.child("away").set(true); L.child("leaves").transaction(n => (n || 0) + 1); sync(); }
+        else { L.child("away").set(false); keepAwake(); toast("⚠️ Siz testdan chiqdingiz. Har bir chiqish ustozga ko'rinadi."); wdLast = null; syncAudio(); }
+      });
+    });
+  }).catch(() => show("⚠️ Internet xatosi.<br><small style='font-weight:400'>Ulanishni tekshirib, sahifani yangilang.</small>"));
+})();
+</script>
+
+</body>
+</html>

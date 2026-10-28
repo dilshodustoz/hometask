@@ -68,6 +68,11 @@
         <label>Guruh<br><select id="selGroup"></select></label>
         <label>Test<br><select id="selTest"></select></label>
         <label>Daqiqa<br><input id="selMin" type="number" min="5" max="120" value="60" style="width:80px"></label>
+        <label id="modeWrap" class="hide">Audio<br><select id="selMode">
+          <option value="phone">🎧 Telefonda (quloqchin)</option>
+          <option value="speaker">🔈 Kolonkadan (shu sahifadan)</option>
+          <option value="mixed">🔀 Aralash (o'quvchi tanlaydi)</option>
+        </select></label>
         <button class="pri" id="btnOpen">Darsni ochish</button>
       </div>
       <div class="msg" id="openMsg"></div>
@@ -87,6 +92,23 @@
           <button class="pri" id="btnGrade">📤 Natijalarni yuborish</button>
           <button id="btnClose">Darsni yopish</button>
         </div>
+      </div>
+      <div id="audCard" class="hide" style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px">
+        <div class="row" style="align-items:center;justify-content:space-between">
+          <div>
+            <div class="muted" id="audMode"></div>
+            <div style="font-weight:700" id="audPos">—</div>
+          </div>
+          <div class="row" style="align-items:center">
+            <button id="btnBack" title="10 soniya orqaga (hammada)">⏪ 10s</button>
+            <button id="btnFwd" title="10 soniya oldinga (hammada)">⏩ 10s</button>
+            <button id="btnSound">🔊 Ovozni sinash</button>
+            <button class="pri hide" id="btnUnlock">▶ Ovozni yoqish</button>
+            <select id="liveMode" title="Audio rejimi"></select>
+          </div>
+        </div>
+        <div class="muted" id="audHint" style="margin-top:6px"></div>
+        <audio id="tAudio" preload="auto"></audio>
       </div>
       <div class="stats" id="stats"></div>
       <div class="msg" id="liveMsg"></div>
@@ -146,7 +168,15 @@
     if (!admin.secret) { admin.secret = randKey(28); db.ref("admin/secret").set(admin.secret); }
     drawSecret();
     for (const g in CLS.GROUPS) { $("selGroup").add(new Option(CLS.GROUPS[g].name, g)); $("btnGroup").add(new Option(CLS.GROUPS[g].name, g)); }
-    window.CLASS_TESTS.forEach(t => $("selTest").add(new Option(t.title, t.key)));
+    ["reading", "listening"].forEach(sk => {
+      const og = document.createElement("optgroup"); og.label = sk === "reading" ? "Reading" : "Listening";
+      window.CLASS_TESTS.filter(t => t.skill === sk).forEach(t => og.appendChild(new Option(t.title, sk + "/" + t.key)));
+      $("selTest").appendChild(og);
+    });
+    try { const t = localStorage.getItem("cls_test"); if (t && testOf(t)) $("selTest").value = t; const m = localStorage.getItem("cls_mode"); if (m) $("selMode").value = m; } catch (e) {}
+    $("selTest").onchange = () => { try { localStorage.setItem("cls_test", $("selTest").value); } catch (e) {} testChanged(); };
+    $("selMode").onchange = () => { try { localStorage.setItem("cls_mode", $("selMode").value); } catch (e) {} };
+    testChanged();
     try { const g = localStorage.getItem("cls_group"); if (g) $("selGroup").value = g; } catch (e) {}
     db.ref("roster").on("value", s => { roster = s.val() || {}; drawTable(); });
     $("selGroup").onchange = () => { try { localStorage.setItem("cls_group", $("selGroup").value); } catch (e) {} watchGroup(); };
@@ -182,6 +212,12 @@
   };
 
   // ---------- dars ----------
+  function testOf(v) { const [sk, key] = String(v).split("/"); return window.CLASS_TESTS.find(x => x.skill === sk && x.key === key); }
+  function testChanged() {
+    const t = testOf($("selTest").value); if (!t) return;
+    $("modeWrap").classList.toggle("hide", t.skill !== "listening");
+    $("selMin").value = t.skill === "listening" ? 40 : 60;
+  }
   function watchGroup() {
     group = $("selGroup").value;
     if (offS) offS(); if (offL) offL();
@@ -204,19 +240,23 @@
     offS = () => sr.off("value", f1); offL = () => lr.off("value", f2);
   }
   $("btnOpen").onclick = () => {
-    const t = window.CLASS_TESTS.find(x => x.key === $("selTest").value), min = Math.max(5, Math.min(120, parseInt($("selMin").value, 10) || 60));
+    const t = testOf($("selTest").value), min = Math.max(5, Math.min(120, parseInt($("selMin").value, 10) || 60));
     const n = Object.values(roster).filter(r => r.group === group).length;
     if (!n) { $("openMsg").textContent = "⚠️ Bu guruhda o'quvchi yo'q. Avval Sozlash → ro'yxatni yangilang."; return; }
     const d = new Date(CLS.now());
     const id = `${t.key}_${group}_${d.toISOString().slice(0, 10).replace(/-/g, "")}_${randKey(5)}`;
     const s = { skill: t.skill, test: t.key, title: t.title, group: group, minutes: min, state: "wait", created: CLS.TS };
+    if (t.skill === "listening") Object.assign(s, { mode: $("selMode").value, durs: t.durs, shift: 0 });
     db.ref("sessions/" + id).set(s).then(() => db.ref("current/" + group).set({ sid: id, skill: t.skill, test: t.key }))
       .then(() => attach(id)).catch(e => { $("openMsg").textContent = "⚠️ " + e.message; });
   };
   function upd(o) { return db.ref("sessions/" + sid).update(o).catch(e => alert(e.message)); }
   $("btnStart").onclick = () => {
     const now = CLS.now();
-    upd({ state: "run", start: now, end: now + sess.minutes * 60000, pausedTotal: 0 });
+    // telefon rejimida har o'quvchining vaqti o'z audiosi boshlangandan: umumiy tugash 5 daqiqa zaxira bilan
+    const grace = sess.skill === "listening" && sess.mode === "phone" ? 300000 : 0;
+    if (sess.skill === "listening") audioUnlock();
+    upd({ state: "run", start: now, end: now + sess.minutes * 60000 + grace, grace: grace, pausedTotal: 0 });
   };
   $("btnPause").onclick = () => {
     if (sess.state === "run") upd({ state: "paused", pausedAt: CLS.now() });
@@ -238,7 +278,7 @@
       const end = live[k].submitted || sess.stoppedAt || CLS.now();
       return { k: k, answers: live[k].ans || {}, minutes: Math.min(sess.minutes, Math.round((end - startT - (sess.pausedTotal || 0)) / 60000)) };
     });
-    api({ admin: "class_grade", t: sess.test, sid: sid, entries: entries }).then(r => {
+    api({ admin: "class_grade", skill: sess.skill || "reading", t: sess.test, sid: sid, entries: entries }).then(r => {
       if (!r.ok) throw new Error(r.error);
       const up = {}; let tg = 0;
       r.results.forEach(x => { if (x.raw != null) { up[x.k + "/result"] = { raw: x.raw, band: x.band }; if (x.telegram || x.already) tg++; } });
@@ -273,6 +313,7 @@
       else if (!v.joined) st = `<span class="pill p-mut">kirmagan</span>`;
       else if (v.online === false || v.away) { st = `<span class="pill p-bad">chiqib ketgan</span>`; away++; }
       else { st = `<span class="pill p-warn">ishlamoqda</span>`; inn++; }
+      if (sess.skill === "listening" && v.choice === "speaker" && !v.result) st += ` <span class="pill p-mut" title="Kolonkadan eshitadi">🔈</span>`;
       if (v.result) subm++;
       return `<tr><td>${i + 1}</td><td>${CLS.esc(roster[k].name)}</td><td>${st}</td><td>${nA}/40</td><td>${v.leaves || 0}</td><td>${v.result ? "Band " + v.result.band : ""}</td>
         <td>${v.joined && !v.result ? `<button data-k="${k}" class="rst" title="Qayta kirishga ruxsat" style="padding:4px 8px">↺</button>` : ""}</td></tr>`;
@@ -283,13 +324,78 @@
       if (confirm(`${roster[k].name}: javoblari o'chirilib, testni boshidan ishlashiga ruxsat berilsinmi?`)) db.ref("live/" + sid + "/" + k).remove();
     });
   }
+  function refNow() { return sess.state === "paused" ? sess.pausedAt : sess.state === "stopped" ? sess.stoppedAt : CLS.now(); }
   setInterval(() => {
     if (!sess) return;
     let left = sess.minutes * 60;
-    if (sess.end) left = ((sess.state === "paused" ? sess.pausedAt : sess.state === "stopped" ? sess.stoppedAt : CLS.now()) - sess.end) / -1000;
+    if (sess.end) left = (sess.end - (sess.grace || 0) - refNow()) / 1000;
     $("timer").textContent = CLS.mmss(left);
-    if (sess.state === "run" && left <= 0 && !sess.stoppedAt) upd({ state: "stopped", stoppedAt: sess.end });
+    if (sess.state === "run" && sess.end && CLS.now() >= sess.end && !sess.stoppedAt) upd({ state: "stopped", stoppedAt: sess.end });
+    audioTick();
   }, 500);
+
+  // ---------- Listening audio (kolonka shu sahifadan chalinadi) ----------
+  const tA = $("tAudio");
+  const MODES = { phone: "🎧 Telefonda (quloqchin)", speaker: "🔈 Kolonkadan", mixed: "🔀 Aralash" };
+  let soundT = null, blocked = false;
+  function durs() { return sess.durs || [0, 0, 0, 0]; }
+  function total() { return durs().reduce((a, b) => a + (b || 0), 0); }
+  function locate(pos) {
+    const D = durs();
+    for (let s = 1; s <= 4; s++) { const d = D[s - 1] || 0; if (pos < d || s === 4) return [s, Math.max(0, pos)]; pos -= d; }
+    return [4, 0];
+  }
+  function sharedPos() { return sess.start ? (refNow() - sess.start - (sess.pausedTotal || 0)) / 1000 + (sess.shift || 0) : 0; }
+  function aUrl(n) { return `../../audio/listening/${sess.test}/${n}.m4a`; }
+  function audioUnlock() {
+    if (soundT) { clearTimeout(soundT); soundT = null; $("btnSound").textContent = "🔊 Ovozni sinash"; tA.pause(); tA.dataset.sec = ""; }
+    if (!tA.src) { tA.src = aUrl(1); tA.dataset.sec = "1"; }
+    tA.play().then(() => { if (!soundT && sess.state !== "run") tA.pause(); blocked = false; $("btnUnlock").classList.add("hide"); }).catch(() => {});
+  }
+  function audioTick() {
+    const L = sess && sess.skill === "listening";
+    $("audCard").classList.toggle("hide", !L);
+    if (!L) { if (!tA.paused) tA.pause(); return; }
+    const speaker = sess.mode !== "phone", st = sess.state;
+    $("audMode").textContent = MODES[sess.mode] + (sess.mode === "phone" ? " · har o'quvchining vaqti o'z audiosi boshlangandan" : " · audio shu kompyuterdan kolonkaga");
+    const pos = sharedPos(), [s, off] = locate(pos), T = total();
+    $("audPos").textContent = !sess.start ? "Audio Boshlash bilan boshlanadi" : pos >= T ? "✔ Audio tugadi" : `Part ${s} · ${CLS.mmss(off)}   (umumiy ${CLS.mmss(pos)} / ${CLS.mmss(T)})`;
+    $("btnSound").classList.toggle("hide", !(speaker && st === "wait"));
+    $("btnBack").classList.toggle("hide", !(st === "run" || st === "paused"));
+    $("btnFwd").classList.toggle("hide", !(st === "run" || st === "paused"));
+    const ms = $("liveMode"), allowed = st === "wait" ? ["phone", "speaker", "mixed"] : (st === "run" || st === "paused") && speaker ? ["speaker", "mixed"] : [];
+    if (ms.dataset.k !== allowed.join() + sess.mode) {
+      ms.dataset.k = allowed.join() + sess.mode; ms.innerHTML = "";
+      allowed.forEach(m => ms.add(new Option(MODES[m], m)));
+      ms.value = sess.mode; ms.classList.toggle("hide", allowed.length < 2);
+    }
+    $("audHint").textContent = st === "wait" && speaker ? "Kolonkani ulang va \"🔊 Ovozni sinash\" bilan tekshiring. Boshlash bosilganda audio o'zi boshlanadi." :
+      st === "wait" ? "O'quvchilar telefonda \"🎧 Tayyorman\" ni bosib turishsin. Boshlash bosilganda audio har birida o'zi boshlanadi." : "";
+    if (soundT) return;
+    const play = speaker && st === "run" && pos < T - 0.3;
+    if (!play) { if (!tA.paused) tA.pause(); return; }
+    if (tA.dataset.sec !== String(s) || !tA.src) {
+      tA.src = aUrl(s) + "#t=" + off.toFixed(1); tA.dataset.sec = String(s);
+      tA.addEventListener("loadedmetadata", () => { try { const o = locate(sharedPos())[1]; if (Math.abs(tA.currentTime - o) > 1) tA.currentTime = o; } catch (e) {} }, { once: true });
+    } else if (tA.readyState >= 1 && Math.abs(tA.currentTime - off) > 1.5) { try { tA.currentTime = off; } catch (e) {} }
+    if (tA.paused && !blocked) tA.play().catch(e => { if (e && e.name === "NotAllowedError") { blocked = true; $("btnUnlock").classList.remove("hide"); } });
+  }
+  tA.onended = () => { tA.dataset.sec = ""; };
+  $("btnUnlock").onclick = () => { blocked = false; $("btnUnlock").classList.add("hide"); tA.play().catch(() => {}); };
+  $("btnSound").onclick = () => {
+    clearTimeout(soundT);
+    tA.src = aUrl(1); tA.dataset.sec = ""; tA.currentTime = 0; tA.play().catch(() => {});
+    $("btnSound").textContent = "🔊 Chalinmoqda (15 s)…";
+    soundT = setTimeout(() => { soundT = null; tA.pause(); $("btnSound").textContent = "🔊 Ovozni sinash"; }, 15000);
+  };
+  function seek(d) {
+    const pos = sharedPos();
+    const nd = Math.max(-pos, Math.min(d, total() - pos));
+    upd({ shift: (sess.shift || 0) + nd });
+  }
+  $("btnBack").onclick = () => seek(-10);
+  $("btnFwd").onclick = () => seek(10);
+  $("liveMode").onchange = () => upd({ mode: $("liveMode").value });
 })();
 </script>
 </body>
