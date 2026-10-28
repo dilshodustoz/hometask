@@ -2361,7 +2361,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     clearTimeout(el._h); el._h = setTimeout(() => el.style.display = "none", ms || 5000);
   }
   function st() { return LO.sess ? LO.sess.state : null; }
-  function shared() { return LO.sess && LO.sess.mode !== "phone"; }
+  function shared() { return LO.sess && (LO.sess.mode !== "phone" || !!LO.sess.common); }   // common: kolonkadan telefonga qaytilgan, hammada bitta umumiy vaqt
   function refNow() { const s = LO.sess; return s.state === "paused" ? s.pausedAt : s.state === "stopped" ? s.stoppedAt : CLS.now(); }
 
   // ---------- vaqt: sahifaning o'z 40 daqiqalik taymeri ishlamaydi ----------
