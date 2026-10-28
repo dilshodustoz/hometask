@@ -259,7 +259,7 @@
       <div class="card-header"><h3 class="card-title" id="hwStTitle"></h3><button class="btn btn-secondary btn-sm" id="hwStReload">Yangilash</button></div>
       <div class="stats" id="hwStats"></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>Ball</th><th>Band</th><th>Daqiqa</th><th>Qachon</th></tr></thead>
+        <thead><tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>Ball</th><th>Band</th><th>Daqiqa</th><th>Qachon</th><th></th></tr></thead>
         <tbody id="hwStBody"></tbody>
       </table></div>
     </div>
@@ -460,9 +460,9 @@
     const h = hwLog["reading_" + t], chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
     $("hwStCard").classList.remove("hide");
     $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
-    $("hwStBody").innerHTML = `<tr><td colspan="7" class="muted">Yuklanmoqda…</td></tr>`;
+    $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
     api({ admin: "status", t: t }).then(r => {
-      if (!r.ok) { $("hwStBody").innerHTML = `<tr><td colspan="7">⚠️ ${CLS.esc(r.error)}</td></tr>`; return; }
+      if (!r.ok) { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(r.error)}</td></tr>`; return; }
       const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
       const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
         .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
@@ -473,12 +473,21 @@
         if (x) { n++; sum += Number(x.band) || 0; }
         const st = x ? `<span class="badge b-ok">Topshirdi</span>` + (x.timeUp ? ` <span class="badge b-warn">vaqt tugadi</span>` : "")
           : late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`;
-        return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${x ? x.raw + "/40" : "—"}</td><td>${x ? CLS.esc(x.band) : "—"}</td><td>${x ? x.minutes : "—"}</td><td>${x ? fmtAt(x.at) : "—"}</td></tr>`;
+        return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${x ? x.raw + "/40" : "—"}</td><td>${x ? CLS.esc(x.band) : "—"}</td><td>${x ? x.minutes : "—"}</td><td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Topshirig'i o'chiriladi (zaxira nusxasi qoladi), o'quvchi testni boshidan qayta ishlaydi">↺ Qayta ochish</button>` : ""}</td></tr>`;
       }).join("");
+      $("hwStBody").querySelectorAll("[data-reopen]").forEach(b => b.onclick = () => {
+        const k = b.dataset.reopen, nm = (roster[k] || {}).name || k;
+        if (!confirm(`${nm} uchun testni qayta ochamizmi?\n\nOldingi natijasi ro'yxatdan olinadi (jadvalda "qayta_ochilgan" varag'ida saqlanib qoladi). O'quvchi Telegram'dagi o'sha tugma orqali testni boshidan ishlaydi.`)) return;
+        b.disabled = true; b.textContent = "…";
+        api({ admin: "hw_reopen", t: t, k: k }).then(r => {
+          if (!r.ok) { alert("⚠️ " + r.error); b.disabled = false; b.textContent = "↺ Qayta ochish"; return; }
+          hwStatus(t);
+        }).catch(e => { alert("⚠️ " + e.message); b.disabled = false; b.textContent = "↺ Qayta ochish"; });
+      });
       $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div><div class="stat"><b>${n ? (sum / n).toFixed(1) : "—"}</b>o'rtacha band</div>` +
         `<div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
       const c = $("hwc_" + t); if (c) c.textContent = n + " / " + keys.length;
-    }).catch(e => { $("hwStBody").innerHTML = `<tr><td colspan="7">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
+    }).catch(e => { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
   }
 
   $("btnPing").onclick = () => {
