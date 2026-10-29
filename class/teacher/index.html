@@ -79,7 +79,7 @@
   .tl-lbl span{position:absolute;padding-left:4px}
   .tl-off .tl-bar{cursor:default;opacity:.75}
   /* qadamlar */
-  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:16px}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:16px}
   .step{display:flex;gap:10px;align-items:center;background:#FFF;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
   .step .n{width:26px;height:26px;border-radius:50%;background:#F1F1EF;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0}
   .step h4{margin:0;font-size:.86rem;font-weight:650;color:var(--ink)}.step p{margin:0;font-size:.74rem;color:var(--muted)}
@@ -112,8 +112,54 @@
   .tgmsg{white-space:pre-wrap;background:#FAFAF9;border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:.86rem;max-width:560px}
   .login{max-width:420px;margin:12vh auto;text-align:center}
   .login img{height:48px;margin-bottom:10px}
-  @media (max-width:760px){.container{padding:18px 12px 40px}.clock{font-size:2rem}header.topbar{padding:8px 12px}.brand p{display:none}
-    th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){display:none}}
+  /* ---- iPhone / iPad / Mac uchun moslashuv ---- */
+  .nav-tabs,.seg{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav-tabs::-webkit-scrollbar,.seg::-webkit-scrollbar{display:none}
+  .seg button{flex-shrink:0}
+  @media (pointer:coarse){.btn{min-height:40px}.btn-sm{min-height:34px}.seg button{padding:8px 13px}.tab-btn{padding:9px 13px}}
+  @media (max-width:1024px){.container{padding:22px 18px 44px}}
+  @media (max-width:760px){
+    .container{padding:14px 12px 40px}
+    .clock{font-size:2.1rem}
+    header.topbar{position:static;padding:8px 12px 10px;gap:8px}
+    .brand p{display:none}
+    .tb-left{width:100%;gap:8px}
+    .nav-tabs{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}   /* hamma bo'lim ko'rinib tursin */
+    .tab-btn{text-align:center;background:#F6F6F4}
+    .tb-right{width:100%}
+    .tb-right .seg{max-width:100%}
+    .who{display:none}
+    .card{padding:16px 14px;border-radius:12px}
+    .card-header{margin-bottom:10px}
+    .row{gap:10px}
+    .row>label{flex:1 1 140px;min-width:0}
+    .row>label .field,.row>label select.field{width:100%!important}
+    .row>label:has(select),.row>label:has(textarea){flex-basis:100%}
+    .field,select.field,textarea.field{font-size:16px}   /* iPhone: bosilganda kattalashib ketmasin */
+    .live-head>div:last-child{align-items:flex-start!important;width:100%}
+    .controls{width:100%}
+    .controls .btn{flex:1 1 auto}
+    .steps{grid-template-columns:repeat(2,1fr);gap:8px}
+    .step{padding:10px}
+    .step p{display:none}
+    th,td{padding:9px 8px}
+    td:nth-child(2){min-width:130px}
+    td:last-child{white-space:normal}
+    td:last-child .btn{margin:2px 0}
+    .tbl-wrap{margin:0 -14px;padding:0 14px}
+    .wimg{max-width:100%}
+    /* O'quvchilar va Guruhlar jadvali telefonda kartochka ko'rinishida */
+    table.cards thead{display:none}
+    table.cards tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:10px 0;border-bottom:1px solid #F0F0EE}
+    table.cards td{border:0;padding:0;min-width:0!important}
+    table.cards td:nth-child(1){color:var(--faint);width:22px}
+    table.cards td:nth-child(2){flex:1 0 auto}
+    table.cards td:nth-child(3),table.cards td:nth-child(4),table.cards td:nth-child(5){font-size:.8rem;color:var(--muted)}
+    table.cards td:last-child{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px}
+    table.cards td:last-child:empty{display:none}
+    table.cards td:last-child .btn{margin:0}
+    .tgmsg{max-width:100%}
+  }
 </style>
 </head>
 <body>
@@ -373,7 +419,7 @@
     </div>
     <div class="card">
       <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button></div>
-      <div class="tbl-wrap"><table>
+      <div class="tbl-wrap"><table class="cards">
         <thead><tr><th>#</th><th>O'quvchi</th><th>Telefon</th><th>Qo'shilgan</th><th></th></tr></thead>
         <tbody id="stBody"><tr><td colspan="5" class="muted">Yuklanmoqda…</td></tr></tbody>
       </table></div>
@@ -383,7 +429,7 @@
     </div>
     <div class="card">
       <div class="card-header"><h3 class="card-title">Guruhlar</h3></div>
-      <div class="tbl-wrap"><table>
+      <div class="tbl-wrap"><table class="cards">
         <thead><tr><th>#</th><th>Guruh</th><th>Telegram chat</th><th>Course bloki</th><th>O'quvchi</th><th></th></tr></thead>
         <tbody id="grBody"></tbody>
       </table></div>
