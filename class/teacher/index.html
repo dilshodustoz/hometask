@@ -754,13 +754,11 @@
     $("stGroupName").textContent = "· " + CLS.GROUPS[group].name;
     if (!stData) return;
     const gs = stData.groups, chat = String(CLS.GROUPS[group].chat), isTest = !!(gs[group] || {}).test;
-    $("stAdd").disabled = isTest;
     const oc = $("stOptCourse"), canC = !isTest && !!(gs[group] || {}).course;
     if (oc.disabled !== !canC) { oc.disabled = !canC; oc.checked = canC; }   // Course bloki yo'q guruhda yoqilmaydi
     const R = stData.roster, ks = Object.keys(R).filter(k => !R[k].test && String(R[k].chat) === chat).sort((a, b) => R[a].name.localeCompare(R[b].name));
     $("stCount").textContent = `· ${CLS.GROUPS[group].name} · ${ks.length} ta`;
-    $("stBody").innerHTML = isTest ? `<tr><td colspan="5" class="muted">Test guruhi. O'quvchilarni ko'rish va qo'shish uchun tepada guruhni tanlang.</td></tr>`
-      : ks.map((k, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(R[k].name)}${R[k].note ? `<div class="muted">${CLS.esc(R[k].note)}</div>` : ""}</td>
+    $("stBody").innerHTML = ks.map((k, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(R[k].name)}${R[k].note ? `<div class="muted">${CLS.esc(R[k].note)}</div>` : ""}</td>
         <td>${CLS.esc(R[k].phone || "")}</td><td>${fdate(R[k].added)}</td>
         <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-inv="${k}">Taklif havolasi</button>
           <button class="btn btn-warning btn-sm" data-ar="${k}">Arxivlash</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("")
@@ -772,7 +770,7 @@
     const all = Object.values(R);
     $("grBody").innerHTML = Object.keys(gs).map((g, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(gs[g].name)}</td><td><code>${gs[g].chat}</code></td>
       <td>${CLS.esc(gs[g].course || (gs[g].test ? "" : "—"))}</td><td>${gs[g].test ? "" : all.filter(x => !x.test && String(x.chat) === String(gs[g].chat)).length}</td>
-      <td>${gs[g].test ? "" : `<button class="btn btn-secondary btn-sm" data-gren="${g}">Nomini o'zgartirish</button>`}
+      <td>${g === "test" ? "" : `<button class="btn btn-secondary btn-sm" data-gren="${g}">Nomini o'zgartirish</button>`}
         ${["test", "morning", "afternoon"].indexOf(g) < 0 ? ` <button class="btn btn-danger btn-sm" data-grm="${g}">Olib tashlash</button>` : ""}</td></tr>`).join("");
   }
   function stInit() {
