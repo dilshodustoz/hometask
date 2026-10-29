@@ -299,7 +299,7 @@ html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) .con
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=reading]) .container::before{content:"IELTS Practice  /  Reading"}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=listening]) .container::before{content:"IELTS Practice  /  Listening"}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=writing]) .container::before{content:"IELTS Practice  /  Writing"}
-html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=hw]) .container::before{content:"IELTS Practice  /  Uy vazifasi"}
+html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=hw]) .container::before{content:"IELTS Practice  /  Home task"}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=students]) .container::before{content:"IELTS Practice  /  O'quvchilar"}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=setup]) .container::before{content:"IELTS Practice  /  Sozlash"}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) .card{background:var(--cardbg)!important;border:1px solid var(--line)!important;border-radius:var(--r)!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important;padding:20px 22px!important;margin-bottom:14px!important}
@@ -421,7 +421,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <button class="tab-btn active" data-tab="reading">Reading</button>
       <button class="tab-btn" data-tab="listening">Listening</button>
       <button class="tab-btn" data-tab="writing">Writing</button>
-      <button class="tab-btn" data-tab="hw">Uy vazifasi</button>
+      <button class="tab-btn" data-tab="hw">Home task</button>
       <button class="tab-btn" data-tab="students">O'quvchilar</button>
       <button class="tab-btn" data-tab="setup">Sozlash</button>
     </nav>
@@ -599,11 +599,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     </div>
   </section>
 
-  <!-- Uy vazifasi (Reading) -->
+  <!-- Home task (uy vazifasi: Reading / Listening / Writing) -->
   <section data-pane="hw" class="hide">
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Uy vazifasini yuborish <small id="hwGroupName"></small></h3>
-        <div class="seg" id="hwSkill"><button data-s="reading" class="active">📖 Reading</button><button data-s="writing">✍️ Writing</button></div></div>
+      <div class="card-header"><h3 class="card-title">Home task yuborish <small id="hwGroupName"></small></h3>
+        <div class="seg" id="hwSkill"><button data-s="reading" class="active">📖 Reading</button><button data-s="listening">🎧 Listening</button><button data-s="writing">✍️ Writing</button></div></div>
       <div class="row">
         <label><span class="field-label" id="hwTestLbl">Test</span><select class="field" id="hwTest"></select></label>
         <label><span class="field-label">Muddat: sana</span><input class="field" id="hwDate" type="date"></label>
@@ -862,16 +862,17 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   }
   $("otherGo").onclick = () => showTab(sess.skill);
 
-  // ---------- Uy vazifasi (Reading) ----------
+  // ---------- Home task (uy vazifasi: Reading / Listening / Writing) ----------
   let hwLog = null, hwCur = null, hwSk = "reading", wTasks = null;
   const OY = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"];
   const fmtAt = iso => { if (!iso) return "—"; const d = new Date(iso); return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5); };
   function hwFill() {
     const sel = $("hwTest"); sel.innerHTML = "";
     $("hwTestLbl").textContent = hwSk === "writing" ? "Vazifa" : "Test";
-    if (hwSk === "reading") {
-      window.CLASS_TESTS.filter(t => t.skill === "reading").forEach(t => sel.add(new Option(t.title.replace(/ · Reading$/, ""), t.key)));
-      try { const v = localStorage.getItem("cls_hw_test"); if (v) sel.value = v; } catch (e) {}
+    if (hwSk !== "writing") {
+      const LK = hwSk === "listening" ? "cls_hw_ltest" : "cls_hw_test";
+      window.CLASS_TESTS.filter(t => t.skill === hwSk).forEach(t => sel.add(new Option(t.title.replace(/ · (Reading|Listening)$/, ""), t.key)));
+      try { const v = localStorage.getItem(LK); if (v && Array.from(sel.options).some(o => o.value === v)) sel.value = v; } catch (e) {}
     } else {
       (wTasks || []).forEach(t => sel.add(new Option(t.title + " · " + (t.task || "Task 2"), t.t)));
       if (!wTasks) sel.add(new Option("Yuklanmoqda…", ""));
@@ -914,7 +915,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     [sel, $("hwDate"), $("hwTime")].forEach(el => el.onchange = () => {
       $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
       $("hwNew").classList.toggle("hide", sel.value !== "__new");
-      try { if (sel.value && sel.value !== "__new") localStorage.setItem(hwSk === "writing" ? "cls_hw_wtask" : "cls_hw_test", sel.value); } catch (e) {}
+      try { if (sel.value && sel.value !== "__new") localStorage.setItem(hwSk === "writing" ? "cls_hw_wtask" : hwSk === "listening" ? "cls_hw_ltest" : "cls_hw_test", sel.value); } catch (e) {}
     });
   }
   function hwBody() { return { skill: hwSk, t: $("hwTest").value, chat: CLS.GROUPS[group].chat, date: $("hwDate").value, time: $("hwTime").value }; }
@@ -959,7 +960,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     const chat = String(CLS.GROUPS[group].chat);
     const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat]).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title }, hwLog[id].chats[chat]))
       .sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${h.skill === "writing" ? "✍️" : "📖"} ${CLS.esc(h.title)}</td><td>${CLS.esc(h.deadline_text)}</td>
+    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${h.skill === "writing" ? "✍️" : h.skill === "listening" ? "🎧" : "📖"} ${CLS.esc(h.title)}</td><td>${CLS.esc(h.deadline_text)}</td>
       <td>${fmtAt(h.at)} · ${h.sent.length} ta${h.fail && h.fail.length ? ` <span class="badge b-bad">${h.fail.length} bormadi</span>` : ""}</td>
       <td id="hwc_${h.id}">—</td><td><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button></td></tr>`).join("")
       : `<tr><td colspan="6" class="muted">Bu guruhga hali uy vazifasi yuborilmagan.</td></tr>`;
