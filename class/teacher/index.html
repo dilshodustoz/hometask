@@ -609,7 +609,9 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <label><span class="field-label">Muddat: sana</span><input class="field" id="hwDate" type="date"></label>
         <label><span class="field-label">Soat</span><input class="field" id="hwTime" type="time" value="20:00" style="width:110px"></label>
         <button class="btn btn-secondary" id="hwPreview" style="min-height:38px">Xabarni ko'rish</button>
+        <button class="btn btn-secondary hide" id="sView" style="min-height:38px">👁 Savollarni ko'rish</button>
       </div>
+      <div class="hide" id="sViewBox" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:14px"></div>
       <div class="hide" id="hwNew" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:14px">
         <div style="font-weight:700;margin-bottom:10px">Yangi Writing vazifasi</div>
         <div class="row">
@@ -623,7 +625,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <div class="row" style="margin-top:10px"><button class="btn btn-orange" id="wSave">Saqlash</button><span class="muted">Saqlangach, ro'yxatdan tanlab yuborasiz. Vazifa ustozning yopiq Drive papkasida saqlanadi.</span></div>
       </div>
       <div class="hide" id="sNew" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:14px">
-        <div style="font-weight:700;margin-bottom:10px">Yangi Speaking vazifasi</div>
+        <div style="font-weight:700;margin-bottom:10px" id="sNewH">Yangi Speaking vazifasi</div>
         <div class="row">
           <label style="flex:1;min-width:220px"><span class="field-label">Nomi (o'quvchiga ko'rinadi)</span><input class="field" id="sTitle" style="width:100%" placeholder="Lesson 7: Shopping and money"></label>
           <label><span class="field-label">Part 1 (soniya)</span><input class="field" id="sP1" type="number" min="10" max="180" value="30" style="width:90px"></label>
@@ -904,7 +906,46 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     }
     $("hwNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "writing");
     $("sNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "speaking");
+    sEditReset(); sBtn();
   }
+  // ---------- Speaking: tanlangan vazifaning savollarini ko'rish va tahrirlash ----------
+  var sEdit = null;   // var: hwFill uni e'londan oldin ham chaqirishi mumkin
+  function sEditReset() { sEdit = null; $("sNewH").textContent = "Yangi Speaking vazifasi"; $("sSave").textContent = "Saqlash"; $("sViewBox").classList.add("hide"); }
+  function sBtn() { const v = $("hwTest").value; $("sView").classList.toggle("hide", !(hwSk === "speaking" && v && v !== "__new")); }
+  const fmtSec = s => s >= 60 ? (s % 60 ? Math.floor(s / 60) + " daq " + s % 60 + " s" : s / 60 + " daq") : s + " s";
+  $("sView").onclick = () => {
+    const t = $("hwTest").value, box = $("sViewBox");
+    if (!box.classList.contains("hide") && box.dataset.t === t) { box.classList.add("hide"); return; }
+    box.dataset.t = t; box.classList.remove("hide"); box.innerHTML = `<span class="muted">Yuklanmoqda…</span>`; $("sNew").classList.add("hide");
+    api({ admin: "s_get", t: t }).then(r => {
+      if (!r.ok) { box.innerHTML = "⚠️ " + CLS.esc(r.error); return; }
+      const T = r.task, it = T.items || [], E = CLS.esc;
+      let html = `<div style="font-weight:700;font-size:17px;margin-bottom:6px">${E(T.title)} <span class="muted" style="font-weight:400;font-size:14px">· ${it.length} savol</span></div>`;
+      if (r.answered) html += `<div class="msg" style="margin:6px 0">⚠️ ${r.answered} o'quvchi allaqachon javob bergan. Savollarni o'chirsangiz yoki tartibini o'zgartirsangiz, ularning javoblari boshqa savolga to'g'ri kelib qoladi: faqat imloni tuzatgan ma'qul.</div>`;
+      let lastKey = "";
+      it.forEach((q, i) => {
+        const key = q.part + "|" + (q.topic || "");
+        if (q.part === 2) {
+          html += `<div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div class="muted" style="font-size:13px;font-weight:700">PART 2 · CUE CARD · ${fmtSec(q.prep || 0)} tayyorlanish + ${fmtSec(q.sec)}</div>
+            <div style="font-weight:600;margin:4px 0">${i + 1}. ${E(q.q)}</div><div class="muted">You should say:</div><ul style="margin:2px 0 0 18px;padding:0">${(q.cue || []).map(c => `<li>${E(c)}</li>`).join("")}</ul></div>`;
+          lastKey = key; return;
+        }
+        if (key !== lastKey) html += `<div class="muted" style="margin-top:12px;font-size:13px;font-weight:700">PART ${q.part}${q.topic ? " · " + E(q.topic).toUpperCase() : ""} · har biriga ${fmtSec(q.sec)}</div>`;
+        lastKey = key;
+        html += `<div style="padding:3px 0">${i + 1}. ${E(q.q)}</div>`;
+      });
+      html += `<div class="row" style="margin-top:12px"><button class="btn btn-orange" id="sEditBtn">✏️ Tahrirlash</button><button class="btn btn-secondary" id="sViewClose">Yopish</button></div>`;
+      box.innerHTML = html;
+      $("sViewClose").onclick = () => box.classList.add("hide");
+      $("sEditBtn").onclick = () => {
+        const sc = T.secs || {};
+        $("sTitle").value = T.title || ""; $("sText").value = T.text || "";
+        $("sP1").value = sc[1] || 30; $("sPrep").value = sc.prep != null ? sc.prep : 60; $("sP2").value = sc[2] || 120; $("sP3").value = sc[3] || 60;
+        sEdit = t; $("sNewH").textContent = "Tahrirlash: " + (T.title || ""); $("sSave").textContent = "O'zgarishlarni saqlash";
+        box.classList.add("hide"); $("sNew").classList.remove("hide"); $("sText").focus();
+      };
+    }).catch(e => { box.innerHTML = "⚠️ " + CLS.esc(e.message); });
+  };
   function wLoad(sel) {
     return api({ admin: "w_tasks" }).then(r => {
       if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
@@ -925,13 +966,14 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     }).catch(e => { $("hwMsg").textContent = "⚠️ " + e.message; });
   }
   $("sSave").onclick = () => {
-    const b = { admin: "s_create", title: $("sTitle").value.trim(), text: $("sText").value.trim(), p1: $("sP1").value, p2: $("sP2").value, p3: $("sP3").value, prep: $("sPrep").value };
+    const b = { admin: "s_create", t: sEdit || "", title: $("sTitle").value.trim(), text: $("sText").value.trim(), p1: $("sP1").value, p2: $("sP2").value, p3: $("sP3").value, prep: $("sPrep").value };
     if (!b.title || !b.text) { $("hwMsg").textContent = "⚠️ Nomi va savollarni yozing"; return; }
     $("sSave").disabled = true; $("hwMsg").textContent = "Saqlanmoqda…";
     api(b).then(r => {
       $("sSave").disabled = false;
       if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
-      $("hwMsg").textContent = `✅ Saqlandi: ${r.n} savol (Part 1: ${r.parts[1]}, Part 2: ${r.parts[2]}, Part 3: ${r.parts[3]}). Endi muddatni tanlab "Xabarni ko'rish" ni bosing.`;
+      const was = sEdit; sEditReset();
+      $("hwMsg").textContent = `✅ ${was ? "Yangilandi" : "Saqlandi"}: ${r.n} savol (Part 1: ${r.parts[1]}, Part 2: ${r.parts[2]}, Part 3: ${r.parts[3]}). Endi muddatni tanlab "Xabarni ko'rish" ni bosing.`;
       ["sTitle", "sText"].forEach(id => $(id).value = "");
       try { localStorage.setItem(HW_LK.speaking, r.t); } catch (e) {}
       return sLoad(r.t);
@@ -957,8 +999,9 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("hwDate").value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
     [sel, $("hwDate"), $("hwTime")].forEach(el => el.onchange = () => {
       $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
+      if (sel === el) { sEditReset(); sBtn(); }
       $("hwNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "writing");
-      $("sNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "speaking");
+      if (!sEdit) $("sNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "speaking");
       try { if (sel.value && sel.value !== "__new") localStorage.setItem(HW_LK[hwSk], sel.value); } catch (e) {}
     });
   }
