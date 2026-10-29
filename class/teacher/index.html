@@ -388,19 +388,29 @@
         <tbody id="grBody"></tbody>
       </table></div>
       <hr class="divider">
-      <div style="font-weight:700;margin-bottom:6px">Yangi guruh ulash</div>
-      <ol class="muted" style="margin:0 0 12px;padding-left:18px;line-height:1.7">
-        <li>Telegram'da yangi guruh oching (nomini o'zingiz bering).</li>
-        <li>Guruh sozlamalarida <b>Topics</b> ni yoqing.</li>
-        <li>Botni guruhga qo'shib <b>admin</b> qiling: <b>Manage topics</b> va <b>Invite users via link</b> huquqlari yoqilgan bo'lsin.</li>
-        <li>Pastdagi "Yangi guruhni topish" ni bosing.</li>
-      </ol>
+      <div style="font-weight:700;margin-bottom:8px">Yangi guruh ochish</div>
       <div class="row">
-        <button class="btn btn-primary" id="grScan">Yangi guruhni topish</button>
-        <label><span class="field-label">yoki chat raqami</span><input class="field" id="grChat" placeholder="-100…" style="width:190px"></label>
-        <button class="btn btn-secondary" id="grCheck">Tekshirish</button>
+        <label><span class="field-label">Guruh nomi</span><input class="field" id="grNewName" placeholder="Kechki 18:00"></label>
+        <label><span class="field-label">Course bloki (ixtiyoriy)</span><input class="field" id="grNewCourse" placeholder="masalan EVENING GROUP"></label>
+        <button class="btn btn-orange" id="grCreate">Guruh yaratish</button>
       </div>
-      <div id="grFound" style="margin-top:12px"></div>
+      <div class="muted" style="margin-top:6px">Guruh avval panelda yaratiladi. Keyin Telegram'da guruh ochib, jadvaldagi "Telegramga ulash" tugmasi bilan ulaysiz.</div>
+      <div class="hide" id="grLink" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <div style="font-weight:700;margin-bottom:6px">Telegramga ulash: <span id="grLinkName"></span></div>
+        <ol class="muted" style="margin:0 0 12px;padding-left:18px;line-height:1.7">
+          <li>Telegram'da yangi guruh oching (nomini o'zingiz bering).</li>
+          <li>Guruh sozlamalarida <b>Topics</b> ni yoqing.</li>
+          <li>Botni guruhga qo'shib <b>admin</b> qiling: <b>Manage topics</b> va <b>Invite users via link</b> huquqlari yoqilgan bo'lsin.</li>
+          <li>Pastdagi "Telegram guruhini topish" ni bosing.</li>
+        </ol>
+        <div class="row">
+          <button class="btn btn-primary" id="grScan">Telegram guruhini topish</button>
+          <label><span class="field-label">yoki chat raqami</span><input class="field" id="grChat" placeholder="-100…" style="width:190px"></label>
+          <button class="btn btn-secondary" id="grCheck">Tekshirish</button>
+          <button class="btn btn-secondary" id="grLinkX">Bekor qilish</button>
+        </div>
+        <div id="grFound" style="margin-top:12px"></div>
+      </div>
       <div class="msg" id="grMsg"></div>
     </div>
   </section>
@@ -709,8 +719,8 @@
   let stData = null;
   function mergeGroups(gs) {
     if (!gs) return;
-    Object.keys(CLS.GROUPS).forEach(g => { if (!gs[g]) delete CLS.GROUPS[g]; });
-    Object.keys(gs).forEach(g => { CLS.GROUPS[g] = { name: gs[g].name, chat: Number(gs[g].chat) }; });
+    Object.keys(CLS.GROUPS).forEach(g => { if (!gs[g] || !gs[g].chat) delete CLS.GROUPS[g]; });
+    Object.keys(gs).forEach(g => { if (gs[g].chat) CLS.GROUPS[g] = { name: gs[g].name, chat: Number(gs[g].chat) }; });   // ulanmagan guruh tepada chiqmaydi
   }
   function drawGroupSeg() {
     $("grpSeg").innerHTML = "";
@@ -768,8 +778,8 @@
     $("stArch").innerHTML = as.map(k => `<tr><td>${CLS.esc(A[k].name)}</td><td class="muted">arxivga: ${fdate(A[k].archived)}</td>
       <td><button class="btn btn-secondary btn-sm" data-rs="${k}">Qaytarish</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("");
     const all = Object.values(R);
-    $("grBody").innerHTML = Object.keys(gs).map((g, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(gs[g].name)}</td><td><code>${gs[g].chat}</code></td>
-      <td>${CLS.esc(gs[g].course || (gs[g].test ? "" : "—"))}</td><td>${gs[g].test ? "" : all.filter(x => !x.test && String(x.chat) === String(gs[g].chat)).length}</td>
+    $("grBody").innerHTML = Object.keys(gs).map((g, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(gs[g].name)}</td><td>${gs[g].chat ? `<code>${gs[g].chat}</code>` : `<span class="badge b-warn">Telegram ulanmagan</span> <button class="btn btn-orange btn-sm" data-glink="${g}">Telegramga ulash</button>`}</td>
+      <td>${CLS.esc(gs[g].course || (gs[g].test ? "" : "—"))}</td><td>${gs[g].test || !gs[g].chat ? "" : all.filter(x => !x.test && String(x.chat) === String(gs[g].chat)).length}</td>
       <td>${g === "test" ? "" : `<button class="btn btn-secondary btn-sm" data-gren="${g}">Nomini o'zgartirish</button>`}
         ${["test", "morning", "afternoon"].indexOf(g) < 0 ? ` <button class="btn btn-danger btn-sm" data-grm="${g}">Olib tashlash</button>` : ""}</td></tr>`).join("");
   }
@@ -824,26 +834,43 @@
     $("grBody").onclick = ev => {
       const b = ev.target.closest("button"); if (!b) return;
       const gs = stData.groups;
-      if (b.dataset.gren) {
+      if (b.dataset.glink) {
+        linkTo = b.dataset.glink;
+        $("grLinkName").textContent = gs[linkTo].name; $("grFound").innerHTML = ""; $("grMsg").textContent = "";
+        $("grLink").classList.remove("hide"); $("grLink").scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (b.dataset.gren) {
         const g = gs[b.dataset.gren], nm = prompt("Guruh nomi (faqat panelda):", g.name);
         if (!nm) return;
         const cb = prompt("Course jadvalidagi blok sarlavhasidan so'z (masalan MORNING GROUP). Bo'sh qoldirsangiz Course'ga yozilmaydi:", g.course || "");
         stCall({ admin: "grp_rename", id: b.dataset.gren, name: nm, course: cb == null ? g.course || "" : cb }, "grMsg").then(r => { if (r) $("grMsg").textContent = "✅ Saqlandi."; });
       } else if (b.dataset.grm) {
-        if (!confirm(`${gs[b.dataset.grm].name} paneldan olib tashlansinmi? (Telegram guruhining o'zi o'chmaydi)`)) return;
+        if (!confirm(`${gs[b.dataset.grm].name} paneldan olib tashlansinmi?` + (gs[b.dataset.grm].chat ? " (Telegram guruhining o'zi o'chmaydi)" : ""))) return;
         stCall({ admin: "grp_remove", id: b.dataset.grm }, "grMsg").then(r => { if (r) $("grMsg").textContent = "✅ Olib tashlandi."; });
       }
+    };
+    let linkTo = null;
+    $("grLinkX").onclick = () => { linkTo = null; $("grLink").classList.add("hide"); };
+    $("grCreate").onclick = () => {
+      const nm = $("grNewName").value.trim();
+      if (nm.length < 2) { $("grMsg").textContent = "⚠️ Guruh nomini kiriting."; return; }
+      stCall({ admin: "grp_create", name: nm, course: $("grNewCourse").value.trim() }, "grMsg").then(r => {
+        if (!r) return;
+        $("grNewName").value = $("grNewCourse").value = "";
+        $("grMsg").textContent = `✅ "${nm}" guruhi yaratildi. Endi Telegram'da guruh ochib, jadvaldagi "Telegramga ulash" ni bosing.`;
+      });
     };
     const showFound = list => {
       $("grFound").innerHTML = list.map((g, i) => `<div class="wf"><b>${CLS.esc(g.title)}</b> <code>${g.chat}</code>
         ${g.known ? `<span class="badge b-mut">allaqachon ulangan</span>` : g.problems.length ? `<div class="muted" style="color:var(--amber)">⚠️ ${CLS.esc(g.problems.join(", "))}. Tuzatib, qayta tekshiring.</div>`
-        : `<div class="row" style="margin-top:8px"><label><span class="field-label">Panel nomi</span><input class="field" data-gn="${i}" value="${CLS.esc(g.title)}"></label>
-           <label><span class="field-label">Course bloki (ixtiyoriy)</span><input class="field" data-gc="${i}" placeholder="masalan EVENING GROUP"></label>
-           <button class="btn btn-orange" data-gadd="${i}">Ulash</button></div>`}</div>`).join("") || `<div class="muted">Yangi guruh topilmadi. Bot admin qilinganini tekshiring yoki chat raqamini kiriting.</div>`;
+        : `<div class="row" style="margin-top:8px"><button class="btn btn-orange" data-gadd="${i}">Shu guruhni ulash</button></div>`}</div>`).join("") || `<div class="muted">Yangi Telegram guruhi topilmadi. Bot admin qilinganini tekshiring yoki chat raqamini kiriting.</div>`;
       $("grFound").querySelectorAll("[data-gadd]").forEach(b => b.onclick = () => {
-        const i = b.dataset.gadd;
-        stCall({ admin: "grp_add", chat: list[i].chat, name: $("grFound").querySelector(`[data-gn="${i}"]`).value, course: $("grFound").querySelector(`[data-gc="${i}"]`).value }, "grMsg")
-          .then(r => { if (r) { $("grFound").innerHTML = ""; $("grMsg").textContent = "✅ Guruh ulandi. Endi tepada uni tanlab o'quvchi qo'shishingiz mumkin."; } });
+        const g = list[b.dataset.gadd], nm = stData.groups[linkTo].name;
+        if (!confirm(`"${g.title}" Telegram guruhi paneldagi "${nm}" guruhiga ulansinmi?`)) return;
+        stCall({ admin: "grp_add", id: linkTo, chat: g.chat }, "grMsg").then(r => {
+          if (!r) return;
+          linkTo = null; $("grLink").classList.add("hide"); $("grFound").innerHTML = "";
+          $("grMsg").textContent = `✅ "${nm}" Telegramga ulandi. Endi tepada uni tanlab o'quvchi qo'shishingiz mumkin.`;
+        });
       });
     };
     $("grScan").onclick = () => {
