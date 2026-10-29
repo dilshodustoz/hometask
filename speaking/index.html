@@ -46,6 +46,8 @@
   .prep{display:flex;align-items:center;gap:10px;background:#EFF6FF;color:#1D4ED8;border-radius:11px;padding:8px 12px;font-weight:600;font-size:.88rem;flex:1;white-space:nowrap}
   .prep b{font:600 1rem 'JetBrains Mono',monospace}
   .note{color:var(--muted);font-size:.82rem}
+  .lockd{border:1px dashed #D4D4CF;border-radius:14px;padding:14px 16px;color:var(--muted);font-size:.88rem;text-align:center;margin-top:6px}
+  .q.closed .t{color:var(--muted);font-weight:500;font-style:italic}
   .done{background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;border-radius:14px;padding:16px;text-align:center;margin-top:22px;font-weight:600}
   .wait{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;margin-top:22px;color:var(--muted);font-size:.9rem}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:50;max-width:92vw;text-align:center}
@@ -63,7 +65,7 @@
   <div class="bar"><i id="barI"></i></div>
 </header>
 <main>
-  <div class="intro">🎙 Har bir savolni o'qing, <b>Javob berish</b> tugmasini bosing va gapiring. Vaqt tugasa yozish o'zi to'xtaydi. Eshitib ko'ring, keyin <b>Yuborish</b>ni bosing. Yuborilgan javob ustozga Telegram orqali boradi va uni qayta yuborib bo'lmaydi.</div>
+  <div class="intro">🎙 Har bir savolni o'qing, <b>Javob berish</b> tugmasini bosing va gapiring. Vaqt tugasa yozish o'zi to'xtaydi. Eshitib ko'ring, keyin <b>Yuborish</b>ni bosing. Savollar birma-bir ochiladi: javobni yuborganingizdan keyin keyingi savol chiqadi. Yuborilgan javob ustozga Telegram orqali boradi, uni qayta yuborib bo'lmaydi.</div>
   <div id="list"></div>
   <div id="foot"></div>
 </main>
@@ -95,9 +97,15 @@
   function post(b) { return fetch(API, { method: "POST", body: JSON.stringify(b), headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" }).then(r => r.json()); }
 
   // ---------- chizish ----------
+  const OPK = i => "spk_open_" + TID + "_" + KEY + "_" + i;
+  const OPEN = {};
+  function opened(i) { if (OPEN[i]) return true; try { return !!localStorage.getItem(OPK(i)); } catch (e) { return false; } }
   function draw() {
     let h = "", lastPart = 0, lastTopic = null;
+    const cur = items.findIndex((q, j) => !done[j]), lastVis = cur < 0 ? items.length - 1 : cur;
     items.forEach((q, i) => {
+      if (i > lastVis) return;
+      const shut = q.prep && !done[i] && !opened(i);
       if (q.part !== lastPart) {
         const same = items.filter(x => x.part === q.part);
         const info = q.part === 2 ? (q.prep ? dur(q.prep) + " tayyorgarlik · " : "") + dur(q.sec) + " gapirish"
@@ -106,11 +114,13 @@
         lastPart = q.part; lastTopic = null;
       }
       if (q.topic && q.topic !== lastTopic) { h += `<div class="topic">${esc(q.topic)}</div>`; lastTopic = q.topic; }
-      const cue = q.cue && q.cue.length;
-      h += `<div class="q${cue ? " cue" : ""}${done[i] ? " sent" : ""}" id="q${i}"><div class="row"><div class="n">${i + 1}</div><div class="t">${esc(q.q)}</div><div class="tm">${mss(q.sec)}</div></div>` +
+      const cue = !shut && q.cue && q.cue.length;
+      h += `<div class="q${q.part === 2 ? " cue" : ""}${done[i] ? " sent" : ""}${shut ? " closed" : ""}" id="q${i}"><div class="row"><div class="n">${i + 1}</div><div class="t">${shut ? "🔒 Cue card yopiq. Ochganingizda savol ko'rinadi." : esc(q.q)}</div><div class="tm">${mss(q.sec)}</div></div>` +
         (cue ? `<div class="say">You should say:</div><ul>${q.cue.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : "") +
         `<div class="act" id="a${i}"></div></div>`;
     });
+    const left = items.length - 1 - lastVis;
+    if (left > 0) h += `<div class="lockd">🔒 Yana ${left} ta savol bor. Bu javobni yuborganingizdan keyin keyingi savol ochiladi.</div>`;
     $("list").innerHTML = h;
     items.forEach((q, i) => drawAct(i));
     drawProg();
@@ -128,7 +138,7 @@
     if (done[i]) { el.innerHTML = `<div class="sent-l">✓ Yuborildi <small>· ${mss(done[i].sec)}</small></div>`; $("q" + i).classList.add("sent"); return; }
     const off = me.closed || (busy >= 0 && busy !== i) ? " disabled" : "";
     if (s.s === "idle") {
-      el.innerHTML = q.prep ? `<button class="btn" data-go${off}>▶ Boshlash</button><span class="note">${dur(q.prep)} tayyorlanasiz, keyin yozish o'zi boshlanadi</span>`
+      el.innerHTML = q.prep && !opened(i) ? `<button class="btn" data-go${off}>📖 Part 2 savolini ochish</button><span class="note">Ochishingiz bilan savol ko'rinadi va <b>${dur(q.prep)} tayyorlanish vaqti</b> boshlanadi. Tayyorlanish tugashi bilan yozish o'zi boshlanadi (${dur(q.sec)} gapirasiz).</span>`
         : `<button class="btn" data-go${off}><span class="dot"></span> Javob berish</button>`;
       el.querySelector("[data-go]").onclick = () => begin(i);
     } else if (s.s === "prep") {
@@ -167,9 +177,11 @@
       return;
     }
     const q = items[i];
-    if (q.prep) {
-      const s = st[i] = { s: "prep", left: q.prep };
-      drawAct(i);
+    if (q.prep && !opened(i)) {
+      OPEN[i] = true;
+      try { localStorage.setItem(OPK(i), String(Date.now())); } catch (e) {}
+      const s = st[i] = { s: "prep", left: q.prep, open: true };
+      draw();
       let last = Date.now();
       s.tick = setInterval(() => {
         const now = Date.now(); s.left -= (now - last) / 1000; last = now;
@@ -248,7 +260,7 @@
       done[i] = { sec: r.already ? (r.sec || s.sec) : s.sec };
       if (s.url) URL.revokeObjectURL(s.url);
       delete st[i];
-      drawAct(i); drawProg();
+      draw();
       toast(r.already ? "Bu savolga javob avval yuborilgan." : "✅ Yuborildi");
       if (r.complete) { const f = $("foot"); if (f) f.scrollIntoView({ behavior: "smooth" }); }
       else { const nx = items.findIndex((q, j) => !done[j]); if (nx >= 0 && $("q" + nx)) $("q" + nx).scrollIntoView({ behavior: "smooth", block: "center" }); }
