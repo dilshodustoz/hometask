@@ -85,6 +85,18 @@
   .step h4{margin:0;font-size:.86rem;font-weight:650;color:var(--ink)}.step p{margin:0;font-size:.74rem;color:var(--muted)}
   .step.on{border-color:var(--ink);background:#F4F4F2;box-shadow:0 0 0 1px var(--ink) inset}.step.on .n{background:var(--ink);color:#FFF}
   .step.done .n{background:var(--green);color:#FFF}
+  /* writing */
+  .wsteps{display:flex;gap:8px;flex-wrap:wrap}
+  .wchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);border-radius:9px;padding:6px 10px;font-size:.84rem;font-weight:600;background:#FFF;cursor:pointer;user-select:none}
+  .wchip input{margin:0}
+  .wchip.on{border-color:var(--ink);background:#F4F4F2}
+  .wchip .fx{border:0;background:transparent;cursor:pointer;font-size:.9rem;padding:0 2px;opacity:.35}
+  .wchip .fx.on{opacity:1}
+  .wf{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:8px}
+  .wf textarea{width:100%;font:inherit;font-size:.84rem;line-height:1.45;border:1px solid var(--border-strong);border-radius:8px;padding:8px}
+  .wcell{cursor:pointer}
+  .wimg{max-width:260px;max-height:160px;border-radius:8px;border:1px solid var(--border);display:block;margin-top:8px}
+  .wdet{white-space:pre-wrap;background:#FAFAF9;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:.88rem;margin:6px 0}
   /* statistika va jadval */
   .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
   .stat{background:#FAFAF9;border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:.76rem;color:var(--muted)}
@@ -111,6 +123,7 @@
     <nav class="nav-tabs hide" id="tabs">
       <button class="tab-btn active" data-tab="reading">Reading</button>
       <button class="tab-btn" data-tab="listening">Listening</button>
+      <button class="tab-btn" data-tab="writing">Writing</button>
       <button class="tab-btn" data-tab="hw">Uy vazifasi</button>
       <button class="tab-btn" data-tab="setup">Sozlash</button>
     </nav>
@@ -164,6 +177,64 @@
       </div>
       <div class="muted" id="modeHint" style="margin-top:8px"></div>
       <div class="msg" id="lsMsg"></div>
+    </div>
+  </section>
+
+  <!-- Writing: darsni ochish -->
+  <section data-pane="writing" class="hide">
+    <div class="card" id="wOpen">
+      <div class="card-header"><h3 class="card-title">Writing darsini ochish <small>o'quvchi qismma-qism yozadi, AI formula bo'yicha tekshiradi</small></h3><span class="badge b-mut state">Dars ochilmagan</span></div>
+      <div class="row">
+        <label style="flex:1;min-width:260px"><span class="field-label">Dars turi (prezentatsiyalardagi formula)</span><select class="field" id="wTpl" style="width:100%"></select></label>
+        <label><span class="field-label">Urinish (har qismga)</span><input class="field" id="wTries" type="number" min="1" max="10" value="3" style="width:90px"></label>
+      </div>
+      <label style="display:block;margin-top:12px"><span class="field-label">Savol matni (o'quvchiga ko'rinadi va AI shu savol bo'yicha tekshiradi)</span>
+        <textarea class="field" id="wcPrompt" rows="5" style="width:100%;font-family:inherit;line-height:1.5" placeholder="Task 2: savolni to'liq yozing.&#10;Task 1: The graph below shows ... Summarise the information by selecting and reporting the main features, and make comparisons where relevant."></textarea></label>
+      <div class="row" style="margin-top:10px;align-items:center" id="wImgRow">
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer">🖼 Grafik rasmini tanlash<input type="file" id="wImgFile" accept="image/*" style="display:none"></label>
+        <button class="btn btn-secondary btn-sm hide" id="wImgDel">Rasmni olib tashlash</button>
+        <span class="muted" id="wImgInfo">Task 1 uchun: rasm o'quvchilar telefonida ko'rinadi, AI raqamlarni ham tekshiradi.</span>
+      </div>
+      <img class="wimg hide" id="wImgPrev" alt="">
+      <div style="margin-top:14px"><span class="field-label">Qaysi qismlar yoziladi (keyin dars davomida ham ochib-yopasiz)</span><div class="wsteps" id="wStepPick"></div></div>
+      <details style="margin-top:12px"><summary class="muted" style="cursor:pointer">Formulalarni ko'rish / o'zgartirish</summary><div id="wFormEdit"></div>
+        <button class="btn btn-secondary btn-sm" id="wFormReset" style="margin-top:8px">Asl formulalarga qaytarish</button></details>
+      <div class="row" style="margin-top:14px"><button class="btn btn-primary" id="wOpenBtn" style="min-height:38px">Darsni ochish</button>
+        <span class="muted">O'quvchilar Telegram'dagi doimiy "Sinf testini ochish" tugmasi orqali kiradi.</span></div>
+      <div class="msg" id="wMsg"></div>
+    </div>
+
+    <div class="hide" id="wLive">
+      <div class="card">
+        <div class="live-head">
+          <div><div class="muted" id="wlTitle" style="font-weight:600"></div><div style="font-size:1.25rem;font-weight:700;color:var(--ink)" id="wlType"></div></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+            <span class="badge state" id="wlState"></span>
+            <div class="controls">
+              <button class="btn btn-success" id="wlStart">Boshlash</button>
+              <button class="btn btn-danger" id="wlStop">Tekshiruvni yakunlash</button>
+              <button class="btn btn-primary" id="wlSend">Natijalarni topic'larga yuborish</button>
+              <button class="btn btn-secondary" id="wlClose">Darsni yopish</button>
+            </div>
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="row" style="align-items:center;justify-content:space-between">
+          <div><span class="field-label">Ochiq qismlar · ☆ = hamma shu qismga o'tadi</span><div class="wsteps" id="wlSteps"></div></div>
+          <label><span class="field-label">Urinish</span><input class="field" id="wlTries" type="number" min="1" max="10" style="width:80px"></label>
+        </div>
+        <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Savol va rasm</summary><div class="wdet" id="wlPrompt"></div><img class="wimg hide" id="wlImg" alt=""></details>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">Jonli natijalar <small>katakni bosing: matn va AI izohi</small></h3></div>
+        <div class="stats" id="wlStats"></div>
+        <div class="msg" id="wlMsg" style="margin:0 0 10px"></div>
+        <div class="tbl-wrap"><table>
+          <thead id="wlHead"></thead>
+          <tbody id="wlBody"></tbody>
+        </table></div>
+      </div>
+      <div class="card hide" id="wlDet"></div>
     </div>
   </section>
 
@@ -286,6 +357,7 @@
       <div class="row" style="margin-top:14px">
         <button class="btn btn-secondary" id="btnPing">Aloqani tekshirish</button>
         <button class="btn btn-secondary" id="btnRoster">O'quvchilar ro'yxatini yangilash</button>
+        <button class="btn btn-secondary" id="btnGemini">Writing AI (Gemini) ni tekshirish</button>
       </div>
     </div>
     <div class="card">
@@ -302,6 +374,7 @@
 <script src="../fb/config.js"></script>
 <script src="../fb/cls.js"></script>
 <script src="tests.js"></script>
+<script src="../writing/templates.js"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -359,10 +432,11 @@
     document.querySelectorAll(".opt[data-mode]").forEach(b => b.onclick = () => { mode = b.dataset.mode; try { localStorage.setItem("cls_mode", mode); } catch (e) {} drawMode(); });
     drawMode();
     hwInit();
+    wInit();
     document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => showTab(b.dataset.tab));
     try { const t = localStorage.getItem("cls_tab"); if (t) showTab(t); } catch (e) {}
     drawSecret();
-    db.ref("roster").on("value", s => { roster = s.val() || {}; drawTable(); });
+    db.ref("roster").on("value", s => { roster = s.val() || {}; drawTable(); if (sess && sess.skill === "writing") wTable(); });
     setGroup(group);
   }
   function setGroup(g) {
@@ -385,11 +459,13 @@
   }
   // jonli dars qaysi bo'limda ko'rinadi
   function layout() {
-    const open = !!(sid && sess), here = open && sess.skill === tab;
-    $("liveSec").classList.toggle("hide", !here);
+    const open = !!(sid && sess), here = open && sess.skill === tab, W = open && sess.skill === "writing";
+    $("liveSec").classList.toggle("hide", !here || W);
+    $("wLive").classList.toggle("hide", !here || !W);
     $("rdOpen").classList.toggle("hide", open);
     $("lsOpen").classList.toggle("hide", open);
-    const other = open && !here && (tab === "reading" || tab === "listening");
+    $("wOpen").classList.toggle("hide", open);
+    const other = open && !here && (tab === "reading" || tab === "listening" || tab === "writing");
     $("otherNotice").classList.toggle("hide", !other);
     if (other) { $("otherText").textContent = `Hozir ${CLS.GROUPS[sess.group].name} guruhida ochiq dars bor: ${sess.title}. Yangi dars ochish uchun avval uni yoping.`; }
     document.querySelectorAll(".tab-btn").forEach(b => { const d = b.querySelector(".dot"); if (d) d.remove(); if (open && b.dataset.tab === sess.skill) b.insertAdjacentHTML("beforeend", '<span class="dot"></span>'); });
@@ -552,6 +628,12 @@
       $("setupMsg").textContent = r.ok ? "✅ Aloqa bor" + (r.bot ? "" : ", lekin bot tokeni yo'q!") : "⚠️ " + r.error;
     }).catch(e => { $("setupMsg").textContent = "⚠️ " + e.message; });
   };
+  $("btnGemini").onclick = () => {
+    $("setupMsg").textContent = "Gemini tekshirilmoqda…";
+    api({ admin: "gemini_ping" }).then(r => {
+      $("setupMsg").textContent = r.ok ? "✅ Writing AI ishlayapti (" + r.model + ")" : "⚠️ " + (r.error || "") + (/GEMINI_API_KEY/.test(r.error || "") ? "\nApps Script → Project Settings → Script Properties: GEMINI_API_KEY qo'shing." : "");
+    }).catch(e => { $("setupMsg").textContent = "⚠️ " + e.message; });
+  };
   $("btnRoster").onclick = () => {
     $("setupMsg").textContent = "Ro'yxat olinmoqda…";
     api({ admin: "roster" }).then(r => {
@@ -592,8 +674,8 @@
     sid = id;
     let first = true;
     const sr = db.ref("sessions/" + sid), lr = db.ref("live/" + sid);
-    const f1 = sr.on("value", s => { sess = s.val(); if (!sess) { detach(); return; } if (first) { first = false; showTab(sess.skill); } drawLive(); });
-    const f2 = lr.on("value", s => { live = s.val() || {}; drawTable(); });
+    const f1 = sr.on("value", s => { sess = s.val(); if (!sess) { detach(); return; } if (first) { first = false; showTab(sess.skill); } if (sess.skill === "writing") { layout(); wDraw(); } else drawLive(); });
+    const f2 = lr.on("value", s => { live = s.val() || {}; if (sess && sess.skill === "writing") wTable(); else drawTable(); });
     offS = () => sr.off("value", f1); offL = () => lr.off("value", f2);
   }
   function openLesson(sk) {
@@ -668,7 +750,7 @@
     drawTable();
   }
   function drawTable() {
-    if (!sid || !sess) return;
+    if (!sid || !sess || sess.skill === "writing") return;
     const rows = Object.keys(roster).filter(k => roster[k].group === sess.group).sort((a, b) => roster[a].name.localeCompare(roster[b].name));
     let inn = 0, away = 0, subm = 0;
     $("tbody").innerHTML = rows.map((k, i) => {
@@ -699,6 +781,179 @@
     if (sess.state === "run" && sess.end && CLS.now() >= sess.end && !sess.stoppedAt) upd({ state: "stopped", stoppedAt: sess.end });
     audioTick();
   }, 500);
+
+  // ---------- Writing (sinfda): o'quvchi qismma-qism yozadi, AI (Apps Script + Gemini) formula bo'yicha tekshiradi ----------
+  const WT = window.WTPL;
+  let wImg = "", wDetCur = null;
+  function wTplNow() { return WT.byId($("wTpl").value) || WT.list[0]; }
+  function wEdits(id) { try { return JSON.parse(localStorage.getItem("cls_wf_" + id) || "{}"); } catch (e) { return {}; } }
+  function wInit() {
+    const sel = $("wTpl");
+    [2, 1].forEach(task => {
+      const g = document.createElement("optgroup"); g.label = "Task " + task;
+      WT.list.filter(t => t.task === task).forEach(t => g.appendChild(new Option(t.name, t.id)));
+      sel.appendChild(g);
+    });
+    try { const v = localStorage.getItem("cls_wtpl"); if (v && WT.byId(v)) sel.value = v; } catch (e) {}
+    sel.onchange = () => { try { localStorage.setItem("cls_wtpl", sel.value); } catch (e) {} wPick(); };
+    wPick();
+  }
+  function wPick() {
+    const T = wTplNow(), ed = wEdits(T.id);
+    $("wStepPick").innerHTML = T.steps.map(st => `<label class="wchip"><input type="checkbox" value="${st.id}" ${st.id === "para" || st.id === "full" ? "" : "checked"}> ${CLS.esc(st.name)}</label>`).join("");
+    $("wFormEdit").innerHTML = T.steps.map(st => `<div class="wf"><b>${CLS.esc(st.name)}</b> <span class="muted">${st.w ? st.w[0] + "–" + st.w[1] + " so'z" : ""}</span>
+      <textarea rows="3" data-f="${st.id}">${CLS.esc(ed[st.id] != null ? ed[st.id] : st.formula)}</textarea><div class="muted">${CLS.esc(st.hint || "")}</div></div>`).join("") +
+      `<div class="muted" style="margin-top:8px">Savol turi qoidasi (AI uchun): ${CLS.esc(T.rule)}</div>`;
+    $("wFormEdit").querySelectorAll("textarea").forEach(t => t.onchange = () => {
+      const e = wEdits(T.id); e[t.dataset.f] = t.value; try { localStorage.setItem("cls_wf_" + T.id, JSON.stringify(e)); } catch (x) {}
+    });
+  }
+  $("wFormReset").onclick = () => { try { localStorage.removeItem("cls_wf_" + wTplNow().id); } catch (e) {} wPick(); };
+  function shrink(file, cb) {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let out = "";
+      for (const [mx, q] of [[1400, .85], [1200, .78], [1000, .7], [800, .65]]) {
+        const k = Math.min(1, mx / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL("image/jpeg", q);
+        if (out.length < 450000) break;
+      }
+      cb(out.length < 600000 ? out : "");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); cb(""); };
+    img.src = url;
+  }
+  $("wImgFile").onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    $("wImgInfo").textContent = "Tayyorlanmoqda…";
+    shrink(f, d => {
+      wImg = d; e.target.value = "";
+      $("wImgPrev").src = d; $("wImgPrev").classList.toggle("hide", !d); $("wImgDel").classList.toggle("hide", !d);
+      $("wImgInfo").textContent = d ? `✅ Rasm tayyor (${Math.round(d.length / 1024)} KB)` : "⚠️ Rasmni o'qib bo'lmadi, boshqasini tanlang.";
+    });
+  };
+  $("wImgDel").onclick = () => { wImg = ""; $("wImgPrev").classList.add("hide"); $("wImgDel").classList.add("hide"); $("wImgInfo").textContent = "Rasm olib tashlandi."; };
+  $("wOpenBtn").onclick = () => {
+    const T = wTplNow(), ed = wEdits(T.id), prompt = $("wcPrompt").value.trim();
+    const picked = Array.from($("wStepPick").querySelectorAll("input:checked")).map(i => i.value);
+    const n = Object.values(roster).filter(r => r.group === group).length;
+    if (!n) { $("wMsg").textContent = "⚠️ " + CLS.GROUPS[group].name + " guruhida o'quvchi yo'q. Avval Sozlash → ro'yxatni yangilang."; return; }
+    if (!prompt) { $("wMsg").textContent = "⚠️ Savol matnini yozing (AI shu savol bo'yicha tekshiradi)."; return; }
+    if (!picked.length) { $("wMsg").textContent = "⚠️ Kamida bitta qismni tanlang."; return; }
+    if (T.task === 1 && !wImg && !confirm("Task 1 uchun grafik rasmi tanlanmadi. Rasm bo'lmasa AI raqamlarni tekshira olmaydi. Rasmsiz ochamizmi?")) return;
+    const steps = {}, open = {};
+    T.steps.forEach(st => { steps[st.id] = { name: st.name, formula: ed[st.id] != null ? ed[st.id] : st.formula, hint: st.hint || "", ai: st.ai || "", w: st.w || null, c: st.c || [] }; });
+    picked.forEach(x => { open[x] = true; });
+    const tpl = JSON.parse(JSON.stringify({ id: T.id, name: T.name, task: T.task, rule: T.rule, order: T.steps.map(st => st.id), steps: steps }));
+    const d = new Date(CLS.now()), id = `w_${T.id}_${group}_${d.toISOString().slice(0, 10).replace(/-/g, "")}_${randKey(5)}`;
+    const s = { skill: "writing", test: T.id, title: T.name, group: group, chat: CLS.GROUPS[group].chat, state: "wait", created: CLS.TS, minutes: 0,
+      prompt: prompt, tpl: tpl, open: open, focus: picked[0], tries: Math.max(1, Math.min(10, parseInt($("wTries").value, 10) || 3)), api: admin.api || DEFAULT_API };
+    if (wImg) s.img = wImg;
+    $("wMsg").textContent = "Ochilmoqda…";
+    db.ref("sessions/" + id).set(s).then(() => db.ref("current/" + group).set({ sid: id, skill: "writing", test: T.id }))
+      .then(() => { $("wMsg").textContent = ""; attach(id); }).catch(e => { $("wMsg").textContent = "⚠️ " + e.message; });
+  };
+  function wDraw() {
+    if (!sess || sess.skill !== "writing") return;
+    const st = sess.state, T = sess.tpl || { steps: {}, order: [] };
+    $("wlTitle").textContent = `Writing Task ${T.task} · ${CLS.GROUPS[sess.group].name}`;
+    $("wlType").textContent = T.name;
+    const lab = { wait: "Kutish: o'quvchilar kirmoqda", run: "Yozish va tekshiruv ketmoqda", stopped: "Tekshiruv yakunlandi", closed: "Yopilgan" };
+    const cls = { wait: "b-blue", run: "b-ok", stopped: "b-warn", closed: "b-mut" };
+    $("wlState").textContent = sess.graded ? "Natijalar topic'larga yuborilgan" : lab[st];
+    $("wlState").className = "badge state " + (sess.graded ? "b-ok" : cls[st]);
+    $("wlStart").classList.toggle("hide", st !== "wait");
+    $("wlStart").textContent = "Boshlash";
+    $("wlStop").classList.toggle("hide", st !== "run");
+    $("wlSend").classList.toggle("hide", st === "wait");
+    if (st === "stopped") { $("wlStart").classList.remove("hide"); $("wlStart").textContent = "Tekshiruvni qayta ochish"; }
+    $("wlSteps").innerHTML = T.order.map(s => `<span class="wchip ${(sess.open || {})[s] ? "on" : ""}"><label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-o="${s}" ${(sess.open || {})[s] ? "checked" : ""}> ${CLS.esc(T.steps[s].name)}</label>
+      <button class="fx ${sess.focus === s ? "on" : ""}" data-f="${s}" title="Hamma o'quvchida shu qism ochilsin">${sess.focus === s ? "★" : "☆"}</button></span>`).join("");
+    $("wlSteps").querySelectorAll("[data-o]").forEach(b => b.onchange = () => upd({ ["open/" + b.dataset.o]: b.checked ? true : null }));
+    $("wlSteps").querySelectorAll("[data-f]").forEach(b => b.onclick = () => upd({ focus: b.dataset.f, ["open/" + b.dataset.f]: true }));
+    if (document.activeElement !== $("wlTries")) $("wlTries").value = sess.tries || 3;
+    $("wlPrompt").textContent = sess.prompt || "";
+    $("wlImg").classList.toggle("hide", !sess.img); if (sess.img && $("wlImg").src !== sess.img) $("wlImg").src = sess.img;
+    wTable();
+  }
+  $("wlTries").onchange = () => upd({ tries: Math.max(1, Math.min(10, parseInt($("wlTries").value, 10) || 3)) });
+  function wCols() { const T = sess.tpl; return T.order.filter(s => (sess.open || {})[s] || Object.values(live).some(v => v && v.w && v.w[s])); }
+  function wTable() {
+    if (!sid || !sess || sess.skill !== "writing") return;
+    const T = sess.tpl, cols = wCols();
+    const rows = Object.keys(roster).filter(k => roster[k].group === sess.group).sort((a, b) => roster[a].name.localeCompare(roster[b].name));
+    $("wlHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th>${cols.map(s => `<th>${CLS.esc(T.steps[s].name)}</th>`).join("")}<th></th></tr>`;
+    let inn = 0, checked = 0, bandSum = 0, bandN = 0;
+    $("wlBody").innerHTML = rows.map((k, i) => {
+      const v = live[k] || {}, w = v.w || {};
+      let st;
+      if (!v.joined) st = `<span class="badge b-mut">kirmagan</span>`;
+      else if (v.online === false || v.away) st = `<span class="badge b-bad">chiqib ketgan</span>`;
+      else { st = `<span class="badge b-ok">ichkarida</span>`; inn++; }
+      if (v.leaves) st += ` <span class="badge b-mut" title="Sahifadan chiqishlar">🚪${v.leaves}</span>`;
+      if (v.pastes) st += ` <span class="badge b-warn" title="Paste urinishlari">📋${v.pastes}</span>`;
+      if (Object.values(w).some(x => x && x.res)) checked++;
+      const cells = cols.map(s => {
+        const x = w[s];
+        if (x && x.res) {
+          const b = parseFloat(x.res.band); if (s === sess.focus && !isNaN(b)) { bandSum += b; bandN++; }
+          return `<td class="wcell" data-k="${k}" data-s="${s}"><span class="badge ${x.res.formula_ok === false ? "b-warn" : "b-ok"}">${CLS.esc(x.res.band || "?")} ${x.res.formula_ok === false ? "✗" : "✓"}</span>${x.n > 1 ? ` <span class="muted">${x.n}×</span>` : ""}${x.res.position_ok === false ? " ⚠️" : ""}</td>`;
+        }
+        const n = x && x.d ? (x.d.match(/[A-Za-z0-9'’-]+/g) || []).length : 0;
+        return `<td class="wcell" data-k="${k}" data-s="${s}">${n ? `<span class="muted">✍️ ${n} so'z</span>` : "—"}</td>`;
+      }).join("");
+      return `<tr><td>${i + 1}</td><td>${CLS.esc(roster[k].name)}</td><td>${st}</td>${cells}<td>${v.joined ? `<button class="btn btn-secondary btn-sm" data-r="${k}" title="Urinishlarni yangilash">↺</button>` : ""}</td></tr>`;
+    }).join("");
+    $("wlStats").innerHTML = `<div class="stat"><b>${rows.length}</b>ro'yxatda</div><div class="stat"><b>${inn}</b>ichkarida</div><div class="stat"><b>${checked}</b>tekshirtirdi</div>` +
+      (bandN ? `<div class="stat"><b>${(bandSum / bandN).toFixed(1)}</b>o'rtacha band · ${CLS.esc(T.steps[sess.focus].name)}</div>` : "");
+    $("wlBody").querySelectorAll(".wcell").forEach(c => c.onclick = () => wDetail(c.dataset.k, c.dataset.s));
+    $("wlBody").querySelectorAll("[data-r]").forEach(b => b.onclick = () => {
+      const k = b.dataset.r, up = {};
+      if (!confirm(`${roster[k].name}: hamma qismlar uchun urinishlar yangilansinmi? (yana ${sess.tries || 3} tadan tekshirtira oladi)`)) return;
+      Object.keys((live[k] || {}).w || {}).forEach(s => { up[s + "/n"] = 0; });
+      db.ref("live/" + sid + "/" + k + "/w").update(up).then(() => upd({ ["gen/" + k]: Date.now() })).catch(e => alert(e.message));
+    });
+    if (wDetCur) wDetail(wDetCur[0], wDetCur[1], true);
+  }
+  function wDetail(k, s, quiet) {
+    const x = (((live[k] || {}).w) || {})[s], T = sess.tpl;
+    wDetCur = [k, s];
+    const r = x && x.res, crit = (r && r.criteria) || {};
+    $("wlDet").classList.remove("hide");
+    $("wlDet").innerHTML = `<div class="card-header"><h3 class="card-title">${CLS.esc((roster[k] || {}).name || k)} · ${CLS.esc(T.steps[s].name)}</h3><button class="btn btn-secondary btn-sm" id="wDetX">Yopish</button></div>` +
+      (!x ? `<div class="muted">Hali hech narsa yozilmagan.</div>` :
+        (r ? `<div><span class="badge b-mut">Band ${CLS.esc(r.band || "?")}</span> <span class="badge ${r.formula_ok === false ? "b-bad" : "b-ok"}">formula ${r.formula_ok === false ? "✗" : "✓"}</span>${r.position_ok === false ? ' <span class="badge b-warn">⚠️ pozitsiya</span>' : ""} <span class="muted">${x.n || 1}-urinish · ${CLS.esc(r.model || "")}</span></div>
+          <div class="wdet">${CLS.esc(x.text)}</div>` +
+          (r.formula ? `<div>📐 ${CLS.esc(r.formula)}</div>` : "") +
+          ["TR", "CC", "LR", "GRA"].filter(c => crit[c]).map(c => `<div><b>${c === "TR" && T.task === 1 ? "TA" : c}:</b> ${CLS.esc(crit[c])}</div>`).join("") +
+          (r.mistakes || []).slice(0, 4).map(m => `<div>• <s>${CLS.esc(m.wrong)}</s> → <b>${CLS.esc(m.right)}</b> <span class="muted">(${CLS.esc(m.why)})</span></div>`).join("") +
+          (r.corrected ? `<div style="margin-top:6px"><b>✍️ Tuzatilgan:</b> <i>${CLS.esc(r.corrected)}</i></div>` : "") +
+          (r.advice ? `<div style="margin-top:6px">💡 ${CLS.esc(r.advice)}</div>` : "") : "") +
+        (x.d && x.d !== x.text ? `<div class="muted" style="margin-top:10px">${r ? "Hozir yozayotgani (tekshirilmagan):" : "Yozayotgani (hali tekshirtirmagan):"}</div><div class="wdet">${CLS.esc(x.d)}</div>` : ""));
+    $("wDetX").onclick = () => { wDetCur = null; $("wlDet").classList.add("hide"); };
+    if (!quiet) $("wlDet").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  $("wlStart").onclick = () => upd(sess.state === "wait" ? { state: "run", start: CLS.now() } : { state: "run" });
+  $("wlStop").onclick = () => { if (confirm("Tekshiruvni yakunlaysizmi? O'quvchilar endi yangi matn tekshirtira olmaydi (keyin qayta ochish mumkin).")) upd({ state: "stopped" }); };
+  $("wlClose").onclick = () => {
+    if (!confirm("Darsni yopasizmi? O'quvchilar endi kira olmaydi." + (sess.graded ? "" : "\n⚠️ Natijalar hali topic'larga yuborilmagan!"))) return;
+    upd({ state: "closed" }).then(() => db.ref("current/" + group).remove()).then(() => { wDetCur = null; $("wlDet").classList.add("hide"); detach(); });
+  };
+  $("wlSend").onclick = () => {
+    const ks = Object.keys(live).filter(k => roster[k] && Object.values((live[k] || {}).w || {}).some(x => x && x.res));
+    if (!ks.length) { $("wlMsg").textContent = "Yuboriladigan natija yo'q (hech kim tekshirtirmagan)."; return; }
+    if (!confirm(`${ks.length} ta o'quvchiga natijalari (har qism bo'yicha oxirgi tekshiruv) topic'iga yuborilsinmi? Taxminan ${Math.ceil(ks.length * 3.5 / 60)} daqiqa.`)) return;
+    $("wlSend").disabled = true; $("wlMsg").textContent = `⏳ ${ks.length} ta xabar yuborilmoqda… Sahifani yopmang.`;
+    api({ admin: "w_class_send", sid: sid, ks: ks }).then(r => {
+      if (!r.ok) throw new Error(r.error);
+      const ok = r.results.filter(x => x.telegram).length;
+      $("wlMsg").textContent = `✅ ${ok} ta o'quvchiga yuborildi.` + (ok < r.results.length ? `\n⚠️ ${r.results.length - ok} tasi yuborilmadi: ${r.results.filter(x => !x.telegram).map(x => (roster[x.k] || {}).name || x.k).join(", ")}` : "");
+      return upd({ graded: CLS.TS });
+    }).catch(e => { $("wlMsg").textContent = "⚠️ " + e.message; }).finally(() => { $("wlSend").disabled = false; });
+  };
 
   // ---------- Listening audio (kolonka shu sahifadan chalinadi) ----------
   const tA = $("tAudio");

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Writing darsi · Dilshod ustoz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F6F6F4;--card:#FFF;--ink:#16181D;--muted:#6B6F76;--line:#E4E4E0;--primary:#E8590C;--ok:#15803D;--ok-bg:#F0FDF4;--bad:#B91C1C;--bad-bg:#FEF2F2;--warn:#B45309;--warn-bg:#FFFBEB}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 'Plus Jakarta Sans',system-ui,sans-serif}
+  header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header .who{font-weight:700}
+  header .ttl{color:var(--muted);font-size:.82rem}
+  header .sp{flex:1}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap}
+  .tabs button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 11px;font:600 .82rem 'Plus Jakarta Sans',sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap}
+  .tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tabs button .b{font-size:.72rem;margin-left:5px;padding:1px 6px;border-radius:999px;background:var(--ok-bg);color:var(--ok)}
+  .tabs button.on .b{background:rgba(255,255,255,.18);color:#fff}
+  main{display:grid;grid-template-columns:minmax(280px,42%) 1fr;gap:16px;max-width:1280px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  .tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--primary);margin-bottom:6px}
+  .q{white-space:pre-wrap}
+  .img{margin-top:10px;max-width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;display:block}
+  .formula{white-space:pre-wrap;font-size:.95rem;background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:10px 12px;margin:6px 0 8px}
+  .hint{color:var(--muted);font-size:.86rem}
+  ul.chk{list-style:none;margin:10px 0 0;padding:0;font-size:.86rem}
+  ul.chk li{padding:2px 0;color:var(--muted)}
+  ul.chk li.ok{color:var(--ok)}
+  ul.chk li.bad{color:var(--bad)}
+  textarea{width:100%;min-height:240px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:14px;font:16px/1.7 'Plus Jakarta Sans',sans-serif;color:var(--ink);background:#fff;outline:none}
+  textarea:focus{border-color:#C9C9C3}
+  textarea[readonly]{background:#FAFAF8}
+  .foot{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .pill{font:600 .9rem 'JetBrains Mono',monospace;background:#F1F1EE;border-radius:9px;padding:6px 11px;white-space:nowrap}
+  .pill.low{background:var(--warn-bg);color:var(--warn)}
+  .foot .msg{flex:1;color:var(--muted);font-size:.85rem;min-width:160px}
+  .btn{border:0;border-radius:10px;padding:10px 18px;font:600 .95rem 'Plus Jakarta Sans',sans-serif;cursor:pointer;background:var(--primary);color:#fff}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.sec{background:#ECECE8;color:var(--ink)}
+  .res h4{margin:0 0 8px;font-size:1rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .badge{display:inline-block;font-size:.78rem;font-weight:700;padding:3px 9px;border-radius:999px}
+  .b-ok{background:var(--ok-bg);color:var(--ok)}.b-bad{background:var(--bad-bg);color:var(--bad)}.b-warn{background:var(--warn-bg);color:var(--warn)}.b-mut{background:#F1F1EE;color:var(--muted)}
+  .res .sec{margin-top:10px;font-size:.92rem}
+  .res .sec b{color:var(--ink)}
+  .res s{color:var(--bad)}
+  .res .fix{color:var(--ok);font-weight:600}
+  .res .corr{background:var(--ok-bg);border-radius:10px;padding:10px 12px;font-style:italic;white-space:pre-wrap}
+  .res .old{color:var(--muted);font-size:.82rem;margin-top:10px}
+  #cover{position:fixed;inset:0;background:rgba(22,24,29,.88);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
+  #cover .box{background:#fff;max-width:460px;width:100%;border-radius:16px;padding:24px;text-align:center}
+  #cover h3{margin:0 0 8px;font-size:1.2rem}
+  #zoom{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:70;padding:10px;cursor:zoom-out}
+  #zoom img{max-width:100%;max-height:100%}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:80}
+  .hide{display:none!important}
+  @media (max-width:820px){main{grid-template-columns:1fr;padding:10px}header{padding:8px 10px}}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="who" id="who">Yuklanmoqda…</div><div class="ttl" id="ttl"></div></div>
+  <div class="sp"></div>
+  <div class="tabs" id="tabs"></div>
+</header>
+<main>
+  <section>
+    <div class="card"><div class="tag" id="task">Writing</div><div class="q" id="prompt"></div><img class="img hide" id="img" alt="Grafik"></div>
+    <div class="card"><div class="tag" id="stepName">Qadam</div><div class="formula" id="formula"></div><div class="hint" id="hint"></div><ul class="chk" id="chk"></ul></div>
+  </section>
+  <section>
+    <div class="card">
+      <textarea id="ed" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Shu qismni yozing…"></textarea>
+      <div class="foot">
+        <span class="pill" id="wc">0 so'z</span>
+        <div class="msg" id="msg">Matningiz avtomatik saqlanadi.</div>
+        <button class="btn" id="btnCheck">Tekshirish</button>
+      </div>
+    </div>
+    <div class="card res hide" id="res"></div>
+  </section>
+</main>
+<div id="cover"><div class="box" id="box"><h3>Yuklanmoqda…</h3><div>Bir soniya kuting.</div></div></div>
+<div id="zoom" class="hide"><img id="zoomImg" alt=""></div>
+<div class="toast" id="toast"></div>
+<script src="../fb/firebase-app-compat.js"></script>
+<script src="../fb/firebase-database-compat.js"></script>
+<script src="../fb/config.js"></script>
+<script src="../fb/cls.js"></script>
+<script>
+// Sinfdagi Writing darsi (Mac'siz): o'quvchi ustoz ochgan qismni (Introduction, Body ...) yozadi va "Tekshirish" ni bosadi.
+// Matn Apps Script orqali AI'ga (Gemini) boradi, natija shu yerda ko'rinadi va ustozning sahifasiga jonli tushadi.
+(function () {
+  const $ = id => document.getElementById(id), esc = CLS.esc;
+  const K = CLS.P.get("k") || "", SID = CLS.P.get("s") || "";
+  const L = CLS.db.ref("live/" + SID + "/" + K), S = CLS.db.ref("sessions/" + SID);
+  const ed = $("ed");
+  let me = null, sess = null, cur = null, focus = null, W = {}, busy = false, pastes = 0, sentD = {}, retryT = null;
+
+  function words(s) { return (String(s || "").match(/[A-Za-z0-9À-ɏ'’-]+/g) || []).length; }
+  function lsKey(st) { return "cw_" + SID + "_" + K + "_" + st; }
+  function lsGet(st) { try { return localStorage.getItem(lsKey(st)); } catch (e) { return null; } }
+  function lsSet(st, v) { try { localStorage.setItem(lsKey(st), v); } catch (e) {} }
+  function cover(t, b) { $("box").innerHTML = `<h3>${t}</h3><div>${b || ""}</div>`; $("cover").classList.remove("hide"); }
+  function uncover() { $("cover").classList.add("hide"); }
+  let toastT = null;
+  function toast(t) { $("toast").textContent = t; $("toast").style.display = "block"; clearTimeout(toastT); toastT = setTimeout(() => { $("toast").style.display = "none"; }, 2800); }
+  const tpl = () => (sess && sess.tpl) || { steps: {}, order: [] };
+  const openSteps = () => (tpl().order || []).filter(s => (sess.open || {})[s]);
+  const step = () => tpl().steps[cur] || {};
+  const draft = st => { const l = lsGet(st); if (l !== null) return l; const w = W[st] || {}; return w.d != null ? w.d : (w.text || ""); };
+
+  function drawTabs() {
+    const os = openSteps();
+    $("tabs").innerHTML = os.map(s => {
+      const w = W[s] || {}, r = w.res;
+      return `<button data-s="${s}" class="${s === cur ? "on" : ""}">${esc(tpl().steps[s].name)}${r ? `<span class="b">${esc(r.band || "✓")}</span>` : ""}</button>`;
+    }).join("");
+    $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => select(b.dataset.s));
+  }
+  function select(s) {
+    if (cur && cur !== s) saveDraft();
+    cur = s;
+    const st = step();
+    $("stepName").textContent = st.name || "";
+    $("formula").textContent = st.formula || "";
+    $("hint").textContent = st.hint || "";
+    ed.value = draft(s);
+    drawTabs(); drawChecks(); drawRes(); drawBtn();
+  }
+  function drawChecks() {
+    const st = step(), t = ed.value, n = words(t), w = st.w;
+    $("wc").textContent = n + (w ? ` / ${w[0]}–${w[1]}` : "") + " so'z";
+    $("wc").classList.toggle("low", !!w && n > 0 && (n < w[0] || n > w[1] * 1.25));
+    $("chk").innerHTML = (st.c || []).map(c => {
+      let hit = false; try { hit = new RegExp(c.re, "im").test(t); } catch (e) {}
+      const ok = c.no ? !hit : hit, empty = !t.trim();
+      return `<li class="${empty ? "" : ok ? "ok" : "bad"}">${empty ? "○" : ok ? "✓" : "✗"} ${esc(c.t)}</li>`;
+    }).join("");
+  }
+  function left() { const w = W[cur] || {}; return Math.max(0, (sess.tries || 3) - (w.n || 0)); }
+  function drawBtn() {
+    const run = sess && sess.state === "run", l = left();
+    ed.readOnly = !run;
+    $("btnCheck").disabled = !run || busy || !l;
+    $("btnCheck").textContent = busy ? "⏳ Tekshirilmoqda…" : l ? `Tekshirish (${l} ta urinish)` : "Urinishlar tugadi";
+  }
+  function drawRes() {
+    const w = W[cur] || {}, r = w.res;
+    $("res").classList.toggle("hide", !r);
+    if (!r) return;
+    const crit = r.criteria || {}, task1 = tpl().task === 1;
+    $("res").innerHTML = `<h4>🤖 AI tekshiruvi <span class="badge b-mut">Band ${esc(r.band || "?")}</span>
+        <span class="badge ${r.formula_ok === false ? "b-bad" : "b-ok"}">formula ${r.formula_ok === false ? "✗" : "✓"}</span>
+        ${r.position_ok === false ? '<span class="badge b-warn">⚠️ pozitsiya / javob</span>' : ""}</h4>` +
+      (r.formula ? `<div class="sec">📐 ${esc(r.formula)}</div>` : "") +
+      ["TR", "CC", "LR", "GRA"].filter(k => crit[k]).map(k => `<div class="sec"><b>${k === "TR" && task1 ? "TA" : k}:</b> ${esc(crit[k])}</div>`).join("") +
+      ((r.mistakes || []).length ? `<div class="sec"><b>❌ Xatolar</b>${r.mistakes.slice(0, 4).map(m => `<div>• <s>${esc(m.wrong)}</s> → <span class="fix">${esc(m.right)}</span> <span class="hint">(${esc(m.why)})</span></div>`).join("")}</div>` : "") +
+      (r.corrected ? `<div class="sec"><b>✍️ Tuzatilgan variant</b><div class="corr">${esc(r.corrected)}</div></div>` : "") +
+      (r.advice ? `<div class="sec">💡 <b>Maslahat:</b> ${esc(r.advice)}</div>` : "") +
+      `<div class="old">Tekshirilgan matn (${w.n || 1}-urinish): ${esc(w.text || "")}</div>`;
+  }
+  function saveDraft() {
+    if (!cur || ed.readOnly) return;
+    lsSet(cur, ed.value);
+    if (sentD[cur] !== ed.value && sess && sess.state === "run") { sentD[cur] = ed.value; L.child("w/" + cur + "/d").set(ed.value.slice(0, 5000)).catch(() => { sentD[cur] = null; }); }
+  }
+  ed.addEventListener("input", () => { drawChecks(); lsSet(cur, ed.value); });
+  setInterval(saveDraft, 3000);
+  window.addEventListener("beforeunload", saveDraft);
+  ["paste", "drop"].forEach(ev => ed.addEventListener(ev, e => {
+    e.preventDefault(); pastes++; L.child("pastes").set(pastes).catch(() => {}); toast("📋 Nusxa ko'chirib qo'yish mumkin emas. O'zingiz yozing.");
+  }));
+  ed.addEventListener("beforeinput", e => { if (e.inputType === "insertFromPaste" || e.inputType === "insertFromDrop") e.preventDefault(); });
+  $("img").onclick = () => { $("zoomImg").src = $("img").src; $("zoom").classList.remove("hide"); };
+  $("zoom").onclick = () => $("zoom").classList.add("hide");
+
+  function check(tryN) {
+    const s = cur, text = ed.value.trim();
+    if (words(text) < 5) { toast("Avval shu qismni yozing."); return; }
+    busy = true; drawBtn(); saveDraft(); clearTimeout(retryT);
+    $("msg").textContent = "⏳ AI tekshirmoqda (10–30 soniya)…";
+    fetch(sess.api, { method: "POST", body: JSON.stringify({ cls: "wcheck", k: K, sid: SID, step: s, text: text }),
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" }).then(r => r.json()).then(r => {
+      if (r.busy && (tryN || 0) < 8) {
+        const sec = 15 + Math.round(Math.random() * 20);
+        $("msg").textContent = `⏳ AI navbatda (ko'p o'quvchi bir vaqtda). ${sec} soniyadan keyin o'zi qayta urinadi…`;
+        retryT = setTimeout(() => { busy = false; if (cur !== s) select(s); check((tryN || 0) + 1); }, sec * 1000);
+        return;
+      }
+      busy = false;
+      if (!r.ok) { $("msg").innerHTML = `<b style="color:var(--bad)">⚠️ ${esc(r.error || "Xato")}</b>`; if (r.left === 0) { W[s] = Object.assign({}, W[s], { n: sess.tries || 3 }); } drawBtn(); return; }
+      const w = { text: text, d: text, res: r.res, n: r.n, at: CLS.TS };
+      W[s] = Object.assign({}, W[s], w, { at: Date.now() });
+      L.child("w/" + s).update(w).catch(() => {});
+      $("msg").textContent = r.left ? `✅ Tekshirildi. Xatolarni tuzatib, yana ${r.left} marta tekshirtirishingiz mumkin.` : "✅ Tekshirildi.";
+      if (cur === s) { drawRes(); $("res").scrollIntoView({ behavior: "smooth", block: "start" }); }
+      drawTabs(); drawBtn();
+    }).catch(() => { busy = false; drawBtn(); $("msg").innerHTML = `<b style="color:var(--bad)">⚠️ Internet xatosi.</b> Qayta bosing.`; });
+  }
+  $("btnCheck").onclick = () => check(0);
+
+  function render() {
+    const st = sess ? sess.state : null;
+    if (!st || st === "closed") { cover("Dars yakunlangan", "Bu Writing darsi yopilgan. Natijalar topic'ingizga keladi."); return; }
+    $("task").textContent = (tpl().task ? "Writing Task " + tpl().task + " · " : "") + (tpl().name || "");
+    $("prompt").textContent = sess.prompt || "Savolni ustoz ekranda ko'rsatadi.";
+    if (sess.img) { $("img").src = sess.img; $("img").classList.remove("hide"); } else $("img").classList.add("hide");
+    if (st === "wait") { cover(`Assalomu alaykum, ${esc(me.name)}!`, `${esc(sess.title || "")}<br><br>⏳ Ustoz <b>Boshlash</b> ni bosishini kuting. Sahifani yopmang.`); return; }
+    uncover();
+    const os = openSteps();
+    if (sess.focus && sess.focus !== focus && os.includes(sess.focus)) { focus = sess.focus; select(sess.focus); }
+    else if (!os.includes(cur)) { if (os.length) select(os.includes(sess.focus) ? sess.focus : os[0]); }
+    else { drawTabs(); drawBtn(); }
+    if (!os.length) cover("⏳ Kuting", "Ustoz yozish qismini hali ochmadi.");
+    if (st === "stopped") $("msg").textContent = "Ustoz tekshiruvni yakunladi. Natijalar topic'ingizga keladi.";
+  }
+
+  if (!/^[A-Za-z0-9_-]{6,20}$/.test(K) || !SID) { cover("⛔ Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  CLS.db.ref("roster/" + K).get().then(r => {
+    me = r.val();
+    if (!me) { cover("⛔ Havola noto'g'ri", "Bu havola ro'yxatda yo'q. Ustozga ayting."); return; }
+    $("who").textContent = me.name;
+    return L.get().then(l => {
+      const v = l.val() || {};
+      W = v.w || {}; pastes = v.pastes || 0;
+      if (!v.joined) L.child("joined").set(CLS.TS).catch(() => {});
+      CLS.db.ref(".info/connected").on("value", c => {
+        if (!c.val()) return;
+        L.child("online").onDisconnect().set(false);
+        L.child("leftAt").onDisconnect().set(CLS.TS);
+        L.update({ online: true, name: me.name, seen: CLS.TS }).catch(() => {});
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (!sess || sess.state !== "run") return;
+        if (document.hidden) { saveDraft(); L.child("away").set(true).catch(() => {}); L.child("leaves").transaction(n => (n || 0) + 1); }
+        else L.child("away").set(false).catch(() => {});
+      });
+      // ustoz "↺" bosib urinishlarni yangilasa yoki boshqa qurilmada tekshirilsa
+      L.child("w").on("value", s => { const nw = s.val() || {}; for (const k in nw) W[k] = Object.assign({}, W[k], nw[k]); for (const k in W) if (!nw[k]) delete W[k]; if (sess) { drawTabs(); drawRes(); drawBtn(); } });
+      S.on("value", s => { sess = s.val(); $("ttl").textContent = sess ? sess.title || "" : ""; render(); });
+    });
+  }).catch(() => cover("⚠️ Internet xatosi", "Ulanishni tekshirib, sahifani yangilang."));
+})();
+</script>
+</body>
+</html>

@@ -33,7 +33,7 @@
       if (!cur || !cur.sid) return;
       CLS.db.ref("sessions/" + cur.sid + "/state").get().then(st => {
         if (st.val() && st.val() !== "closed")
-          location.replace(`${cur.skill}/${cur.test}/?k=${encodeURIComponent(K)}&s=${encodeURIComponent(cur.sid)}${CLS.emu}`);
+          location.replace(`${cur.skill === "writing" ? "writing" : cur.skill + "/" + cur.test}/?k=${encodeURIComponent(K)}&s=${encodeURIComponent(cur.sid)}${CLS.emu}`);
       });
     });
   }).catch(() => say("⚠️ Internet xatosi", "Ulanishni tekshirib, sahifani yangilang."));
