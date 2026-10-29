@@ -391,9 +391,10 @@
       <div style="font-weight:700;margin-bottom:8px">Yangi guruh ochish</div>
       <div class="row">
         <label><span class="field-label">Guruh nomi</span><input class="field" id="grNewName" placeholder="Kechki 18:00"></label>
-        <label><span class="field-label">Course bloki (ixtiyoriy)</span><input class="field" id="grNewCourse" placeholder="masalan EVENING GROUP"></label>
+        <label><span class="field-label">Course bloki nomi (ixtiyoriy)</span><input class="field" id="grNewCourse" placeholder="bo'sh: GURUH NOMI + GROUP"></label>
         <button class="btn btn-orange" id="grCreate">Guruh yaratish</button>
       </div>
+      <label class="muted" style="display:block;margin-top:8px"><input type="checkbox" id="grNewBlock" checked> Course jadvalida (oy varag'i va ASSESSMENT) shu guruh uchun yangi blok ochish</label>
       <div class="muted" style="margin-top:6px">Guruh avval panelda yaratiladi. Keyin Telegram'da guruh ochib, jadvaldagi "Telegramga ulash" tugmasi bilan ulaysiz.</div>
       <div class="hide" id="grLink" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:14px">
         <div style="font-weight:700;margin-bottom:6px">Telegramga ulash: <span id="grLinkName"></span></div>
@@ -853,10 +854,10 @@
     $("grCreate").onclick = () => {
       const nm = $("grNewName").value.trim();
       if (nm.length < 2) { $("grMsg").textContent = "⚠️ Guruh nomini kiriting."; return; }
-      stCall({ admin: "grp_create", name: nm, course: $("grNewCourse").value.trim() }, "grMsg").then(r => {
+      stCall({ admin: "grp_create", name: nm, course: $("grNewCourse").value.trim(), block: $("grNewBlock").checked }, "grMsg", "Guruh yaratilmoqda…").then(r => {
         if (!r) return;
         $("grNewName").value = $("grNewCourse").value = "";
-        $("grMsg").textContent = `✅ "${nm}" guruhi yaratildi. Endi Telegram'da guruh ochib, jadvaldagi "Telegramga ulash" ni bosing.`;
+        $("grMsg").textContent = `✅ "${nm}" guruhi yaratildi. Endi Telegram'da guruh ochib, jadvaldagi "Telegramga ulash" ni bosing.` + (r.notes || []).map(x => "\n" + x).join("");
       });
     };
     const showFound = list => {
