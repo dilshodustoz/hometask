@@ -599,11 +599,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     </div>
   </section>
 
-  <!-- Home task (uy vazifasi: Reading / Listening / Writing) -->
+  <!-- Home task (uy vazifasi: Reading / Listening / Writing / Speaking) -->
   <section data-pane="hw" class="hide">
     <div class="card">
       <div class="card-header"><h3 class="card-title">Home task yuborish <small id="hwGroupName"></small></h3>
-        <div class="seg" id="hwSkill"><button data-s="reading" class="active">📖 Reading</button><button data-s="listening">🎧 Listening</button><button data-s="writing">✍️ Writing</button></div></div>
+        <div class="seg" id="hwSkill"><button data-s="reading" class="active">📖 Reading</button><button data-s="listening">🎧 Listening</button><button data-s="writing">✍️ Writing</button><button data-s="speaking">🎙 Speaking</button></div></div>
       <div class="row">
         <label><span class="field-label" id="hwTestLbl">Test</span><select class="field" id="hwTest"></select></label>
         <label><span class="field-label">Muddat: sana</span><input class="field" id="hwDate" type="date"></label>
@@ -621,6 +621,19 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <label style="display:block;margin-top:10px"><span class="field-label">Savol matni (prompt)</span>
           <textarea class="field" id="wPrompt" rows="6" style="width:100%;font-family:inherit;line-height:1.5" placeholder="Some people believe that ... To what extent do you agree or disagree?&#10;&#10;Give reasons for your answer and include any relevant examples from your own knowledge or experience."></textarea></label>
         <div class="row" style="margin-top:10px"><button class="btn btn-orange" id="wSave">Saqlash</button><span class="muted">Saqlangach, ro'yxatdan tanlab yuborasiz. Vazifa ustozning yopiq Drive papkasida saqlanadi.</span></div>
+      </div>
+      <div class="hide" id="sNew" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:14px">
+        <div style="font-weight:700;margin-bottom:10px">Yangi Speaking vazifasi</div>
+        <div class="row">
+          <label style="flex:1;min-width:220px"><span class="field-label">Nomi (o'quvchiga ko'rinadi)</span><input class="field" id="sTitle" style="width:100%" placeholder="Lesson 7: Shopping and money"></label>
+          <label><span class="field-label">Part 1 (soniya)</span><input class="field" id="sP1" type="number" min="10" max="180" value="30" style="width:90px"></label>
+          <label><span class="field-label">Part 2 tayyorlanish</span><input class="field" id="sPrep" type="number" min="0" max="120" value="60" style="width:90px"></label>
+          <label><span class="field-label">Part 2 (soniya)</span><input class="field" id="sP2" type="number" min="30" max="300" value="120" style="width:90px"></label>
+          <label><span class="field-label">Part 3 (soniya)</span><input class="field" id="sP3" type="number" min="15" max="240" value="60" style="width:90px"></label>
+        </div>
+        <label style="display:block;margin-top:10px"><span class="field-label">Savollar (namunadagidek: har qatorda bitta savol)</span>
+          <textarea class="field" id="sText" rows="14" style="width:100%;font-family:inherit;line-height:1.5" placeholder="Part 1: Shopping&#10;Do you enjoy going shopping?&#10;Do you prefer shopping online or in shops? Why?&#10;What was the last thing you bought?&#10;Part 1: Money&#10;Is it easy for you to save money?&#10;Who taught you how to manage money?&#10;Do you think children should get pocket money?&#10;Part 2&#10;Describe a time when you saved money to buy something.&#10;You should say:&#10;what you wanted to buy&#10;how long it took you to save&#10;how you saved the money&#10;and explain how you felt when you bought it.&#10;Part 3&#10;Why do some people find it difficult to save money?&#10;Should schools teach children about money?&#10;How has online shopping changed people's spending habits?"></textarea></label>
+        <div class="row" style="margin-top:10px"><button class="btn btn-orange" id="sSave">Saqlash</button><span class="muted">Javoblar o'quvchining topic'iga ovozli xabar bo'lib tushadi, hech qayerda saqlanmaydi.</span></div>
       </div>
       <div class="hide" id="hwPrevBox" style="margin-top:14px">
         <div class="muted" id="hwPrevInfo" style="margin-bottom:8px"></div>
@@ -862,14 +875,22 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   }
   $("otherGo").onclick = () => showTab(sess.skill);
 
-  // ---------- Home task (uy vazifasi: Reading / Listening / Writing) ----------
-  let hwLog = null, hwCur = null, hwSk = "reading", wTasks = null;
+  // ---------- Home task (uy vazifasi: Reading / Listening / Writing / Speaking) ----------
+  let hwLog = null, hwCur = null, hwSk = "reading", wTasks = null, sTasks = null;
+  const HW_LK = { reading: "cls_hw_test", listening: "cls_hw_ltest", writing: "cls_hw_wtask", speaking: "cls_hw_stask" };
+  const HW_IC = { reading: "📖", listening: "🎧", writing: "✍️", speaking: "🎙" };
   const OY = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"];
   const fmtAt = iso => { if (!iso) return "—"; const d = new Date(iso); return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5); };
   function hwFill() {
     const sel = $("hwTest"); sel.innerHTML = "";
-    $("hwTestLbl").textContent = hwSk === "writing" ? "Vazifa" : "Test";
-    if (hwSk !== "writing") {
+    $("hwTestLbl").textContent = hwSk === "writing" || hwSk === "speaking" ? "Vazifa" : "Test";
+    if (hwSk === "speaking") {
+      (sTasks || []).forEach(t => sel.add(new Option(t.title + " · " + t.n + " savol", t.t)));
+      if (!sTasks) sel.add(new Option("Yuklanmoqda…", ""));
+      sel.add(new Option("➕ Yangi vazifa…", "__new"));
+      try { const v = localStorage.getItem(HW_LK.speaking); if (v && sTasks && sTasks.some(t => t.t === v)) sel.value = v; } catch (e) {}
+      if (sTasks && !sTasks.length) sel.value = "__new";
+    } else if (hwSk !== "writing") {
       const LK = hwSk === "listening" ? "cls_hw_ltest" : "cls_hw_test";
       window.CLASS_TESTS.filter(t => t.skill === hwSk).forEach(t => sel.add(new Option(t.title.replace(/ · (Reading|Listening)$/, ""), t.key)));
       try { const v = localStorage.getItem(LK); if (v && Array.from(sel.options).some(o => o.value === v)) sel.value = v; } catch (e) {}
@@ -880,7 +901,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       try { const v = localStorage.getItem("cls_hw_wtask"); if (v && wTasks && wTasks.some(t => t.t === v)) sel.value = v; } catch (e) {}
       if (wTasks && !wTasks.length) sel.value = "__new";
     }
-    $("hwNew").classList.toggle("hide", sel.value !== "__new");
+    $("hwNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "writing");
+    $("sNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "speaking");
   }
   function wLoad(sel) {
     return api({ admin: "w_tasks" }).then(r => {
@@ -892,8 +914,27 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     hwSk = b.dataset.s;
     document.querySelectorAll("#hwSkill button").forEach(x => x.classList.toggle("active", x === b));
     $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
-    hwFill(); if (hwSk === "writing" && !wTasks) wLoad();
+    hwFill(); if (hwSk === "writing" && !wTasks) wLoad(); if (hwSk === "speaking" && !sTasks) sLoad();
   });
+  function sLoad(sel) {
+    return api({ admin: "s_tasks" }).then(r => {
+      if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
+      sTasks = r.tasks; if (hwSk === "speaking") { hwFill(); if (sel) { $("hwTest").value = sel; $("sNew").classList.add("hide"); } }
+    }).catch(e => { $("hwMsg").textContent = "⚠️ " + e.message; });
+  }
+  $("sSave").onclick = () => {
+    const b = { admin: "s_create", title: $("sTitle").value.trim(), text: $("sText").value.trim(), p1: $("sP1").value, p2: $("sP2").value, p3: $("sP3").value, prep: $("sPrep").value };
+    if (!b.title || !b.text) { $("hwMsg").textContent = "⚠️ Nomi va savollarni yozing"; return; }
+    $("sSave").disabled = true; $("hwMsg").textContent = "Saqlanmoqda…";
+    api(b).then(r => {
+      $("sSave").disabled = false;
+      if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
+      $("hwMsg").textContent = `✅ Saqlandi: ${r.n} savol (Part 1: ${r.parts[1]}, Part 2: ${r.parts[2]}, Part 3: ${r.parts[3]}). Endi muddatni tanlab "Xabarni ko'rish" ni bosing.`;
+      ["sTitle", "sText"].forEach(id => $(id).value = "");
+      try { localStorage.setItem(HW_LK.speaking, r.t); } catch (e) {}
+      return sLoad(r.t);
+    }).catch(e => { $("sSave").disabled = false; $("hwMsg").textContent = "⚠️ " + e.message; });
+  };
   $("wSave").onclick = () => {
     const b = { admin: "w_create", title: $("wTitle").value.trim(), task: $("wTask").value, minutes: $("wMin").value, min_words: $("wWords").value, prompt: $("wPrompt").value.trim() };
     if (!b.title || !b.prompt) { $("hwMsg").textContent = "⚠️ Nomi va savol matnini yozing"; return; }
@@ -914,8 +955,9 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("hwDate").value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
     [sel, $("hwDate"), $("hwTime")].forEach(el => el.onchange = () => {
       $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
-      $("hwNew").classList.toggle("hide", sel.value !== "__new");
-      try { if (sel.value && sel.value !== "__new") localStorage.setItem(hwSk === "writing" ? "cls_hw_wtask" : hwSk === "listening" ? "cls_hw_ltest" : "cls_hw_test", sel.value); } catch (e) {}
+      $("hwNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "writing");
+      $("sNew").classList.toggle("hide", sel.value !== "__new" || hwSk !== "speaking");
+      try { if (sel.value && sel.value !== "__new") localStorage.setItem(HW_LK[hwSk], sel.value); } catch (e) {}
     });
   }
   function hwBody() { return { skill: hwSk, t: $("hwTest").value, chat: CLS.GROUPS[group].chat, date: $("hwDate").value, time: $("hwTime").value }; }
@@ -960,7 +1002,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     const chat = String(CLS.GROUPS[group].chat);
     const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat]).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title }, hwLog[id].chats[chat]))
       .sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${h.skill === "writing" ? "✍️" : h.skill === "listening" ? "🎧" : "📖"} ${CLS.esc(h.title)}</td><td>${CLS.esc(h.deadline_text)}</td>
+    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${HW_IC[h.skill] || "📖"} ${CLS.esc(h.title)}</td><td>${CLS.esc(h.deadline_text)}</td>
       <td>${fmtAt(h.at)} · ${h.sent.length} ta${h.fail && h.fail.length ? ` <span class="badge b-bad">${h.fail.length} bormadi</span>` : ""}</td>
       <td id="hwc_${h.id}">—</td><td><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button></td></tr>`).join("")
       : `<tr><td colspan="6" class="muted">Bu guruhga hali uy vazifasi yuborilmagan.</td></tr>`;
@@ -972,11 +1014,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   $("hwStReload").onclick = () => hwCur && hwStatus(hwCur);
   function hwStatus(id) {
     hwCur = id;
-    const h = hwLog[id], t = h.t, W = h.skill === "writing", chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
+    const h = hwLog[id], t = h.t, W = h.skill === "writing", S = h.skill === "speaking", chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
     $("hwStCard").classList.remove("hide");
     $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
     $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
-    $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : "Ball"}</th><th>${W ? "Paste · chiqish" : "Band"}</th><th>Daqiqa</th><th>Qachon</th><th></th></tr>`;
+    $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Jami ovoz" : "Band"}</th><th>${S ? "Holati" : "Daqiqa"}</th><th>Qachon</th><th></th></tr>`;
     api({ admin: "status", skill: h.skill, t: t }).then(r => {
       if (!r.ok) { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(r.error)}</td></tr>`; return; }
       const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
@@ -986,6 +1028,13 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       let n = 0, sum = 0;
       $("hwStBody").innerHTML = keys.map((k, i) => {
         const x = sub[k], nm = (roster[k] || {}).name || (x && x.name) || k;
+        if (S) {
+          if (x && x.n >= x.total) { n++; sum += x.sec || 0; }
+          const sst = !x ? (late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`)
+            : x.n >= x.total ? `<span class="badge b-ok">Topshirdi</span>` : late ? `<span class="badge b-bad">Chala</span>` : `<span class="badge b-warn">Davom etmoqda</span>`;
+          const m = x ? Math.floor(x.sec / 60) + ":" + String(x.sec % 60).padStart(2, "0") : "—";
+          return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${sst}</td><td>${x ? x.n + "/" + x.total : "—"}</td><td>${m}</td><td>—</td><td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Yuborilgan javoblar ro'yxatdan olinadi (Telegram'dagi ovozlar qoladi), o'quvchi hammasini qaytadan yuboradi">↺ Qayta ochish</button>` : ""}</td></tr>`;
+        }
         if (x) { n++; sum += Number(W ? x.words : x.band) || 0; }
         const st = x ? `<span class="badge b-ok">Topshirdi</span>` + (x.timeUp ? ` <span class="badge b-warn">vaqt tugadi</span>` : "")
           : late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`;
@@ -1000,7 +1049,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
           hwStatus(id);
         }).catch(e => { alert("⚠️ " + e.message); b.disabled = false; b.textContent = "↺ Qayta ochish"; });
       });
-      $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div><div class="stat"><b>${n ? (W ? Math.round(sum / n) : (sum / n).toFixed(1)) : "—"}</b>${W ? "o'rtacha so'z" : "o'rtacha band"}</div>` +
+      $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div><div class="stat"><b>${n ? (S ? Math.round(sum / n / 60 * 10) / 10 : W ? Math.round(sum / n) : (sum / n).toFixed(1)) : "—"}</b>${S ? "o'rtacha daqiqa" : W ? "o'rtacha so'z" : "o'rtacha band"}</div>` +
         `<div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
       const c = $("hwc_" + id); if (c) c.textContent = n + " / " + keys.length;
     }).catch(e => { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
