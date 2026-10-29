@@ -204,6 +204,7 @@
         <label><span class="field-label">Test</span><select class="field" id="rdTest"></select></label>
         <label><span class="field-label">Daqiqa</span><input class="field" id="rdMin" type="number" min="5" max="120" value="60" style="width:90px"></label>
         <button class="btn btn-primary" id="rdOpenBtn" style="min-height:38px">Darsni ochish</button>
+        <button class="btn btn-secondary" id="rdTaBtn" style="min-height:38px" title="Javoblar va tahlil (faqat sizga ko'rinadi)">👩‍🏫 Teacher Analysis</button>
       </div>
       <div class="msg" id="rdMsg"></div>
     </div>
@@ -217,6 +218,7 @@
         <label><span class="field-label">Test</span><select class="field" id="lsTest"></select></label>
         <label><span class="field-label">Daqiqa</span><input class="field" id="lsMin" type="number" min="5" max="120" value="40" style="width:90px"></label>
         <button class="btn btn-primary" id="lsOpenBtn" style="min-height:38px">Darsni ochish</button>
+        <button class="btn btn-secondary" id="lsTaBtn" style="min-height:38px" title="Javoblar va tahlil (faqat sizga ko'rinadi)">👩‍🏫 Teacher Analysis</button>
       </div>
       <hr class="divider">
       <div class="row" style="align-items:center">
@@ -983,6 +985,25 @@
   }
   $("rdOpenBtn").onclick = () => openLesson("reading");
   $("lsOpenBtn").onclick = () => openLesson("listening");
+
+  // ---------- Teacher Analysis: yopiq Drive'dan LC Panel orqali, yangi oynada ----------
+  const taCache = {};
+  function openTA(sk) {
+    const t = $(sk === "reading" ? "rdTest" : "lsTest").value, m = $(sk === "reading" ? "rdMsg" : "lsMsg");
+    if (!t) return;
+    const w = window.open("", "_blank");   // bosilgan zahoti ochiladi, aks holda brauzer bloklaydi
+    if (!w) { m.textContent = "Brauzer yangi oynani blokladi: bu sayt uchun pop-up'ga ruxsat bering."; return; }
+    const show = html => { w.document.open(); w.document.write(html); w.document.close(); };
+    if (taCache[sk + t]) return show(taCache[sk + t]);
+    w.document.write('<p style="font:16px system-ui;padding:24px">Teacher Analysis yuklanmoqda…</p>');
+    m.textContent = "";
+    api({ admin: "ta_get", skill: sk, t: t }).then(r => {
+      if (!r.ok) throw new Error(r.error || "xato");
+      taCache[sk + t] = r.html; show(r.html);
+    }).catch(e => { w.close(); m.textContent = "Teacher Analysis ochilmadi: " + e.message; });
+  }
+  $("rdTaBtn").onclick = () => openTA("reading");
+  $("lsTaBtn").onclick = () => openTA("listening");
   function upd(o) { return db.ref("sessions/" + sid).update(o).catch(e => alert(e.message)); }
   $("btnStart").onclick = () => {
     const now = CLS.now();
