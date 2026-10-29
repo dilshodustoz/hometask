@@ -653,7 +653,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       </table></div>
     </div>
     <div class="card hide" id="hwStCard">
-      <div class="card-header"><h3 class="card-title" id="hwStTitle"></h3><button class="btn btn-secondary btn-sm" id="hwStReload">Yangilash</button></div>
+      <div class="card-header"><h3 class="card-title" id="hwStTitle"></h3><div><button class="btn btn-sm hide" id="hwFbAll">📤 Baholanganlarni yuborish</button> <button class="btn btn-secondary btn-sm" id="hwStReload">Yangilash</button></div></div>
       <div class="msg" id="hwStMsg"></div>
       <div class="stats" id="hwStats"></div>
       <div class="tbl-wrap"><table>
@@ -1030,7 +1030,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     hwCur = id;
     const h = hwLog[id], t = h.t, W = h.skill === "writing", S = h.skill === "speaking", chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
     $("hwStCard").classList.remove("hide");
-    $("hwStMsg").textContent = "";
+    $("hwStMsg").textContent = ""; $("hwFbAll").classList.add("hide");
     $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
     $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
     $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Matnga o'girildi" : "Band"}</th><th>${S ? "Baho (Claude)" : "Daqiqa"}</th><th>Qachon</th><th></th></tr>`;
@@ -1050,7 +1050,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
           const m = x ? Math.floor(x.sec / 60) + ":" + String(x.sec % 60).padStart(2, "0") : "—";
           if (x) { trN += x.tr || 0; ansN += x.n; if (x.band) { gN++; gSum += Number(x.band) || 0; if (x.sent) sentN++; } }
           const tr = !x ? "—" : (x.tr || 0) >= x.n ? `<span class="badge b-ok">${x.tr}/${x.n}</span>` : `<span class="badge b-warn" title="AI band bo'lgan: Home task ochilganda o'zi to'ldiriladi">${x.tr || 0}/${x.n}</span>`;
-          const bd = !x ? "—" : x.band ? `<b>${CLS.esc(x.band)}</b> ` + (x.sent ? `<span class="badge b-ok">yuborildi</span>` : `<span class="badge b-warn">yuborilmagan</span>`)
+          const bd = !x ? "—" : x.band ? `<b>${CLS.esc(x.band)}</b> ` + (x.sent ? `<span class="badge b-ok">yuborildi</span>` : `<button class="btn btn-sm" data-fb="${CLS.esc(k)}" title="Feedback fayli va baho o'quvchining topic'iga boradi">📤 Yuborish</button>`)
             : `<span class="badge b-mut">${x.n >= x.total ? "baholanmoqda" : "—"}</span>`;
           return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${sst}</td><td>${x ? `${x.n}/${x.total} <span class="muted">· ${m}</span>` : "—"}</td><td>${tr}</td><td>${bd}</td><td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Yuborilgan javoblar ro'yxatdan olinadi (Telegram'dagi ovozlar qoladi), o'quvchi hammasini qaytadan yuboradi">↺ Qayta ochish</button>` : ""}</td></tr>`;
         }
@@ -1059,6 +1059,21 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
           : late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`;
         return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${!x ? "—" : W ? x.words : x.raw + "/40"}</td><td>${!x ? "—" : W ? (x.pastes || 0) + " · " + (x.leaves || 0) : CLS.esc(x.band)}</td><td>${x ? x.minutes : "—"}</td><td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Topshirig'i o'chiriladi (zaxira nusxasi qoladi), o'quvchi testni boshidan qayta ishlaydi">↺ Qayta ochish</button>` : ""}</td></tr>`;
       }).join("");
+      const fbSend = (k, b) => {
+        const one = !!k, nm = one ? ((roster[k] || {}).name || k) : "";
+        if (!confirm(one ? `${nm}: Speaking feedback va baho topic'iga yuborilsinmi?` : `Baholangan, lekin hali yuborilmagan ${gN - sentN} ta o'quvchining feedback'i o'z topic'lariga yuborilsinmi?`)) return;
+        b.disabled = true; b.textContent = "Yuborilmoqda…";
+        api({ admin: "s_fb_send", t: t, k: k || "" }).then(r => {
+          if (!r.ok) { alert("⚠️ " + r.error); hwStatus(id); return; }
+          hwStatus(id);
+          setTimeout(() => { $("hwStMsg").textContent = `✅ ${r.sent} ta feedback yuborildi.` + (r.fail.length ? "\n⚠️ Bormadi: " + r.fail.map(f => f.name + " (" + f.error + ")").join(", ") : ""); }, 50);
+        }).catch(e => { alert("⚠️ " + e.message); hwStatus(id); });
+      };
+      $("hwStBody").querySelectorAll("[data-fb]").forEach(b => b.onclick = () => fbSend(b.dataset.fb, b));
+      $("hwFbAll").classList.toggle("hide", !(S && gN > sentN));
+      $("hwFbAll").textContent = `📤 Baholanganlarni yuborish (${gN - sentN})`;
+      $("hwFbAll").disabled = false;
+      $("hwFbAll").onclick = () => fbSend("", $("hwFbAll"));
       $("hwStBody").querySelectorAll("[data-reopen]").forEach(b => b.onclick = () => {
         const k = b.dataset.reopen, nm = (roster[k] || {}).name || k;
         if (!confirm(`${nm} uchun ${W ? "vazifani" : "testni"} qayta ochamizmi?\n\nOldingi natijasi ro'yxatdan olinadi (jadvalda "qayta_ochilgan" varag'ida saqlanib qoladi). O'quvchi Telegram'dagi o'sha tugma orqali testni boshidan ishlaydi.`)) return;
