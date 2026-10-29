@@ -1031,14 +1031,14 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("hwStMsg").textContent = "";
     $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
     $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
-    $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Jami ovoz" : "Band"}</th><th>${S ? "Holati" : "Daqiqa"}</th><th>Qachon</th><th></th></tr>`;
+    $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Matnga o'girildi" : "Band"}</th><th>${S ? "Baho (Claude)" : "Daqiqa"}</th><th>Qachon</th><th></th></tr>`;
     api({ admin: "status", skill: h.skill, t: t }).then(r => {
       if (!r.ok) { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(r.error)}</td></tr>`; return; }
       const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
       const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
         .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
       const late = CLS.now() > new Date(info.deadline).getTime();
-      let n = 0, sum = 0;
+      let n = 0, sum = 0, trN = 0, ansN = 0, gN = 0, gSum = 0, sentN = 0;
       $("hwStBody").innerHTML = keys.map((k, i) => {
         const x = sub[k], nm = (roster[k] || {}).name || (x && x.name) || k;
         if (S) {
@@ -1046,7 +1046,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
           const sst = !x ? (late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`)
             : x.n >= x.total ? `<span class="badge b-ok">Topshirdi</span>` : late ? `<span class="badge b-bad">Chala</span>` : `<span class="badge b-warn">Davom etmoqda</span>`;
           const m = x ? Math.floor(x.sec / 60) + ":" + String(x.sec % 60).padStart(2, "0") : "—";
-          return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${sst}</td><td>${x ? x.n + "/" + x.total : "—"}</td><td>${m}</td><td>—</td><td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Yuborilgan javoblar ro'yxatdan olinadi (Telegram'dagi ovozlar qoladi), o'quvchi hammasini qaytadan yuboradi">↺ Qayta ochish</button>` : ""}</td></tr>`;
+          if (x) { trN += x.tr || 0; ansN += x.n; if (x.band) { gN++; gSum += Number(x.band) || 0; if (x.sent) sentN++; } }
+          const tr = !x ? "—" : (x.tr || 0) >= x.n ? `<span class="badge b-ok">${x.tr}/${x.n}</span>` : `<span class="badge b-warn" title="AI band bo'lgan: Home task ochilganda o'zi to'ldiriladi">${x.tr || 0}/${x.n}</span>`;
+          const bd = !x ? "—" : x.band ? `<b>${CLS.esc(x.band)}</b> ` + (x.sent ? `<span class="badge b-ok">yuborildi</span>` : `<span class="badge b-warn">yuborilmagan</span>`)
+            : `<span class="badge b-mut">${x.n >= x.total ? "baholanmoqda" : "—"}</span>`;
+          return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${sst}</td><td>${x ? `${x.n}/${x.total} <span class="muted">· ${m}</span>` : "—"}</td><td>${tr}</td><td>${bd}</td><td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Yuborilgan javoblar ro'yxatdan olinadi (Telegram'dagi ovozlar qoladi), o'quvchi hammasini qaytadan yuboradi">↺ Qayta ochish</button>` : ""}</td></tr>`;
         }
         if (x) { n++; sum += Number(W ? x.words : x.band) || 0; }
         const st = x ? `<span class="badge b-ok">Topshirdi</span>` + (x.timeUp ? ` <span class="badge b-warn">vaqt tugadi</span>` : "")
@@ -1062,7 +1066,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
           hwStatus(id);
         }).catch(e => { alert("⚠️ " + e.message); b.disabled = false; b.textContent = "↺ Qayta ochish"; });
       });
-      $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div><div class="stat"><b>${n ? (S ? Math.round(sum / n / 60 * 10) / 10 : W ? Math.round(sum / n) : (sum / n).toFixed(1)) : "—"}</b>${S ? "o'rtacha daqiqa" : W ? "o'rtacha so'z" : "o'rtacha band"}</div>` +
+      $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div>` + (S ? `<div class="stat"><b>${trN} / ${ansN}</b>matnga o'girildi</div><div class="stat"><b>${gN} / ${n}</b>baholandi · ${sentN} yuborildi</div><div class="stat"><b>${gN ? (gSum / gN).toFixed(1) : "—"}</b>o'rtacha band</div>` : "") + `<div class="stat"><b>${n ? (S ? Math.round(sum / n / 60 * 10) / 10 : W ? Math.round(sum / n) : (sum / n).toFixed(1)) : "—"}</b>${S ? "o'rtacha daqiqa" : W ? "o'rtacha so'z" : "o'rtacha band"}</div>` +
         `<div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
       const c = $("hwc_" + id); if (c) c.textContent = n + " / " + keys.length;
     }).catch(e => { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
