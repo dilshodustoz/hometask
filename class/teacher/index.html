@@ -125,6 +125,7 @@
       <button class="tab-btn" data-tab="listening">Listening</button>
       <button class="tab-btn" data-tab="writing">Writing</button>
       <button class="tab-btn" data-tab="hw">Uy vazifasi</button>
+      <button class="tab-btn" data-tab="students">O'quvchilar</button>
       <button class="tab-btn" data-tab="setup">Sozlash</button>
     </nav>
   </div>
@@ -349,6 +350,61 @@
     </div>
   </section>
 
+  <!-- O'quvchilar bazasi -->
+  <section data-pane="students" class="hide">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Yangi o'quvchi <small id="stGroupName"></small></h3></div>
+      <div class="row">
+        <label><span class="field-label">Ism</span><input class="field" id="stFirst" placeholder="Sevinch" autocomplete="off"></label>
+        <label><span class="field-label">Familiya</span><input class="field" id="stLast" placeholder="Subxonova" autocomplete="off"></label>
+        <label><span class="field-label">Telefon (ixtiyoriy)</span><input class="field" id="stPhone" placeholder="+998 90 123 45 67" style="width:170px"></label>
+        <label style="flex:1;min-width:160px"><span class="field-label">Izoh (ixtiyoriy)</span><input class="field" id="stNote" style="width:100%"></label>
+      </div>
+      <div class="row" style="margin-top:12px;gap:16px">
+        <label class="muted"><input type="checkbox" id="stOptBtn" checked> Doimiy sinf tugmasini yuborish</label>
+        <label class="muted"><input type="checkbox" id="stOptInv" checked> Bir martalik taklif havolasi</label>
+        <label class="muted"><input type="checkbox" id="stOptCourse" checked> Course jadvaliga qator qo'shish</label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn-orange" id="stAdd">Yaratish</button>
+        <span class="muted">Topic o'quvchining ism-familiyasi bilan ochiladi.</span>
+      </div>
+      <div class="msg" id="stMsg"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>O'quvchi</th><th>Telefon</th><th>Qo'shilgan</th><th></th></tr></thead>
+        <tbody id="stBody"><tr><td colspan="5" class="muted">Yuklanmoqda…</td></tr></tbody>
+      </table></div>
+      <details id="stArchBox" style="margin-top:14px"><summary class="muted" style="cursor:pointer">Arxiv <span id="stArchN"></span></summary>
+        <div class="tbl-wrap"><table><tbody id="stArch"></tbody></table></div>
+      </details>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Guruhlar</h3></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>Guruh</th><th>Telegram chat</th><th>Course bloki</th><th>O'quvchi</th><th></th></tr></thead>
+        <tbody id="grBody"></tbody>
+      </table></div>
+      <hr class="divider">
+      <div style="font-weight:700;margin-bottom:6px">Yangi guruh ulash</div>
+      <ol class="muted" style="margin:0 0 12px;padding-left:18px;line-height:1.7">
+        <li>Telegram'da yangi guruh oching (nomini o'zingiz bering).</li>
+        <li>Guruh sozlamalarida <b>Topics</b> ni yoqing.</li>
+        <li>Botni guruhga qo'shib <b>admin</b> qiling: <b>Manage topics</b> va <b>Invite users via link</b> huquqlari yoqilgan bo'lsin.</li>
+        <li>Pastdagi "Yangi guruhni topish" ni bosing.</li>
+      </ol>
+      <div class="row">
+        <button class="btn btn-primary" id="grScan">Yangi guruhni topish</button>
+        <label><span class="field-label">yoki chat raqami</span><input class="field" id="grChat" placeholder="-100…" style="width:190px"></label>
+        <button class="btn btn-secondary" id="grCheck">Tekshirish</button>
+      </div>
+      <div id="grFound" style="margin-top:12px"></div>
+      <div class="msg" id="grMsg"></div>
+    </div>
+  </section>
+
   <!-- Sozlash -->
   <section data-pane="setup" class="hide">
     <div class="card">
@@ -413,16 +469,15 @@
       : `⚠️ <b>Bir martalik sozlash.</b> Apps Script "Hometask Reading" → Project Settings → Script Properties → Add script property: nomi <code>CLASS_SECRET</code>, qiymati <code>${CLS.esc(admin.secret)}</code>. Keyin "Aloqani tekshirish" ni bosing.`;
     if (!admin.verified) showTab("setup");
     else if (tab === "hw" && !hwLog) hwLoad();
+    else if (tab === "students" && !stData) stLoad();
   }
 
   function start() {
     if (!admin.secret) { admin.secret = randKey(28); db.ref("admin/secret").set(admin.secret); }
     try { group = localStorage.getItem("cls_group"); mode = localStorage.getItem("cls_mode") || mode; } catch (e) {}
+    mergeGroups(admin.groups);   // saytda ulangan yangi guruhlar
     if (!CLS.GROUPS[group]) group = "test";
-    for (const g in CLS.GROUPS) {
-      const b = document.createElement("button"); b.textContent = CLS.GROUPS[g].name; b.dataset.g = g;
-      b.onclick = () => setGroup(g); $("grpSeg").appendChild(b);
-    }
+    drawGroupSeg();
     ["reading", "listening"].forEach(sk => {
       const sel = $(sk === "reading" ? "rdTest" : "lsTest");
       window.CLASS_TESTS.filter(t => t.skill === sk).forEach(t => sel.add(new Option(t.title.replace(/ · (Reading|Listening)$/, ""), t.key)));
@@ -433,6 +488,7 @@
     drawMode();
     hwInit();
     wInit();
+    stInit();
     document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => showTab(b.dataset.tab));
     try { const t = localStorage.getItem("cls_tab"); if (t) showTab(t); } catch (e) {}
     drawSecret();
@@ -446,6 +502,7 @@
     $("btnGroupName").textContent = "· " + CLS.GROUPS[g].name;
     $("hwGroupName").textContent = "· " + CLS.GROUPS[g].name;
     $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
+    $("stMsg").textContent = ""; $("grMsg").textContent = ""; stDraw();
     hwShowList();
     watchGroup();
   }
@@ -456,6 +513,7 @@
     document.querySelectorAll("[data-pane]").forEach(p => p.classList.toggle("hide", p.dataset.pane !== t));
     layout();
     if (t === "hw" && !hwLog && admin.verified) hwLoad();
+    if (t === "students" && !stData && admin.verified) stLoad();
   }
   // jonli dars qaysi bo'limda ko'rinadi
   function layout() {
@@ -636,15 +694,7 @@
   };
   $("btnRoster").onclick = () => {
     $("setupMsg").textContent = "Ro'yxat olinmoqda…";
-    api({ admin: "roster" }).then(r => {
-      if (!r.ok) { $("setupMsg").textContent = "⚠️ " + r.error; return; }
-      const out = {}; let n = 0;
-      Object.keys(r.roster).forEach(k => {
-        const st = r.roster[k], g = st.test ? "test" : CLS.groupOfChat(st.chat);
-        if (g && /^[A-Za-z0-9_-]{6,20}$/.test(k)) { out[k] = { name: st.name, group: g }; n++; }
-      });
-      return db.ref("roster").set(out).then(() => { $("setupMsg").textContent = `✅ ${n} ta o'quvchi yangilandi.`; });
-    }).catch(e => { $("setupMsg").textContent = "⚠️ " + e.message; });
+    stLoad().then(n => { $("setupMsg").textContent = n ? `✅ ${n} ta o'quvchi yangilandi.` : "⚠️ Ro'yxat olinmadi (O'quvchilar bo'limida xato ko'rinadi)."; });
   };
   $("btnButtons").onclick = () => {
     const g = group;
@@ -654,6 +704,163 @@
       $("setupMsg").textContent = r.ok ? `✅ Yuborildi: ${r.sent}` + (r.fail.length ? `\nXato: ${r.fail.join("; ")}` : "") : "⚠️ " + r.error;
     }).catch(e => { $("setupMsg").textContent = "⚠️ " + e.message; });
   };
+
+  // ---------- o'quvchilar bazasi ----------
+  let stData = null;
+  function mergeGroups(gs) {
+    if (!gs) return;
+    Object.keys(CLS.GROUPS).forEach(g => { if (!gs[g]) delete CLS.GROUPS[g]; });
+    Object.keys(gs).forEach(g => { CLS.GROUPS[g] = { name: gs[g].name, chat: Number(gs[g].chat) }; });
+  }
+  function drawGroupSeg() {
+    $("grpSeg").innerHTML = "";
+    for (const g in CLS.GROUPS) {
+      const b = document.createElement("button"); b.textContent = CLS.GROUPS[g].name; b.dataset.g = g;
+      b.classList.toggle("active", g === group);
+      b.onclick = () => setGroup(g); $("grpSeg").appendChild(b);
+    }
+  }
+  function groupOfIn(gs, chat) { for (const g in gs) if (String(gs[g].chat) === String(chat)) return g; return null; }
+  // server javobi (roster + groups) → Firebase (sinf sahifalari shu ro'yxatdan foydalanadi) va sahifa
+  function stApply(r) {
+    stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups };
+    const out = {}; let n = 0;
+    Object.keys(r.roster).forEach(k => {
+      const st = r.roster[k], g = st.test ? "test" : (st.group && r.groups[st.group] ? st.group : groupOfIn(r.groups, st.chat));
+      if (g && /^[A-Za-z0-9_-]{6,20}$/.test(k)) { out[k] = { name: st.name, group: g }; n++; }
+    });
+    mergeGroups(r.groups);
+    if (!CLS.GROUPS[group]) { group = "test"; setGroup(group); }
+    drawGroupSeg();
+    stDraw();
+    return Promise.all([db.ref("roster").set(out), db.ref("admin/groups").set(r.groups)]).then(() => n);
+  }
+  function stLoad() {
+    $("stBody").innerHTML = `<tr><td colspan="5" class="muted">Yuklanmoqda…</td></tr>`;
+    return api({ admin: "st_list" }).then(r => {
+      if (!r.ok) { $("stBody").innerHTML = `<tr><td colspan="5">⚠️ ${CLS.esc(r.error)}</td></tr>`; return 0; }
+      return stApply(r);
+    }).catch(e => { $("stBody").innerHTML = `<tr><td colspan="5">⚠️ ${CLS.esc(e.message)}</td></tr>`; return 0; });
+  }
+  function stCall(body, msgEl, busy) {
+    $(msgEl).textContent = busy || "Bajarilmoqda…";
+    return api(body).then(r => {
+      if (!r.ok) { $(msgEl).textContent = "⚠️ " + r.error; return null; }
+      return stApply(r).then(() => r);
+    }).catch(e => { $(msgEl).textContent = "⚠️ " + e.message; return null; });
+  }
+  function fdate(s) { return s ? new Date(s).toLocaleDateString("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" }) : ""; }
+  function stDraw() {
+    $("stGroupName").textContent = "· " + CLS.GROUPS[group].name;
+    if (!stData) return;
+    const gs = stData.groups, chat = String(CLS.GROUPS[group].chat), isTest = !!(gs[group] || {}).test;
+    const oc = $("stOptCourse"), canC = !isTest && !!(gs[group] || {}).course;
+    if (oc.disabled !== !canC) { oc.disabled = !canC; oc.checked = canC; }   // Course bloki yo'q guruhda yoqilmaydi
+    const R = stData.roster, ks = Object.keys(R).filter(k => !R[k].test && String(R[k].chat) === chat).sort((a, b) => R[a].name.localeCompare(R[b].name));
+    $("stCount").textContent = `· ${CLS.GROUPS[group].name} · ${ks.length} ta`;
+    $("stBody").innerHTML = ks.map((k, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(R[k].name)}${R[k].note ? `<div class="muted">${CLS.esc(R[k].note)}</div>` : ""}</td>
+        <td>${CLS.esc(R[k].phone || "")}</td><td>${fdate(R[k].added)}</td>
+        <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-inv="${k}">Taklif havolasi</button>
+          <button class="btn btn-warning btn-sm" data-ar="${k}">Arxivlash</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("")
+        || `<tr><td colspan="5" class="muted">Bu guruhda hali o'quvchi yo'q.</td></tr>`;
+    const A = stData.archive, as = Object.keys(A).filter(k => String(A[k].chat) === chat).sort((a, b) => A[a].name.localeCompare(A[b].name));
+    $("stArchN").textContent = as.length ? `(${as.length})` : "(bo'sh)";
+    $("stArch").innerHTML = as.map(k => `<tr><td>${CLS.esc(A[k].name)}</td><td class="muted">arxivga: ${fdate(A[k].archived)}</td>
+      <td><button class="btn btn-secondary btn-sm" data-rs="${k}">Qaytarish</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("");
+    const all = Object.values(R);
+    $("grBody").innerHTML = Object.keys(gs).map((g, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(gs[g].name)}</td><td><code>${gs[g].chat}</code></td>
+      <td>${CLS.esc(gs[g].course || (gs[g].test ? "" : "—"))}</td><td>${gs[g].test ? "" : all.filter(x => !x.test && String(x.chat) === String(gs[g].chat)).length}</td>
+      <td>${g === "test" ? "" : `<button class="btn btn-secondary btn-sm" data-gren="${g}">Nomini o'zgartirish</button>`}
+        ${["test", "morning", "afternoon"].indexOf(g) < 0 ? ` <button class="btn btn-danger btn-sm" data-grm="${g}">Olib tashlash</button>` : ""}</td></tr>`).join("");
+  }
+  function stInit() {
+    $("stReload").onclick = () => stLoad();
+    $("stAdd").onclick = () => {
+      const first = $("stFirst").value.trim(), last = $("stLast").value.trim();
+      if (!first || !last) { $("stMsg").textContent = "⚠️ Ism va familiyani kiriting."; return; }
+      const name = first + " " + last;
+      if (!confirm(`${CLS.GROUPS[group].name} guruhiga "${name}" qo'shilsinmi? Telegram'da shu nomli topic ochiladi.`)) return;
+      const body = { admin: "st_add", group: group, first: first, last: last, phone: $("stPhone").value.trim(), note: $("stNote").value.trim(),
+        button: $("stOptBtn").checked, invite: $("stOptInv").checked, course: $("stOptCourse").checked, url: STUDENT_URL };
+      const go = force => stCall(Object.assign({ force: force }, body), "stMsg", "Topic ochilmoqda…").then(r => {
+        if (r === null && !force && /allaqachon bor/.test($("stMsg").textContent) && confirm($("stMsg").textContent.replace("⚠️ ", "") + ". Baribir yana qo'shilsinmi?")) return go(true);
+        if (!r) return;
+        ["stFirst", "stLast", "stPhone", "stNote"].forEach(i => $(i).value = "");
+        $("stMsg").innerHTML = `✅ <b>${CLS.esc(name)}</b> qo'shildi, topic ochildi.` + (r.notes || []).map(x => "<br>" + CLS.esc(x)).join("") +
+          (r.invite ? `<br>Taklif havolasi (bir kishilik, o'quvchiga yuboring): <code>${CLS.esc(r.invite)}</code> <button class="btn btn-secondary btn-sm" id="stCopy">Nusxa olish</button>` : "");
+        if (r.invite) $("stCopy").onclick = () => navigator.clipboard.writeText(r.invite).then(() => { $("stCopy").textContent = "✓ Olindi"; });
+      });
+      go(false);
+    };
+    $("stBody").onclick = $("stArch").onclick = ev => {
+      const b = ev.target.closest("button"); if (!b) return;
+      const R = stData.roster, A = stData.archive;
+      if (b.dataset.ed) {
+        const st = R[b.dataset.ed], nm = prompt("Yangi ism-familiya (topic nomi va Course'dagi ism ham o'zgaradi):", st.name);
+        if (!nm || nm.trim() === st.name) return;
+        const ph = prompt("Telefon:", st.phone || "");
+        stCall({ admin: "st_rename", k: b.dataset.ed, first: nm.trim(), last: "", phone: ph == null ? st.phone || "" : ph.trim(), course: true }, "stMsg")
+          .then(r => { if (r) $("stMsg").textContent = "✅ Yangilandi." + (r.notes || []).map(x => "\n" + x).join(""); });
+      } else if (b.dataset.inv) {
+        $("stMsg").textContent = "Havola yaratilmoqda…";
+        api({ admin: "st_invite", k: b.dataset.inv }).then(r => {
+          $("stMsg").innerHTML = r.ok ? `${CLS.esc(R[b.dataset.inv].name)} uchun bir martalik havola: <code>${CLS.esc(r.invite)}</code>` : "⚠️ " + CLS.esc(r.error);
+        }).catch(e => { $("stMsg").textContent = "⚠️ " + e.message; });
+      } else if (b.dataset.ar) {
+        const st = R[b.dataset.ar];
+        if (!confirm(`${st.name} arxivlansinmi?\n\nTopic yopiladi va nomiga "(ketgan)" qo'shiladi, ichidagi xabarlar saqlanadi. Uy vazifalari endi unga yuborilmaydi. Keyin "Qaytarish" mumkin.`)) return;
+        stCall({ admin: "st_archive", k: b.dataset.ar }, "stMsg").then(r => { if (r) $("stMsg").textContent = `✅ ${st.name} arxivlandi.` + (r.notes || []).map(x => "\n" + x).join(""); });
+      } else if (b.dataset.rs) {
+        const st = A[b.dataset.rs];
+        stCall({ admin: "st_restore", k: b.dataset.rs }, "stMsg").then(r => { if (r) $("stMsg").textContent = `✅ ${st.name} qaytarildi, topic qayta ochildi.` + (r.notes || []).map(x => "\n" + x).join(""); });
+      } else if (b.dataset.del) {
+        const st = R[b.dataset.del] || A[b.dataset.del];
+        const typed = prompt(`DIQQAT: ${st.name} butunlay o'chiriladi.\nTelegram'dagi topic va undagi BARCHA xabarlar (esse, feedback) qaytarib bo'lmaydigan qilib o'chadi.\nCourse jadvalidagi qatori o'zgarmaydi.\n\nTasdiqlash uchun ism-familiyani to'liq yozing:`);
+        if (typed == null) return;
+        if (typed.trim().toLowerCase() !== st.name.toLowerCase()) { $("stMsg").textContent = "Ism mos kelmadi, o'chirilmadi."; return; }
+        stCall({ admin: "st_delete", k: b.dataset.del, confirm: typed.trim() }, "stMsg").then(r => { if (r) $("stMsg").textContent = `🗑 ${st.name} o'chirildi.`; });
+      }
+    };
+    $("grBody").onclick = ev => {
+      const b = ev.target.closest("button"); if (!b) return;
+      const gs = stData.groups;
+      if (b.dataset.gren) {
+        const g = gs[b.dataset.gren], nm = prompt("Guruh nomi (faqat panelda):", g.name);
+        if (!nm) return;
+        const cb = prompt("Course jadvalidagi blok sarlavhasidan so'z (masalan MORNING GROUP). Bo'sh qoldirsangiz Course'ga yozilmaydi:", g.course || "");
+        stCall({ admin: "grp_rename", id: b.dataset.gren, name: nm, course: cb == null ? g.course || "" : cb }, "grMsg").then(r => { if (r) $("grMsg").textContent = "✅ Saqlandi."; });
+      } else if (b.dataset.grm) {
+        if (!confirm(`${gs[b.dataset.grm].name} paneldan olib tashlansinmi? (Telegram guruhining o'zi o'chmaydi)`)) return;
+        stCall({ admin: "grp_remove", id: b.dataset.grm }, "grMsg").then(r => { if (r) $("grMsg").textContent = "✅ Olib tashlandi."; });
+      }
+    };
+    const showFound = list => {
+      $("grFound").innerHTML = list.map((g, i) => `<div class="wf"><b>${CLS.esc(g.title)}</b> <code>${g.chat}</code>
+        ${g.known ? `<span class="badge b-mut">allaqachon ulangan</span>` : g.problems.length ? `<div class="muted" style="color:var(--amber)">⚠️ ${CLS.esc(g.problems.join(", "))}. Tuzatib, qayta tekshiring.</div>`
+        : `<div class="row" style="margin-top:8px"><label><span class="field-label">Panel nomi</span><input class="field" data-gn="${i}" value="${CLS.esc(g.title)}"></label>
+           <label><span class="field-label">Course bloki (ixtiyoriy)</span><input class="field" data-gc="${i}" placeholder="masalan EVENING GROUP"></label>
+           <button class="btn btn-orange" data-gadd="${i}">Ulash</button></div>`}</div>`).join("") || `<div class="muted">Yangi guruh topilmadi. Bot admin qilinganini tekshiring yoki chat raqamini kiriting.</div>`;
+      $("grFound").querySelectorAll("[data-gadd]").forEach(b => b.onclick = () => {
+        const i = b.dataset.gadd;
+        stCall({ admin: "grp_add", chat: list[i].chat, name: $("grFound").querySelector(`[data-gn="${i}"]`).value, course: $("grFound").querySelector(`[data-gc="${i}"]`).value }, "grMsg")
+          .then(r => { if (r) { $("grFound").innerHTML = ""; $("grMsg").textContent = "✅ Guruh ulandi. Endi tepada uni tanlab o'quvchi qo'shishingiz mumkin."; } });
+      });
+    };
+    $("grScan").onclick = () => {
+      $("grMsg").textContent = "Qidirilmoqda…"; $("grFound").innerHTML = "";
+      api({ admin: "grp_scan" }).then(r => {
+        if (!r.ok) { $("grMsg").textContent = "⚠️ " + r.error; return; }
+        $("grMsg").textContent = ""; showFound(r.found);
+      }).catch(e => { $("grMsg").textContent = "⚠️ " + e.message; });
+    };
+    $("grCheck").onclick = () => {
+      $("grMsg").textContent = "Tekshirilmoqda…"; $("grFound").innerHTML = "";
+      api({ admin: "grp_check", chat: $("grChat").value }).then(r => {
+        if (!r.ok) { $("grMsg").textContent = "⚠️ " + r.error; return; }
+        $("grMsg").textContent = ""; showFound([r.group]);
+      }).catch(e => { $("grMsg").textContent = "⚠️ " + e.message; });
+    };
+  }
 
   // ---------- dars ----------
   function testOf(v) { const [sk, key] = String(v).split("/"); return window.CLASS_TESTS.find(x => x.skill === sk && x.key === key); }
