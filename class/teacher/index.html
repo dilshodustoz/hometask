@@ -492,6 +492,8 @@
 (function () {
   const $ = id => document.getElementById(id);
   const db = CLS.db, auth = firebase.auth();
+  // Kirish qurilmada saqlansin (iPhone'da har yangilashda qayta so'ramasin): avval IndexedDB, bo'lmasa localStorage
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
   const DEFAULT_API = "https://script.google.com/macros/s/AKfycbyG1ztRvvg2zdwdel1FhDjUytbhkZ0BGjITPkUAo_DNSddF23lbtlVMvbvex6CsG1ZGDw/exec";
   const STUDENT_URL = "https://dilshodustoz.github.io/hometask/class/";
   let admin = {}, roster = {}, group = null, sid = null, sess = null, live = {}, offS = null, offL = null, tab = "reading", mode = "phone";
@@ -502,8 +504,12 @@
     auth.signInWithPopup(p).catch(e => { $("loginMsg").textContent = "Kirib bo'lmadi: " + e.message; });
   };
   auth.onAuthStateChanged(u => {
-    if (!u) { $("login").classList.remove("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.add("hide")); return; }
+    if (!u) {
+      let was = false; try { was = localStorage.getItem("cls_in") === "1"; } catch (e) {}
+      if (was && !$("loginMsg").textContent) $("loginMsg").textContent = "Brauzer kirishni eslab qolmadi. iPhone'da sahifani Safari'da oching (Telegram yoki boshqa ilova ichidagi brauzerda emas) yoki Safari → Ulashish → \"Bosh ekranga qo'shish\".";
+      $("login").classList.remove("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.add("hide")); return; }
     $("who").textContent = u.email;
+    try { localStorage.setItem("cls_in", "1"); } catch (e) {}
     db.ref("admin").get().then(s => {
       admin = s.val() || {};
       $("login").classList.add("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.remove("hide"));
