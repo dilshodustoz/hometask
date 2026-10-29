@@ -476,7 +476,7 @@
   function drawSecret() {
     $("secretBox").innerHTML = admin.verified
       ? "✅ Apps Script bilan aloqa sozlangan."
-      : `⚠️ <b>Bir martalik sozlash.</b> Apps Script "Hometask Reading" → Project Settings → Script Properties → Add script property: nomi <code>CLASS_SECRET</code>, qiymati <code>${CLS.esc(admin.secret)}</code>. Keyin "Aloqani tekshirish" ni bosing.`;
+      : `⚠️ <b>Bir martalik sozlash.</b> Apps Script "LC Panel" → Project Settings → Script Properties → Add script property: nomi <code>CLASS_SECRET</code>, qiymati <code>${CLS.esc(admin.secret)}</code>. Keyin "Aloqani tekshirish" ni bosing.`;
     if (!admin.verified) showTab("setup");
     else if (tab === "hw" && !hwLog) hwLoad();
     else if (tab === "students" && !stData) stLoad();
