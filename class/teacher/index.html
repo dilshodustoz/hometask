@@ -653,7 +653,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       </table></div>
     </div>
     <div class="card hide" id="hwStCard">
-      <div class="card-header"><h3 class="card-title" id="hwStTitle"></h3><div class="row" style="gap:8px"><button class="btn btn-secondary btn-sm hide" id="hwStTr" title="Ovozli javoblarni AI eshitib matnga o'giradi va talaffuz izohini yozadi (natijalar jadvalida). Claude shu matn bo'yicha baholaydi.">📝 Matnga o'girish</button><button class="btn btn-secondary btn-sm" id="hwStReload">Yangilash</button></div></div>
+      <div class="card-header"><h3 class="card-title" id="hwStTitle"></h3><button class="btn btn-secondary btn-sm" id="hwStReload">Yangilash</button></div>
       <div class="msg" id="hwStMsg"></div>
       <div class="stats" id="hwStats"></div>
       <div class="tbl-wrap"><table>
@@ -995,7 +995,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   let hwBusy = false;
   function hwLoad() {
     if (hwBusy) return; hwBusy = true;
-    return api({ admin: "hw_list" }).finally(() => { hwBusy = false; }).then(r => { if (r.ok) { hwLog = r.log; hwShowList(); } else $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; })
+    return api({ admin: "hw_list" }).finally(() => { hwBusy = false; }).then(r => { if (r.ok) { hwLog = r.log; hwShowList(); spBackfill(); } else $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; })
       .catch(e => { $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
   }
   function hwShowList() {
@@ -1013,22 +1013,22 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   }
   $("hwReload").onclick = () => { $("hwList").innerHTML = `<tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr>`; hwLoad(); };
   $("hwStReload").onclick = () => hwCur && hwStatus(hwCur);
-  $("hwStTr").onclick = () => {
-    if (!hwCur) return;
-    const b = $("hwStTr"), t = hwLog[hwCur].t;
-    b.disabled = true; $("hwStMsg").textContent = "⏳ Ovozlar matnga o'girilmoqda… (bir necha daqiqa, sahifani yopmang)";
-    api({ admin: "s_transcribe", t: t }).then(r => {
-      b.disabled = false;
-      if (!r.ok) { $("hwStMsg").textContent = "⚠️ " + r.error; return; }
-      $("hwStMsg").textContent = `✅ ${r.done} ta javob matnga o'girildi.` + (r.left ? ` Yana ${r.left} ta qoldi: tugmani qayta bosing.` : r.done ? " Endi Claude'ga \"baholab ber\" deb yozing." : " Yangi javob yo'q.") +
-        (r.errors && r.errors.length ? "\n⚠️ " + r.errors.join("\n⚠️ ") : "");
-    }).catch(e => { b.disabled = false; $("hwStMsg").textContent = "⚠️ " + e.message + "\nIsh davom etgan bo'lishi mumkin: bir daqiqadan keyin qayta bosing."; });
-  };
+  // Speaking: matnga o'girilmay qolgan javoblar (AI band bo'lgan paytdagilar) sahifa ochilganda jimgina to'ldiriladi
+  const spTrDone = {};
+  function spBackfill() {
+    Object.keys(hwLog || {}).forEach(id => {
+      const h = hwLog[id];
+      if (h.skill !== "speaking" || spTrDone[h.t]) return;
+      spTrDone[h.t] = 1;
+      api({ admin: "s_transcribe", t: h.t }).then(r => { if (r.ok && r.left) delete spTrDone[h.t]; }).catch(() => { delete spTrDone[h.t]; });
+    });
+  }
+
   function hwStatus(id) {
     hwCur = id;
     const h = hwLog[id], t = h.t, W = h.skill === "writing", S = h.skill === "speaking", chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
     $("hwStCard").classList.remove("hide");
-    $("hwStTr").classList.toggle("hide", !S); $("hwStMsg").textContent = "";
+    $("hwStMsg").textContent = "";
     $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
     $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
     $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Jami ovoz" : "Band"}</th><th>${S ? "Holati" : "Daqiqa"}</th><th>Qachon</th><th></th></tr>`;
