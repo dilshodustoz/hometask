@@ -646,7 +646,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <div class="msg" id="hwMsg"></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Yuborilgan vazifalar</h3><button class="btn btn-secondary btn-sm" id="hwReload">Yangilash</button></div>
+      <div class="card-header"><h3 class="card-title">Yuborilgan vazifalar <span id="hwListSk" class="muted"></span></h3><button class="btn btn-secondary btn-sm" id="hwReload">Yangilash</button></div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>#</th><th>Vazifa</th><th>Muddat</th><th>Yuborildi</th><th>Topshirdi</th><th></th></tr></thead>
         <tbody id="hwList"><tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr></tbody>
@@ -916,6 +916,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     document.querySelectorAll("#hwSkill button").forEach(x => x.classList.toggle("active", x === b));
     $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
     hwFill(); if (hwSk === "writing" && !wTasks) wLoad(); if (hwSk === "speaking" && !sTasks) sLoad();
+    hwShowList();
   });
   function sLoad(sel) {
     return api({ admin: "s_tasks" }).then(r => {
@@ -1001,12 +1002,13 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function hwShowList() {
     if (!hwLog) return;
     const chat = String(CLS.GROUPS[group].chat);
-    const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat]).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title }, hwLog[id].chats[chat]))
+    const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat] && (hwLog[id].skill || "reading") === hwSk).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title }, hwLog[id].chats[chat]))
       .sort((a, b) => (b.at || "").localeCompare(a.at || ""));
     $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${HW_IC[h.skill] || "📖"} ${CLS.esc(h.title)}</td><td>${CLS.esc(h.deadline_text)}</td>
       <td>${fmtAt(h.at)} · ${h.sent.length} ta${h.fail && h.fail.length ? ` <span class="badge b-bad">${h.fail.length} bormadi</span>` : ""}</td>
       <td id="hwc_${h.id}">—</td><td><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button></td></tr>`).join("")
-      : `<tr><td colspan="6" class="muted">Bu guruhga hali uy vazifasi yuborilmagan.</td></tr>`;
+      : `<tr><td colspan="6" class="muted">Bu guruhga hali ${HW_IC[hwSk] || ""} ${hwSk[0].toUpperCase() + hwSk.slice(1)} uy vazifasi yuborilmagan.</td></tr>`;
+    $("hwListSk").textContent = "· " + (HW_IC[hwSk] || "") + " " + hwSk[0].toUpperCase() + hwSk.slice(1);
     $("hwList").querySelectorAll("button[data-id]").forEach(b => b.onclick = () => hwStatus(b.dataset.id));
     if (hwCur && !rows.some(h => h.id === hwCur)) { hwCur = null; $("hwStCard").classList.add("hide"); }
     if (hwCur) hwStatus(hwCur);
