@@ -164,6 +164,7 @@
     .tgmsg{max-width:100%}
   }
 
+  #stNewCard{scroll-margin-top:90px}
   /* ==== ILOVA USLUBI (C dizayn, 2026-10-29): Mac/iPad'da chap menyu, iPhone'da pastki menyu, hammasi kattaroq ==== */
 /* telefonda jonli jadval kartochka ko'rinishida */
 @media (max-width:760px){
@@ -502,8 +503,8 @@ table{font-size:1rem}th{padding:14px}td{padding:15px 14px}
 
   <!-- O'quvchilar bazasi -->
   <section data-pane="students" class="hide">
-    <div class="card">
-      <div class="card-header"><h3 class="card-title">Yangi o'quvchi <small id="stGroupName"></small></h3></div>
+    <div class="card hide" id="stNewCard">
+      <div class="card-header"><h3 class="card-title">Yangi o'quvchi <small id="stGroupName"></small></h3><button class="btn btn-secondary btn-sm" id="stNewClose">✕ Yopish</button></div>
       <div class="row">
         <label><span class="field-label">Ism</span><input class="field" id="stFirst" placeholder="Sevinch" autocomplete="off"></label>
         <label><span class="field-label">Familiya</span><input class="field" id="stLast" placeholder="Subxonova" autocomplete="off"></label>
@@ -522,7 +523,7 @@ table{font-size:1rem}th{padding:14px}td{padding:15px 14px}
       <div class="msg" id="stMsg"></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button></div>
+      <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><div class="controls"><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button><button class="btn btn-orange btn-sm" id="stNewOpen">＋ Yangi o'quvchi</button></div></div>
       <div class="tbl-wrap"><table class="cards">
         <thead><tr><th>#</th><th>O'quvchi</th><th>Telefon</th><th>Qo'shilgan</th><th></th></tr></thead>
         <tbody id="stBody"><tr><td colspan="5" class="muted">Yuklanmoqda…</td></tr></tbody>
@@ -942,6 +943,11 @@ table{font-size:1rem}th{padding:14px}td{padding:15px 14px}
   }
   function stInit() {
     $("stReload").onclick = () => stLoad();
+    // yangi o'quvchi formasi faqat kerak bo'lganda ochiladi
+    const stNew = open => { $("stNewCard").classList.toggle("hide", !open); $("stNewOpen").classList.toggle("hide", open);
+      if (open) { $("stNewCard").scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("stFirst").focus(), 300); } else $("stMsg").textContent = ""; };
+    $("stNewOpen").onclick = () => stNew(true);
+    $("stNewClose").onclick = () => stNew(false);
     $("stAdd").onclick = () => {
       const first = $("stFirst").value.trim(), last = $("stLast").value.trim();
       if (!first || !last) { $("stMsg").textContent = "⚠️ Ism va familiyani kiriting."; return; }
