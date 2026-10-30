@@ -2565,7 +2565,11 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
   // ---------- audio oldindan yuklash: 4 Part to'liq telefonga yuklanadi (xotira + brauzer keshi), ----------
   // test paytida audio internetdan oqim bo'lib kelmaydi, shuning uchun uzilmaydi. Yuklanmagan Part eski usulda (oqim) ishlaydi.
   // Foiz ustozga live/<sid>/<k>/part maydonida boradi (Listening'da bu maydon boshqa ishga ishlatilmaydi).
-  const NET = Object.assign({}, embeddedAudios), BLOB = {};
+  // Audio jsDelivr CDN orqali (30.10: github.io O'zbekistonda kechqurun juda sekin). Yangi test audiosi qo'shilsa @sha yangilanadi;
+  // fayl CDN'da topilmasa yoki uzilsa navbatdagi urinish GitHub Pages'dan oladi.
+  const cdnA = u => "https://cdn.jsdelivr.net/gh/dilshodustoz/hometask@3d41e1d161a3ab2fbdc3558dbc903237fc09b921/audio/listening/" + String(u).split("audio/listening/")[1];
+  const PG = Object.assign({}, embeddedAudios), NET = {}, BLOB = {};
+  for (const n in PG) embeddedAudios[n] = NET[n] = cdnA(PG[n]);
   LO.pre = 0; LO.preErr = false;
   let preOn = false, preSent = -1, preUI = 0;
   function preHtml() {
@@ -2582,8 +2586,8 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     const p = Math.floor(LO.pre);
     if (LO.me && !LO.done && p !== preSent && (p >= 100 || preSent < 0 || p - preSent >= 10)) { preSent = p; L.child("part").set(p).catch(() => { preSent = -1; }); }
   }
-  async function preFetch(n, onPart) {
-    const url = NET[n];
+  async function preFetch(n, onPart, alt) {
+    const url = alt ? new URL(PG[n], location.href).href : NET[n];
     let cache = null;
     try {
       cache = await caches.open("lo-audio-v2");   // v2: 30.10 audio mono 64k ga o'tkazildi, eski nusxa ishlatilmasin
@@ -2613,7 +2617,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     for (let n = 1; n <= 4; n++) {
       for (let tryN = 0; !BLOB[n]; tryN++) {
         try {
-          const b = await preFetch(n, f => { LO.pre = (n - 1 + f) * 25; preTick(); });
+          const b = await preFetch(n, f => { LO.pre = (n - 1 + f) * 25; preTick(); }, tryN % 2 === 1);
           BLOB[n] = URL.createObjectURL(b); embeddedAudios[n] = BLOB[n];
           LO.preErr = false;
         } catch (e) {
