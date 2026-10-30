@@ -2344,6 +2344,14 @@
   tr.hw-ev .q{font-style:italic;color:#0f172a}
   tr.hw-ev .t{color:#9a3412}
   body{padding-bottom:46px}
+  #rvPlayer{border-bottom:1px solid #e2e8f0;background:#f8fafc;padding:10px 14px;font:14px system-ui,sans-serif;color:#0f172a}
+  #rvPlayer .rv-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  #rvPlayer button{border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:8px;padding:6px 10px;font:600 13px system-ui;cursor:pointer;min-width:38px}
+  #rvPlayer button.on{background:#0f172a;color:#fff;border-color:#0f172a}
+  #rvPlayer #rvPlay{background:#ea580c;border-color:#ea580c;color:#fff;min-width:46px}
+  #rvPlayer input[type=range]{flex:1;min-width:140px;accent-color:#ea580c}
+  #rvPlayer .rv-t{font-variant-numeric:tabular-nums;color:#475569;font-size:12px;white-space:nowrap}
+  .rv-jump{border:0;background:#fff7ed;color:#9a3412;border-radius:6px;padding:3px 8px;font:600 12px system-ui;cursor:pointer;margin-top:4px}
 </style>
 <div id="hwBar">⏳ Yuklanmoqda…</div>
 <div id="hwCover"><div class="card" id="hwCard"></div></div>
@@ -2352,7 +2360,7 @@
 // topshirilgandan keyin serverdan keladi. Javoblar/vaqt/audio joyi shu qurilmada saqlanib boradi.
 (function () {
   const API = window.HW_API, T = window.HW_TEST;
-  const KEY = new URLSearchParams(location.search).get("k") || "";
+  const KEY = new URLSearchParams(location.search).get("k") || "", CLS_ID = new URLSearchParams(location.search).get("cls") || "";
   const bar = document.getElementById("hwBar"), cover = document.getElementById("hwCover"), card = document.getElementById("hwCard");
   const LS = "hwl_" + T + "_" + KEY, ST = LS + "_st";
   let me = null, sent = false, done = false, last = null, startedAt = null;
@@ -2453,10 +2461,86 @@
       x.innerHTML = `<td></td><td colspan="3">${e.quote ? `<div class="q">🎧 “${esc(e.quote)}”</div>` : ""}${e.expl ? `<div>💡 ${esc(e.expl)}</div>` : ""}${e.traps ? `<div class="t">⚠️ ${esc(e.traps)}</div>` : ""}</td>`;
       row.after(x);
     });
+    addPlayer(r.tr || {}, ev);
     resultBar(r.raw);
   }
+  // Natija oynasida audio pleer: istalgan Part, istalgan joy, ±10 s, tezlik. Savol yonidagi "▶" audioni
+  // audioscriptdagi javob joyidan ~20 s oldinroqqa qo'yadi (joy matndagi o'rniga qarab taxminiy).
+  const RV = { a: new Audio(), sec: 1, want: null, frac: {} };
+  RV.a.preload = "auto";
+  const fmt = t => { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); };
+  function rvLoad(sec, at, play) {
+    if (RV.sec !== sec || !RV.a.src) {
+      RV.sec = sec; RV.want = at || 0;
+      RV.a.src = embeddedAudios[sec];
+    } else if (at != null) { try { RV.a.currentTime = at; } catch (e) {} }
+    if (play) RV.a.play().catch(() => {});
+    rvDraw();
+  }
+  RV.a.addEventListener("loadedmetadata", () => {
+    if (RV.want != null) {
+      let t = RV.want;
+      if (t < 0) t = Math.max(0, (RV.a.duration || 0) * -t - 20);   // manfiy = taxminiy ulush (savol tugmasi)
+      try { RV.a.currentTime = t; } catch (e) {}
+      RV.want = null;
+    }
+    rvDraw();
+  });
+  ["timeupdate", "play", "pause", "ended"].forEach(e => RV.a.addEventListener(e, rvDraw));
+  function rvDraw() {
+    const el = document.getElementById("rvPlayer"); if (!el) return;
+    for (let s = 1; s <= 4; s++) document.getElementById("rvP" + s).classList.toggle("on", s === RV.sec);
+    document.getElementById("rvPlay").textContent = RV.a.paused ? "▶" : "⏸";
+    const d = RV.a.duration || 0, rg = document.getElementById("rvSeek");
+    if (!rg.matches(":active")) rg.value = d ? Math.round(RV.a.currentTime / d * 1000) : 0;
+    document.getElementById("rvTime").textContent = fmt(RV.a.currentTime) + " / " + fmt(d);
+  }
+  function rvJumpQ(q) {
+    const s = partOf(q), f = RV.frac[q];
+    if (f == null) return;
+    if (RV.sec === s && RV.a.duration) rvLoad(s, Math.max(0, RV.a.duration * f - 20), true);
+    else { RV.sec = 0; rvLoad(s, -f, true); }
+    try { switchScriptSec(s); } catch (e) {}
+  }
+  window.rvJumpQ = rvJumpQ;
+  function addPlayer(tr, ev) {
+    if (document.getElementById("rvPlayer")) return;
+    const head = document.querySelector("#resultModal .modal-header");
+    if (!head) return;
+    const box = document.createElement("div");
+    box.id = "rvPlayer";
+    box.innerHTML = `<div class="rv-row">🎧 <b>Audio:</b>${[1, 2, 3, 4].map(s => `<button id="rvP${s}" type="button">Part ${s}</button>`).join("")}
+        <span style="flex:1"></span><button id="rvRate" type="button" title="Tezlik">1x</button></div>
+      <div class="rv-row" style="margin-top:8px"><button id="rvBack" type="button">⏪ 10</button><button id="rvPlay" type="button">▶</button><button id="rvFwd" type="button">10 ⏩</button>
+        <input type="range" id="rvSeek" min="0" max="1000" value="0"><span class="rv-t" id="rvTime">0:00 / 0:00</span></div>`;
+    head.after(box);
+    for (let s = 1; s <= 4; s++) document.getElementById("rvP" + s).onclick = () => { rvLoad(s, 0, !RV.a.paused); try { switchScriptSec(s); } catch (e) {} };
+    document.getElementById("rvPlay").onclick = () => { if (!RV.a.src) rvLoad(RV.sec, 0, true); else if (RV.a.paused) RV.a.play().catch(() => {}); else RV.a.pause(); };
+    document.getElementById("rvBack").onclick = () => { if (RV.a.src) RV.a.currentTime = Math.max(0, RV.a.currentTime - 10); };
+    document.getElementById("rvFwd").onclick = () => { if (RV.a.src) RV.a.currentTime = Math.min((RV.a.duration || 0) - 0.5, RV.a.currentTime + 10); };
+    document.getElementById("rvSeek").oninput = e => { if (!RV.a.src) rvLoad(RV.sec, 0, false); const d = RV.a.duration; if (d) RV.a.currentTime = d * e.target.value / 1000; };
+    const rates = [1, 0.75, 0.9, 1.25];
+    document.getElementById("rvRate").onclick = e => { const r = rates[(rates.indexOf(RV.a.playbackRate) + 1) % rates.length] || 1; RV.a.playbackRate = r; e.target.textContent = r + "x"; };
+    // Audioscript Part tugmalari audio Part'ini ham almashtiradi (audio to'xtab turgan bo'lsa)
+    for (let s = 1; s <= 4; s++) { const b = document.getElementById("scriptTabBtn_" + s); if (b) b.addEventListener("click", () => { if (RV.a.paused && RV.sec !== s) rvLoad(s, 0, false); }); }
+    // Savol javobining audioscriptdagi taxminiy joyi (to'liq audioscript bor testlarda)
+    const norm = x => String(x || "").replace(/<[^>]*>/g, " ").replace(/&[a-z#0-9]+;/gi, " ").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+    for (let q = 1; q <= 40; q++) {
+      const s = partOf(q), full = norm(tr[s]), qt = norm(ev[q] && ev[q].quote);
+      if (!full || !qt || full.length < 500) continue;
+      let i = full.indexOf(qt);
+      if (i < 0) i = full.indexOf(qt.split(" ").slice(0, 6).join(" "));
+      if (i >= 0) RV.frac[q] = i / full.length;
+    }
+    document.querySelectorAll("#reviewTableBody > tr:not(.hw-ev)").forEach((row, i) => {
+      const q = i + 1; if (RV.frac[q] == null) return;
+      const cell = row.querySelector("td"); if (!cell) return;
+      cell.insertAdjacentHTML("beforeend", `<br><button class="rv-jump" type="button" onclick="rvJumpQ(${q})" title="Audioni shu savol javobidan sal oldinroqdan eshitish">▶</button>`);
+    });
+    rvDraw();
+  }
   function resultBar(raw) {
-    bar.innerHTML = `✅ <b>${esc(me ? me.name : "")}</b> · Natija: <b>${raw}/40</b> · ustozga yuborildi <button id="hwShow">📄 Kalit va Audioscript</button>`;
+    bar.innerHTML = `✅ <b>${esc(me ? me.name : "")}</b> · Natija: <b>${raw}/40</b>${CLS_ID ? " (sinfda)" : " · ustozga yuborildi"} <button id="hwShow">📄 Kalit, Audioscript va Audio</button>`;
     document.getElementById("hwShow").onclick = () => { document.getElementById("resultModal").style.display = "flex"; };
   }
 
@@ -2499,15 +2583,15 @@
 
   if (!KEY || !API || !T) { bar.innerHTML = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
 
-  get({ action: "hello", skill: "listening", t: T, k: KEY }).then(r => {
+  get(Object.assign({ action: "hello", skill: "listening", t: T, k: KEY }, CLS_ID ? { cls: CLS_ID } : {})).then(r => {
     if (!r.ok) { bar.innerHTML = "⛔ " + esc(r.error || "Xato"); show("Kirish mumkin emas", esc(r.error || "Xato")); return; }
     me = r;
     if (r.submitted) {
       showReview(r, r.answers);
       hide();
       document.getElementById("resultModal").style.display = "none";
-      show("Siz bu testni topshirgansiz", `${esc(r.name)}, natijangiz: <b>${r.raw}/40</b> (band ${esc(r.band)}).<br>To'g'ri javoblar, audioscript va izohlarni ko'ring, keyin ❌ savollar uchun topic'ingizga error log yozing.`,
-        "📄 Kalit va Audioscript", () => { hide(); document.getElementById("resultModal").style.display = "flex"; });
+      show(r.cls ? "Sinfdagi test natijangiz" : "Siz bu testni topshirgansiz", `${esc(r.name)}, natijangiz: <b>${r.raw}/40</b> (band ${esc(r.band)}).<br>To'g'ri javoblar, audioscript va izohlarni ko'ring. Audioni istalgan Part va joyidan qayta eshitishingiz mumkin (savol yonidagi ▶ o'sha javob joyiga olib boradi). Keyin ❌ savollar uchun topic'ingizga error log yozing.`,
+        "📄 Kalit, Audioscript va Audio", () => { hide(); document.getElementById("resultModal").style.display = "flex"; });
       return;
     }
     if (r.closed) { bar.innerHTML = "⛔ Muddat tugagan"; show("Muddat tugagan", "Topshirish muddati (" + esc(r.deadline) + ") o'tib ketgan."); me = null; return; }
