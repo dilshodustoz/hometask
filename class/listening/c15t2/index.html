@@ -2490,6 +2490,75 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     finish("");
   };
 
+  // ---------- audio oldindan yuklash: 4 Part to'liq telefonga yuklanadi (xotira + brauzer keshi), ----------
+  // test paytida audio internetdan oqim bo'lib kelmaydi, shuning uchun uzilmaydi. Yuklanmagan Part eski usulda (oqim) ishlaydi.
+  // Foiz ustozga live/<sid>/<k>/part maydonida boradi (Listening'da bu maydon boshqa ishga ishlatilmaydi).
+  const NET = Object.assign({}, embeddedAudios), BLOB = {};
+  LO.pre = 0; LO.preErr = false;
+  let preOn = false, preSent = -1, preUI = 0;
+  function preHtml() {
+    if (LO.speaker || !preOn) return "";
+    if (LO.pre >= 100) return "✅ Audio telefoningizga to'liq yuklandi";
+    return (LO.preErr ? "⚠️ Internet sekin, audio qayta yuklanmoqda: " : "⏳ Audio yuklanmoqda: ") + Math.floor(LO.pre) + "%";
+  }
+  function preTick(force) {
+    const t = Date.now();
+    if (!force && t - preUI < 400) return;
+    preUI = t;
+    const h = preHtml();
+    document.querySelectorAll(".lo-pre").forEach(el => { el.textContent = h; el.style.display = h ? "" : "none"; });
+    const p = Math.floor(LO.pre);
+    if (LO.me && !LO.done && p !== preSent && (p >= 100 || preSent < 0 || p - preSent >= 10)) { preSent = p; L.child("part").set(p).catch(() => { preSent = -1; }); }
+  }
+  async function preFetch(n, onPart) {
+    const url = NET[n];
+    let cache = null;
+    try {
+      cache = await caches.open("lo-audio-v1");
+      const hit = await cache.match(url);
+      if (hit) { const b = await hit.blob(); if (b.size > 100000) return b; }
+    } catch (e) { cache = null; }
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const total = +r.headers.get("content-length") || 0;
+    let blob;
+    if (r.body && r.body.getReader) {
+      const rd = r.body.getReader(), chunks = [];
+      let got = 0;
+      for (;;) {
+        const x = await rd.read();
+        if (x.done) break;
+        chunks.push(x.value); got += x.value.length;
+        if (total) onPart(Math.min(1, got / total));
+      }
+      blob = new Blob(chunks, { type: "audio/mp4" });
+    } else blob = await r.blob();
+    if (blob.size < 100000) throw new Error("audio to'liq kelmadi");
+    if (cache) { try { await cache.put(url, new Response(blob, { headers: { "Content-Type": "audio/mp4" } })); } catch (e) {} }
+    return blob;
+  }
+  async function preloadAll() {
+    for (let n = 1; n <= 4; n++) {
+      for (let tryN = 0; !BLOB[n]; tryN++) {
+        try {
+          const b = await preFetch(n, f => { LO.pre = (n - 1 + f) * 25; preTick(); });
+          BLOB[n] = URL.createObjectURL(b); embeddedAudios[n] = BLOB[n];
+          LO.preErr = false;
+        } catch (e) {
+          LO.preErr = true; preTick(true);
+          if (tryN >= 40) return;
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      }
+      LO.pre = n * 25; preTick(true);
+    }
+  }
+  function ensurePreload() {
+    if (preOn || LO.speaker || LO.done || !DURS[0]) return;
+    preOn = true; preTick(true);
+    preloadAll();
+  }
+
   // ---------- audio ----------
   function totalDur() { return DURS.reduce((s, d) => s + (d || 0), 0); }
   function locate(pos) {
@@ -2526,7 +2595,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     const prevSec = currentAudioSec;
     currentAudioSec = s;
     if (prevSec !== s && currentViewSec === prevSec) switchSection(s);
-    const sameSrc = testAudio.getAttribute("data-sec") === String(s) && testAudio.readyState >= 1;
+    const sameSrc = testAudio.getAttribute("data-sec") === String(s) && testAudio.readyState >= 1 && (!BLOB[s] || testAudio.src === BLOB[s]);
     if (!sameSrc) {
       testAudio.src = embeddedAudios[s] + "#t=" + off.toFixed(1);
       testAudio.setAttribute("data-sec", String(s));
@@ -2560,8 +2629,11 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     if (!shared() && LO.aStart == null) { if (testAudio.paused) startAudioAt(0); return; }
     const exp = expectedPos();
     if (exp >= totalDur()) { if (!LO.audioDone) audioFinished(); return; }
-    if (!testAudio.paused && testAudio.readyState < 3) return;   // yuklanyapti: kutamiz
     const [s, off] = locate(exp);
+    if (!testAudio.paused && testAudio.readyState < 3) {   // yuklanyapti: to'liq nusxa tayyor bo'lsa unga o'tamiz, bo'lmasa kutamiz
+      if (BLOB[s] && testAudio.src !== BLOB[s]) startAudioAt(exp);
+      return;
+    }
     const cur = testAudio.getAttribute("data-sec") === String(s) ? testAudio.currentTime : -99;
     if (testAudio.paused || Math.abs(cur - off) > (shared() ? 1.5 : 6)) startAudioAt(exp);
   }
@@ -2641,7 +2713,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     const btn = document.getElementById("audioControlBtn");
     if (btn) { btn.innerHTML = "<span>🔈</span> Audio kolonkadan"; btn.disabled = true; }
     const lbl = document.getElementById("audioTrackLabel"); if (lbl) lbl.innerText = "🔈 Kolonka";
-    updateChoiceBtn();
+    updateChoiceBtn(); preTick(true);
     if (fromTeacher && st() === "run" && !LO.done) toast("🔈 Audio sinfda kolonkadan eshittiriladi. Savollarni shu yerda ishlayvering.", 6000);
   }
   function exitSpeakerMode() {
@@ -2651,7 +2723,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     const btn = document.getElementById("audioControlBtn");
     if (btn) { btn.innerHTML = "<span>🔊</span> Eshitilmoqda"; btn.disabled = false; }
     const lbl = document.getElementById("audioTrackLabel"); if (lbl) lbl.innerText = "🎧 Quloqchin";
-    updateChoiceBtn();
+    updateChoiceBtn(); ensurePreload(); preTick(true);
     if (st() === "run" && !LO.done) { toast("🎧 Audio endi telefoningizda. Quloqchinni taqing.", 6000); syncAudio(); }
   }
   function addSpeakerButton() {
@@ -2698,6 +2770,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     if (m === "speaker" || (m === "mixed" && LO.choice === "speaker")) enterSpeakerMode(true);
     else if (LO.speaker && !LO.speakerSelf) exitSpeakerMode();
     updateChoiceBtn();
+    if (!LO.speaker) ensurePreload();
   }
 
   // ---------- holat ----------
@@ -2716,7 +2789,8 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
         : LO.speaker ? "🔈 Audio sinfda kolonkadan eshittiriladi." + (mixed ? "<br><button onclick=\"loChoose('phone')\" style='margin-top:12px;padding:8px 14px;border:0;border-radius:8px;background:#16a34a;color:#fff;font:600 14px system-ui'>🎧 Naushnik bor</button>" : "")
         : (LO.unlocked ? "✅ Tayyorsiz. Ustoz boshlaganda audio o'zi boshlanadi." + soundTestHtml()
            : "🎧 Quloqchinni taqing va pastdagi tugmani bosing.<br><button onclick='loUnlock()' style='margin-top:16px;padding:14px 26px;font:700 18px system-ui;border:0;border-radius:10px;background:#16a34a;color:#fff'>🎧 Tayyorman</button>");
-      show(`Assalomu alaykum, ${CLS.esc(LO.me.name)}!<br>⏳ Ustoz testni hali boshlamadi.<br><small style='font-weight:400'>` + ready + "<br>Sahifani yopmang.</small>");
+      show(`Assalomu alaykum, ${CLS.esc(LO.me.name)}!<br>⏳ Ustoz testni hali boshlamadi.<br><span class='lo-pre' style='display:inline-block;margin:8px 0 2px;font-size:16px;color:#fde68a'></span><br><small style='font-weight:400'>` + ready + "<br>Sahifani yopmang.</small>");
+      preTick(true);
       return;
     }
     // run yoki paused
@@ -2778,7 +2852,8 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
         L.child("leftAt").onDisconnect().set(CLS.TS);
         L.update({ online: true, name: LO.me.name, seen: CLS.TS });
       });
-      bar.innerHTML = `👤 <b>${CLS.esc(LO.me.name)}</b> · javoblaringiz avtomatik saqlanadi`;
+      bar.innerHTML = `👤 <b>${CLS.esc(LO.me.name)}</b> · javoblaringiz avtomatik saqlanadi <span class="lo-pre" style="margin-left:8px;color:#fde68a"></span>`;
+      preSent = -1; preTick(true);
       // boshqa qurilmada kiritilgan javoblar shu yerga ham keladi
       L.child("ans").on("value", s => {
         const remote = s.val() || {}, j = JSON.stringify(remote);
