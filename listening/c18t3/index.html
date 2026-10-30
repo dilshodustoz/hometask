@@ -2749,7 +2749,11 @@
   // Audio oldindan to'liq yuklanadi (sinf sahifasidagi kabi, kesh "lo-audio-v2" umumiy): 4 Part qurilma xotirasiga tushgach
   // Start ochiladi. Shundan keyin internet uzilsa ham audio to'xtamaydi.
   const NET = {}, BLOB = {}, PRE = { p: 0, ok: false, err: 0, wait: null, net: false };
-  for (let n = 1; n <= 4; n++) NET[n] = embeddedAudios[n];
+  // Audio jsDelivr CDN orqali (30.10: github.io O'zbekistonda kechqurun juda sekin). Yangi test audiosi qo'shilsa @sha yangilanadi;
+  // fayl CDN'da topilmasa yoki uzilsa navbatdagi urinish GitHub Pages'dan oladi.
+  const cdnA = u => "https://cdn.jsdelivr.net/gh/dilshodustoz/hometask@3d41e1d161a3ab2fbdc3558dbc903237fc09b921/audio/listening/" + String(u).split("audio/listening/")[1];
+  const PG = {};
+  for (let n = 1; n <= 4; n++) { PG[n] = embeddedAudios[n]; embeddedAudios[n] = NET[n] = cdnA(PG[n]); }
   const abtn = document.getElementById("audioControlBtn"), abtnHtml = abtn ? abtn.innerHTML : "";
   function preText() {
     if (PRE.ok) return PRE.net ? "⚠️ Audio internetdan eshitiladi" : "✅ Audio qurilmangizga to'liq yuklandi";
@@ -2768,8 +2772,8 @@
     const nb = document.getElementById("hwNet");
     if (nb) nb.style.display = !PRE.ok && PRE.err >= 8 ? "" : "none";
   }
-  async function preFetch(n, onPart) {
-    const url = new URL(NET[n], location.href).href;
+  async function preFetch(n, onPart, alt) {
+    const url = alt ? new URL(PG[n], location.href).href : NET[n];
     let cache = null;
     try {
       cache = await caches.open("lo-audio-v2");
@@ -2800,9 +2804,9 @@
     if (preOn) return;
     preOn = true; preDraw(true);
     for (let n = 1; n <= 4; n++) {
-      while (!BLOB[n] && !PRE.net) {
+      for (let tryN = 0; !BLOB[n] && !PRE.net; tryN++) {
         try {
-          const b = await preFetch(n, f => { PRE.p = (n - 1 + f) * 25; preDraw(); });
+          const b = await preFetch(n, f => { PRE.p = (n - 1 + f) * 25; preDraw(); }, tryN % 2 === 1);
           BLOB[n] = URL.createObjectURL(b); embeddedAudios[n] = BLOB[n];
           PRE.err = 0;
         } catch (e) {
