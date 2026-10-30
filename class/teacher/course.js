@@ -1,5 +1,5 @@
 // Kurs bo'limlari: Yo'qlama (davomat + hisob-kitob) va Baholar (ASSESSMENT).
-// Manba: Google Sheet "Course" (Mac'dagi Course.xlsx bilan sinxron). Sahifa faqat o'qiydi, jadval o'zgarmaydi.
+// Manba: Google Sheet "Course" (yagona manba; har kuni Drive "Hometask/Course zaxira" ga .xlsx nusxa olinadi).
 (function () {
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -113,7 +113,7 @@
 
   // ---------- BAHOLAR ----------
   const skillOf = n => { const m = /^\s*(listening|reading|writing|speaking)/i.exec(n || ""); return m ? m[1].toLowerCase() : null; };
-  const scaleOf = n => /out of 40|\/\s*40|cd mock|in-class/i.test(n) && !/error log/i.test(n) ? 40 : /^\s*writing/i.test(n) ? 9 : 100;
+  const scaleOf = n => /out of 40|\/\s*40|cd mock|in-class/i.test(n) && !/error log/i.test(n) ? 40 : /^\s*(writing|speaking)/i.test(n) && !/out of 100/i.test(n) ? 9 : 100;
   const lvl = (v, s) => { const r = s === 40 ? v / 40 * 100 : s === 9 ? (v >= 7 ? 90 : v >= 6 ? 65 : 30) : v; return r >= 75 ? "hi" : r >= 50 ? "mid" : "lo"; };
   const short = n => String(n).replace(/\n/g, " + ").replace(/^Writing Task 2:?\s*/i, "W · ").replace(/^Listening\s*/i, "").replace(/^Reading\s*/i, "").replace(/^Speaking\s*/i, "")
     .replace(/ out of (40|100)/i, " /$1").replace(/error log/i, "error log").replace(/ Essay$/i, "").replace(/CD mock/i, "mock");
@@ -254,6 +254,133 @@
   }
   function edBtn(id, on) { $(id).textContent = on ? "✓ Tayyor" : "✎ Kiritish"; $(id).classList.toggle("btn-orange", on); $(id).classList.toggle("btn-secondary", !on); }
 
+  // ---------- yangi oy varag'i (Yo'qlama) ----------
+  const EN = Object.keys(OY);   // january … december
+  const cap = s => s[0].toUpperCase() + s.slice(1);
+  const dd = d => [d.getDate(), d.getMonth() + 1].map(x => String(x).padStart(2, "0")).join(".") + "." + d.getFullYear();
+  function monthPlan() {   // oxirgi oy varag'idan: keyingi oy va o'sha hafta kunlaridagi sanalar
+    const ms = months(), last = ms[ms.length - 1], lbl = label();
+    const B = last && (block(data.sheets[last] || [], lbl || "") || (() => { const v = data.sheets[last] || []; const h = v.findIndex(r => r && /ism/i.test(r[1] || "")); return h >= 0 ? { head: v[h] } : null; })());
+    const ds = B ? B.head.map(dOf).filter(Boolean) : [];
+    const wd = new Set(ds.map(d => d.getDay()));
+    let mi = (EN.indexOf(norm(last)) + 1) % 12, y = ds.length ? ds[0].getFullYear() + (mi === 0 ? 1 : 0) : new Date().getFullYear();
+    const out = [];
+    for (let d = new Date(y, mi, 1); d.getMonth() === mi; d.setDate(d.getDate() + 1)) if (!wd.size || wd.has(d.getDay())) out.push(dd(d));
+    return { last, mi, y, dates: out };
+  }
+  function monthOpen() {
+    const box = $("atTool");
+    if (!box.classList.contains("hide") && box.dataset.k === "m") { box.classList.add("hide"); return; }
+    load(false).then(() => {
+      const P = monthPlan();
+      box.dataset.k = "m"; box.classList.remove("hide");
+      box.innerHTML = `<div class="card-header"><h3 class="card-title">Yangi oy varag'i <small>${esc(OY[norm(P.last)] || "")} varag'idan nusxa: o'quvchilar, formulalar, to'lov</small></h3><button class="btn btn-secondary btn-sm" id="mnX">✕</button></div>
+        <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap">
+          <label><span class="field-label">Oy</span><select class="field" id="mnM">${EN.map((m, i) => `<option value="${i}" ${i === P.mi ? "selected" : ""}>${OY[m]}</option>`).join("")}</select></label>
+          <label><span class="field-label">Yil</span><input class="field" id="mnY" value="${P.y}" style="width:90px" inputmode="numeric"></label>
+          <button class="btn btn-secondary" id="mnRe">Sanalarni qayta hisoblash</button></div>
+        <label style="display:block;margin-top:10px"><span class="field-label">Dars kunlari (vergul bilan; bayram yoki qo'shimcha darsni shu yerda o'zgartiring)</span>
+          <textarea class="field" id="mnD" rows="3" style="width:100%">${P.dates.join(", ")}</textarea></label>
+        <div class="muted" id="mnInfo" style="margin:6px 0 10px"></div>
+        <button class="btn btn-orange" id="mnGo">Varaqni yaratish</button>
+        <div class="msg" id="mnMsg"></div>`;
+      const wdOf = () => { const s = new Set(); P.dates.forEach(x => s.add(dOf(x).getDay())); return s; };
+      const days = wdOf();
+      const info = () => { const n = $("mnD").value.split(/[,\s]+/).filter(Boolean).length; $("mnInfo").textContent = `${n} ta dars. To'lov formulasi "oylik / ${n}" bo'lib yangilanadi, yo'qlama bo'sh bo'ladi.`; };
+      $("mnRe").onclick = () => { const mi = +$("mnM").value, y = +$("mnY").value || new Date().getFullYear(), out = [];
+        for (let d = new Date(y, mi, 1); d.getMonth() === mi; d.setDate(d.getDate() + 1)) if (!days.size || days.has(d.getDay())) out.push(dd(d));
+        $("mnD").value = out.join(", "); info(); };
+      $("mnM").onchange = $("mnRe").onclick; $("mnY").onchange = $("mnRe").onclick; $("mnD").oninput = info; info();
+      $("mnX").onclick = () => box.classList.add("hide");
+      $("mnGo").onclick = () => {
+        const mi = +$("mnM").value, dates = $("mnD").value.split(/[,\s]+/).filter(Boolean);
+        if (!confirm(`${OY[EN[mi]]} varag'i yaratilsinmi? (${dates.length} ta dars)`)) return;
+        $("mnGo").disabled = true; $("mnMsg").textContent = "Yaratilmoqda… (10-20 soniya)";
+        T().api({ admin: "course_month", month: cap(EN[mi]), dates }).then(r => {
+          $("mnGo").disabled = false;
+          if (!r.ok) { $("mnMsg").textContent = "⚠️ " + r.error; return; }
+          box.classList.add("hide");
+          return load(true).then(() => { month = r.sheet; drawAt(); $("atMsg").textContent = `✅ ${OY[norm(r.sheet)]} varag'i yaratildi: ${r.n} ta dars, ${r.students} ta o'quvchi (${OY[norm(r.from)]} dan).`; });
+        }).catch(e => { $("mnGo").disabled = false; $("mnMsg").textContent = "⚠️ " + e.message; });
+      };
+    }).catch(() => {});
+  }
+
+  // ---------- Baholar: yangi ustun va natijalarni Course'ga yozish ----------
+  const KIND = { hw: "uy vazifasi", cls: "sinf darsi", log: "error log (to'liqlik %)", sp: "Speaking bahosi" };
+  const todayDD = () => dd(new Date());
+  function bhTool(k, html) {
+    const box = $("bhTool");
+    if (!box.classList.contains("hide") && box.dataset.k === k && !html) { box.classList.add("hide"); return null; }
+    box.dataset.k = k; box.classList.remove("hide"); box.innerHTML = html || `<span class="muted">Yuklanmoqda…</span>`;
+    return box;
+  }
+  function colOpen() {
+    const box = bhTool("c"); if (!box) return;
+    bhTool("c", `<div class="card-header"><h3 class="card-title">Yangi ustun <small>ASSESSMENT · har bir guruh blokiga</small></h3><button class="btn btn-secondary btn-sm" id="ncX">✕</button></div>
+      <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap">
+        <label style="flex:1;min-width:240px"><span class="field-label">Topshiriq nomi</span><input class="field" id="ncT" placeholder="Reading C16 T1 in-class out of 40" style="width:100%"></label>
+        <label><span class="field-label">Sana</span><input class="field" id="ncD" value="${todayDD()}" style="width:130px"></label>
+        <button class="btn btn-orange" id="ncGo">Qo'shish</button></div>
+      <div class="muted" style="margin-top:8px">Nom ko'nikmadan boshlansin (Listening / Reading / Writing / Speaking). "out of 40" yozilsa 40 ballik, Writing va Speaking band (0-9), qolgani 100 ballik deb ko'rsatiladi.</div>
+      <div class="msg" id="ncMsg"></div>`);
+    $("ncX").onclick = () => $("bhTool").classList.add("hide");
+    $("ncGo").onclick = () => {
+      const title = $("ncT").value.trim(), date = $("ncD").value.trim();
+      if (!title) { $("ncMsg").textContent = "⚠️ Nomini yozing"; return; }
+      $("ncGo").disabled = true; $("ncMsg").textContent = "Qo'shilmoqda…";
+      T().api({ admin: "course_col", title, date }).then(r => {
+        $("ncGo").disabled = false;
+        if (!r.ok) { $("ncMsg").textContent = "⚠️ " + r.error; return; }
+        data.sheets.ASSESSMENT = r.values; data.at = r.at; $("bhTool").classList.add("hide"); drawBh();
+        $("bhMsg").textContent = `✅ ${r.col} ustuni qo'shildi: ${title}. "✎ Kiritish" bilan ball qo'yasiz.`;
+      }).catch(e => { $("ncGo").disabled = false; $("ncMsg").textContent = "⚠️ " + e.message; });
+    };
+  }
+  function impOpen() {
+    const box = bhTool("i"); if (!box) return;
+    T().api({ admin: "course_sources" }).then(r => {
+      if (!r.ok) { box.innerHTML = "⚠️ " + esc(r.error); return; }
+      const S = r.sources;
+      const lab = x => `${SK[(/^(listening|reading|speaking)/.exec(x.title.toLowerCase()) || [])[1]] || "📄"} ${x.title.replace(/ out of (40|100)$/, "").replace(/ homework band$/, "")} · ${KIND[x.kind]}${x.date ? " · " + x.date : ""} · ${x.n} ta`;
+      bhTool("i", `<div class="card-header"><h3 class="card-title">Natijalarni Course'ga yozish <small>Home task va sinf testlari → ASSESSMENT</small></h3><button class="btn btn-secondary btn-sm" id="imX">✕</button></div>
+        ${S.length ? `<label style="display:block"><span class="field-label">Manba</span><select class="field" id="imS" style="width:100%">${S.map((x, i) => `<option value="${i}">${esc(lab(x))}</option>`).join("")}</select></label>
+        <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:10px">
+          <label style="flex:1;min-width:240px"><span class="field-label">Ustun nomi (shu nomli ustun bo'lsa, o'shanga yoziladi)</span><input class="field" id="imT" style="width:100%"></label>
+          <label><span class="field-label">Sana</span><input class="field" id="imD" style="width:130px"></label></div>
+        <label class="muted" style="display:block;margin:8px 0"><input type="checkbox" id="imZ"> Topshirmaganlarga 0 yozilsin (bo'sh qolsa ham "bajarilmagan" hisoblanadi)</label>
+        <button class="btn btn-secondary" id="imPrev">Ko'rish</button>
+        <div id="imOut" style="margin-top:12px"></div>` : `<div class="muted">Hali natija yo'q.</div>`}
+        <div class="msg" id="imMsg"></div>`);
+      $("imX").onclick = () => $("bhTool").classList.add("hide");
+      if (!S.length) return;
+      const fill = () => { const x = S[+$("imS").value]; $("imT").value = x.title; $("imD").value = x.date || todayDD(); $("imOut").innerHTML = ""; };
+      $("imS").onchange = fill; fill();
+      const body = () => ({ src: S[+$("imS").value].src, title: $("imT").value.trim(), date: $("imD").value.trim(), zero: $("imZ").checked });
+      $("imPrev").onclick = () => {
+        $("imMsg").textContent = "Tekshirilmoqda…"; $("imOut").innerHTML = "";
+        T().api(Object.assign({ admin: "course_scores", dry: true }, body())).then(p => {
+          if (!p.ok) { $("imMsg").textContent = "⚠️ " + p.error; return; }
+          $("imMsg").textContent = "";
+          $("imOut").innerHTML = `<div style="margin-bottom:8px">${p.col ? `Mavjud <b>${esc(p.col)}</b> ustuniga yoziladi.` : "<b>Yangi ustun</b> ochiladi."} O'zgaradi: <b>${p.changes}</b> ta katak.</div>
+            ${p.miss.length ? `<div class="msg" style="margin:0 0 8px">⚠️ Course'da topilmadi (ismni tekshiring): ${p.miss.map(esc).join(", ")}</div>` : ""}
+            <div class="tbl-wrap"><table><thead><tr><th>Guruh</th><th>O'quvchi</th><th>Hozir</th><th>Yangi</th></tr></thead><tbody>
+            ${p.rows.map(x => `<tr><td>${esc(x.group)}</td><td>${esc(x.name)}</td><td>${esc(x.old) || "—"}</td><td><b>${esc(x.value)}</b>${x.zero ? ' <span class="muted">(topshirmagan)</span>' : ""}</td></tr>`).join("")}</tbody></table></div>
+            <button class="btn btn-orange" id="imGo" style="margin-top:10px" ${p.changes ? "" : "disabled"}>Course'ga yozish (${p.changes})</button>`;
+          const go = $("imGo"); if (!go) return;
+          go.onclick = () => {
+            go.disabled = true; $("imMsg").textContent = "Yozilmoqda…";
+            T().api(Object.assign({ admin: "course_scores" }, body())).then(w => {
+              if (!w.ok) { go.disabled = false; $("imMsg").textContent = "⚠️ " + w.error; return; }
+              data.sheets.ASSESSMENT = w.values; data.at = w.at; $("bhTool").classList.add("hide"); drawBh();
+              $("bhMsg").textContent = `✅ ${w.written} ta ball ${w.col} ustuniga yozildi.` + (w.miss.length ? " Topilmadi: " + w.miss.join(", ") : "");
+            }).catch(e => { go.disabled = false; $("imMsg").textContent = "⚠️ " + e.message; });
+          };
+        }).catch(e => { $("imMsg").textContent = "⚠️ " + e.message; });
+      };
+    }).catch(e => { box.innerHTML = "⚠️ " + esc(e.message); });
+  }
+
   // ---------- ulash ----------
   function show(t) {
     if (t !== "attend" && t !== "grades") return;
@@ -277,6 +404,9 @@
     $("atEdit").onclick = () => { edAt = !edAt; edBtn("atEdit", edAt); popClose(); drawAt(); };
     $("bhEdit").onclick = () => { edBh = !edBh; edBtn("bhEdit", edBh); popClose(); drawBh(); };
     $("atTbody").addEventListener("click", onAt);
+    $("atNewM").onclick = monthOpen;
+    $("bhCol").onclick = colOpen;
+    $("bhImp").onclick = impOpen;
     $("bhTbody").addEventListener("click", onBh, true);
     document.addEventListener("click", e => { if (!e.target.closest("#cPop") && !e.target.closest("td.c-ed")) popClose(); });
     window.addEventListener("scroll", () => { if (Date.now() - popAt > 600) popClose(); }, true);
