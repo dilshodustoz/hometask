@@ -647,6 +647,15 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
           <textarea class="field" id="sText" rows="14" style="width:100%;font-family:inherit;line-height:1.5" placeholder="Part 1: Shopping&#10;Do you enjoy going shopping?&#10;Do you prefer shopping online or in shops? Why?&#10;What was the last thing you bought?&#10;Part 1: Money&#10;Is it easy for you to save money?&#10;Who taught you how to manage money?&#10;Do you think children should get pocket money?&#10;Part 2&#10;Describe a time when you saved money to buy something.&#10;You should say:&#10;what you wanted to buy&#10;how long it took you to save&#10;how you saved the money&#10;and explain how you felt when you bought it.&#10;Part 3&#10;Why do some people find it difficult to save money?&#10;Should schools teach children about money?&#10;How has online shopping changed people's spending habits?"></textarea></label>
         <div class="row" style="margin-top:10px"><button class="btn btn-orange" id="sSave">Saqlash</button><span class="muted">Javoblar o'quvchining topic'iga ovozli xabar bo'lib tushadi, hech qayerda saqlanmaydi.</span></div>
       </div>
+      <div style="margin-top:10px">
+        <div class="row"><span class="field-label" style="margin:0">Kimga:</span> <b id="hwWhoTxt">guruhdagi hamma</b>
+          <button class="btn btn-secondary btn-sm" id="hwWhoBtn" type="button">O'quvchilarni tanlash</button></div>
+        <div class="hide" id="hwWhoBox" style="margin-top:8px">
+          <div class="row" style="margin-bottom:6px"><button class="btn btn-secondary btn-sm" id="hwWhoAll" type="button">Hammasi</button><button class="btn btn-secondary btn-sm" id="hwWhoNone" type="button">Hech kim</button>
+            <span class="muted">Masalan, darsga kelmaganlarga testni uy vazifasi qilib berish uchun faqat ularni belgilang.</span></div>
+          <div id="hwWhoList"></div>
+        </div>
+      </div>
       <div class="hide" id="hwPrevBox" style="margin-top:14px">
         <div class="muted" id="hwPrevInfo" style="margin-bottom:8px"></div>
         <div class="tgmsg" id="hwPrevText"></div>
@@ -1015,18 +1024,46 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       try { if (sel.value && sel.value !== "__new") localStorage.setItem(HW_LK[hwSk], sel.value); } catch (e) {}
     });
   }
-  function hwBody() { return { skill: hwSk, t: $("hwTest").value, chat: CLS.GROUPS[group].chat, date: $("hwDate").value, time: $("hwTime").value }; }
+  // Kimga: null = guruhdagi hamma, aks holda tanlangan kalitlar (server hw_send keys bilan cheklaydi)
+  let hwPick = null, hwPickGroup = null;
+  function hwGroupKeys() { return Object.keys(roster).filter(k => roster[k].group === group).sort((a, b) => roster[a].name.localeCompare(roster[b].name)); }
+  function hwWhoDraw() {
+    if (hwPickGroup !== group) { hwPick = null; hwPickGroup = group; }
+    const ks = hwGroupKeys(), sel = hwPick || new Set(ks);
+    $("hwWhoList").innerHTML = ks.map(k => `<label class="wchip"><input type="checkbox" value="${k}" ${sel.has(k) ? "checked" : ""}> ${CLS.esc(roster[k].name)}</label>`).join("") || '<span class="muted">Guruhda o\'quvchi yo\'q</span>';
+    $("hwWhoList").querySelectorAll("input").forEach(c => c.onchange = () => {
+      const on = new Set(Array.from($("hwWhoList").querySelectorAll("input:checked")).map(x => x.value));
+      hwPick = on.size === ks.length ? null : on;
+      hwWhoTxt(); $("hwPrevBox").classList.add("hide");
+    });
+    hwWhoTxt();
+  }
+  function hwWhoTxt() {
+    if (hwPickGroup !== group) { hwPick = null; hwPickGroup = group; }
+    const n = hwGroupKeys().length;
+    $("hwWhoTxt").textContent = hwPick ? `${hwPick.size} ta tanlangan o'quvchi (${n} tadan)` + (hwPick.size && hwPick.size <= 5 ? ": " + Array.from(hwPick).map(k => roster[k].name).join(", ") : "") : `guruhdagi hamma (${n})`;
+  }
+  $("hwWhoBtn").onclick = () => { const box = $("hwWhoBox"); box.classList.toggle("hide"); if (!box.classList.contains("hide")) hwWhoDraw(); };
+  $("hwWhoAll").onclick = () => { hwPick = null; hwWhoDraw(); $("hwPrevBox").classList.add("hide"); };
+  $("hwWhoNone").onclick = () => { hwPick = new Set(); hwWhoDraw(); $("hwPrevBox").classList.add("hide"); };
+  function hwBody() {
+    hwWhoTxt();
+    const b = { skill: hwSk, t: $("hwTest").value, chat: CLS.GROUPS[group].chat, date: $("hwDate").value, time: $("hwTime").value };
+    if (hwPick) b.keys = Array.from(hwPick);
+    return b;
+  }
   $("hwPreview").onclick = () => {
     const b = hwBody();
     if (!b.t || b.t === "__new") { $("hwMsg").textContent = "⚠️ Avval vazifani tanlang yoki saqlang"; return; }
     if (!b.date || !b.time) { $("hwMsg").textContent = "⚠️ Muddatni tanlang"; return; }
+    if (b.keys && !b.keys.length) { $("hwMsg").textContent = "⚠️ Kamida bitta o'quvchini tanlang"; return; }
     if (new Date(b.date + "T" + b.time + ":00+05:00").getTime() < CLS.now()) { $("hwMsg").textContent = "⚠️ Muddat o'tib ketgan vaqt"; return; }
     $("hwMsg").textContent = "Tayyorlanmoqda…"; $("hwPrevBox").classList.add("hide");
     api(Object.assign({ admin: "hw_send", dry: true }, b)).then(r => {
       if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
       $("hwMsg").textContent = "";
       const was = ((hwLog || {})[b.skill + "_" + b.t] || { chats: {} }).chats[String(b.chat)];
-      $("hwPrevInfo").innerHTML = `<b>${CLS.esc(CLS.GROUPS[group].name)}</b> guruhidagi <b>${r.n}</b> o'quvchiga boradi. Namuna (birinchi o'quvchi uchun):` +
+      $("hwPrevInfo").innerHTML = `<b>${CLS.esc(CLS.GROUPS[group].name)}</b> guruhidagi <b>${r.n}</b> ${b.keys ? "ta tanlangan " : ""}o'quvchiga boradi. Namuna (birinchi o'quvchi uchun):` +
         (was ? `<br>⚠️ Bu test shu guruhga ${fmtAt(was.at)} da yuborilgan. Qayta yuborsangiz, muddat yangilanadi va xabar yana boradi.` : "");
       $("hwPrevText").innerHTML = r.sample;
       $("hwSend").textContent = `Yuborish (${r.n} o'quvchi)`;
@@ -1035,7 +1072,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   };
   $("hwSend").onclick = () => {
     const b = hwBody(), btn = $("hwSend");
-    if (!confirm(`${CLS.GROUPS[group].name} guruhiga yuborilsinmi?`)) return;
+    if (!confirm(b.keys ? `${b.keys.length} ta tanlangan o'quvchiga yuborilsinmi?` : `${CLS.GROUPS[group].name} guruhiga yuborilsinmi?`)) return;
     btn.disabled = true; $("hwMsg").textContent = "Yuborilmoqda… (sahifani yopmang, 1-2 daqiqa)";
     api(Object.assign({ admin: "hw_send" }, b)).then(r => {
       btn.disabled = false;
@@ -1053,6 +1090,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       .catch(e => { $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
   }
   function hwShowList() {
+    try { hwWhoTxt(); if (!$("hwWhoBox").classList.contains("hide")) hwWhoDraw(); } catch (e) {}
     if (!hwLog) return;
     const chat = String(CLS.GROUPS[group].chat);
     const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat] && (hwLog[id].skill || "reading") === hwSk).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title }, hwLog[id].chats[chat]))
