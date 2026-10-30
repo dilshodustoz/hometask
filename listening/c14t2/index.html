@@ -2442,6 +2442,19 @@
   #rvPlayer #rvPlay{background:#ea580c;border-color:#ea580c;color:#fff;min-width:46px}
   #rvPlayer input[type=range]{flex:1;min-width:140px;accent-color:#ea580c}
   #rvPlayer .rv-t{font-variant-numeric:tabular-nums;color:#475569;font-size:12px;white-space:nowrap}
+  #modalTabContentLog{padding:4px 2px 70px;font:15px/1.5 system-ui,sans-serif;color:#0f172a}
+  #modalTabContentLog .el-intro{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+  #modalTabContentLog .el-q{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#fff}
+  #modalTabContentLog .el-q.ok{border-color:#86efac;background:#f0fdf4}
+  #modalTabContentLog .el-h{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-bottom:8px}
+  #modalTabContentLog .el-h b{font-size:16px}
+  #modalTabContentLog .el-you{color:#b91c1c}
+  #modalTabContentLog .el-key{color:#15803d;font-weight:600}
+  #modalTabContentLog select,#modalTabContentLog textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:8px;font:15px system-ui,sans-serif;background:#fff;color:#0f172a}
+  #modalTabContentLog textarea{min-height:58px;margin-top:6px;resize:vertical}
+  #modalTabContentLog .el-foot{border-top:1px solid #e2e8f0;padding:10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  #modalTabContentLog .el-send{background:#ea580c;color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 15px system-ui;cursor:pointer}
+  #modalTabContentLog .el-send:disabled{opacity:.6;cursor:default}
   .rv-jump{border:0;background:#fff7ed;color:#9a3412;border-radius:6px;padding:3px 8px;font:600 12px system-ui;cursor:pointer;margin-top:4px}
 </style>
 <div id="hwBar">⏳ Yuklanmoqda…</div>
@@ -2546,6 +2559,94 @@
     // izoh/isbot qatorlari ko'rsatilmaydi: o'quvchi xatosini audioscript va audioga qarab o'zi topadi
     addPlayer(r.tr || {}, ev);
     resultBar(r.raw);
+    elInit(r, answers || {});
+  }
+
+  // ---------- Error log: natija oynasida "✍️ Error log" bo'limi, har bir ❌ savolga turi va sababi ----------
+  const EL_T = [["Spelling", "imlo xatosi"], ["Distractor", "chalg'itdi: avval boshqa javob aytildi"], ["Didn't hear / missed", "eshitmadim / o'tkazib yubordim"],
+    ["Unknown word", "so'zni bilmadim"], ["Grammar / plural", "shakl: -s, -ed, artikl"], ["Word limit", "so'z cheklovi"], ["Lost my place", "qayerdaligimni yo'qotdim"], ["Other", "boshqa"]];
+  const EL_PH = { "Distractor": "What misled you? e.g. The man first said Tuesday, then corrected it to Thursday.", "Spelling": "Which letters were wrong? e.g. accommodation: I wrote one 'm'.",
+    "Didn't hear / missed": "Where did you lose it? e.g. I was still on Q13 when the answer to Q14 came.", "Unknown word": "Which word didn't you know and what does it mean?",
+    "Grammar / plural": "What form was needed? e.g. plural 'boots', not 'boot'.", "Word limit": "How many words were allowed / did you write?", "Lost my place": "What happened? e.g. I missed the change from Q16 to Q17." };
+  const EL = { wrong: [], ans: {}, items: {}, sent: null };
+  const ELS = "hwl_log_" + T + "_" + KEY + "_" + CLS_ID;
+  function elInit(r, answers) {
+    if (document.getElementById("modalTabContentLog")) return;
+    const tabs = document.querySelector("#resultModal .modal-tabs"), audio = document.getElementById("modalTabContentAudioscript");
+    if (!tabs || !audio) return;
+    EL.wrong = (r.wrong || []).slice(); EL.ans = answers;
+    if (!EL.wrong.length) return;
+    const saved = r.log || null, draft = lsGet(ELS) || {};
+    (saved && saved.items || []).forEach(x => { EL.items[x.q] = { type: x.type, why: x.why }; });
+    Object.keys(draft).forEach(q => { EL.items[q] = draft[q]; });
+    EL.sent = saved;
+    const btn = document.createElement("button");
+    btn.id = "tabBtnLog"; btn.className = "modal-tab-btn"; btn.type = "button"; btn.textContent = "✍️ Error log";
+    tabs.appendChild(btn);
+    const box = document.createElement("div");
+    box.id = "modalTabContentLog"; box.style.display = "none";
+    audio.after(box);
+    btn.onclick = () => elTab(true);
+    const orig = window.switchModalTab;
+    if (orig && !orig.__el) { window.switchModalTab = function (t) { elTab(false); return orig.apply(this, arguments); }; window.switchModalTab.__el = 1; }
+    elDraw();
+    const bar2 = document.getElementById("hwShow");
+    if (bar2) bar2.insertAdjacentHTML("afterend", ` <button id="hwLogBtn">✍️ Error log</button>`);
+    const lb = document.getElementById("hwLogBtn");
+    if (lb) lb.onclick = () => { document.getElementById("resultModal").style.display = "flex"; elTab(true); };
+  }
+  function elTab(on) {
+    const box = document.getElementById("modalTabContentLog"), btn = document.getElementById("tabBtnLog");
+    if (!box) return;
+    box.style.display = on ? "block" : "none"; btn.classList.toggle("active", on);
+    if (on) {
+      ["modalTabContentReview", "modalTabContentAudioscript"].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = "none"; });
+      ["tabBtnReview", "tabBtnAudioscript"].forEach(id => { const e = document.getElementById(id); if (e) e.classList.remove("active"); });
+    }
+  }
+  const elOk = x => x && x.type && String(x.why || "").trim().length >= 3;
+  function elCount() { return EL.wrong.filter(q => elOk(EL.items[q])).length; }
+  function elDraw() {
+    const box = document.getElementById("modalTabContentLog");
+    const opt = v => `<option value="">— xato turi —</option>` + EL_T.map(t => `<option value="${esc(t[0])}" ${t[0] === v ? "selected" : ""}>${esc(t[0])} · ${esc(t[1])}</option>`).join("");
+    box.innerHTML = `<div class="el-intro"><b>Error log.</b> Har bir ❌ savol uchun xato turini tanlang va sababini 1-2 gapda yozing (inglizcha yoki o'zbekcha).
+      Audioscript bo'limida javob joyini toping, ▶ tugmasi audioni o'sha joyga olib boradi. Yozganlaringiz shu qurilmada saqlanib boradi.</div>` +
+      EL.wrong.map(q => {
+        const it = EL.items[q] || {}, keys = (answerKeys[q] || []).join(" / ");
+        return `<div class="el-q ${elOk(it) ? "ok" : ""}" data-q="${q}"><div class="el-h"><b>Q${q}</b><span>Sizniki: <span class="el-you">${esc(EL.ans[q] || "(bo'sh)")}</span></span><span>To'g'ri: <span class="el-key">${esc(keys)}</span></span>
+          ${RV.frac[q] != null ? `<button class="rv-jump" type="button" data-j="${q}" style="margin:0">▶ audio</button>` : ""}</div>
+          <select data-f="type">${opt(it.type || "")}</select>
+          <textarea data-f="why" placeholder="${esc(EL_PH[it.type] || "Why was it wrong? What exactly did you hear / miss?")}">${esc(it.why || "")}</textarea></div>`;
+      }).join("") +
+      `<div class="el-foot"><button class="el-send" type="button" id="elSend">📤 Error logni yuborish</button><span id="elCnt"></span></div><div id="elMsg" style="font-size:14px"></div>`;
+    box.querySelectorAll("[data-j]").forEach(b => b.onclick = () => { rvJumpQ(+b.dataset.j); });
+    box.querySelectorAll(".el-q").forEach(c => {
+      const q = +c.dataset.q, sel = c.querySelector("select"), ta = c.querySelector("textarea");
+      const upd = () => { EL.items[q] = { type: sel.value, why: ta.value }; ta.placeholder = EL_PH[sel.value] || "Why was it wrong? What exactly did you hear / miss?";
+        c.classList.toggle("ok", elOk(EL.items[q])); lsSet(ELS, EL.items); elFoot(); };
+      sel.onchange = upd; ta.oninput = upd;
+    });
+    document.getElementById("elSend").onclick = elSend;
+    elFoot();
+  }
+  function elFoot() {
+    const n = elCount(), all = EL.wrong.length;
+    document.getElementById("elCnt").innerHTML = `Yozildi: <b>${n} / ${all}</b>` + (EL.sent ? ` · <span style="color:#15803d">✅ yuborilgan ${esc(new Date(EL.sent.at).toLocaleString())} (${EL.sent.done}/${EL.sent.wrong}). O'zgartirsangiz, qayta yuboring.</span>` : "");
+  }
+  function elSend() {
+    const items = EL.wrong.map(q => Object.assign({ q: q }, EL.items[q] || {})).filter(x => x.type || String(x.why || "").trim());
+    const msg = document.getElementById("elMsg"), b = document.getElementById("elSend");
+    if (!items.length) { msg.textContent = "⚠️ Hech bo'lmasa bitta savolga yozing."; return; }
+    const n = elCount();
+    if (n < EL.wrong.length && !confirm(`${EL.wrong.length} ta xatodan ${n} tasi to'liq yozilgan. Shunday yuborilsinmi? (keyin to'ldirib qayta yuborsangiz bo'ladi)`)) return;
+    b.disabled = true; msg.textContent = "📤 Yuborilmoqda…";
+    post(Object.assign({ skill: "listening", log: true, t: T, k: KEY, items: items }, CLS_ID ? { cls: CLS_ID } : {})).then(r => {
+      b.disabled = false;
+      if (!r.ok) throw new Error(r.error || "Yuborilmadi");
+      EL.sent = { at: r.at, done: r.done, wrong: r.wrong };
+      msg.innerHTML = `✅ Error log ustozga yuborildi: <b>${r.done} / ${r.wrong}</b> (${r.pct}%).` + (r.pct < 100 ? " Qolganlarini ham yozib, qayta yuboring." : " Barakalla!");
+      elFoot();
+    }).catch(e => { b.disabled = false; msg.textContent = "⚠️ " + (e.message === "Failed to fetch" ? "Internet xatosi, qayta urinib ko'ring." : e.message); });
   }
   // Natija oynasida audio pleer: istalgan Part, istalgan joy, ±10 s, tezlik. Savol yonidagi "▶" audioni
   // audioscriptdagi javob joyidan ~20 s oldinroqqa qo'yadi (joy matndagi o'rniga qarab taxminiy).
@@ -2673,7 +2774,7 @@
       showReview(r, r.answers);
       hide();
       document.getElementById("resultModal").style.display = "none";
-      show(r.cls ? "Sinfdagi test natijangiz" : "Siz bu testni topshirgansiz", `${esc(r.name)}, natijangiz: <b>${r.raw}/40</b> (band ${esc(r.band)}).<br>To'g'ri javoblar va audioscriptni ko'ring. Xatoingiz sababini audioscript va audioga qarab o'zingiz toping. Audioni istalgan Part va joyidan qayta eshitishingiz mumkin (savol yonidagi ▶ o'sha javob joyiga olib boradi). Keyin ❌ savollar uchun topic'ingizga error log yozing.`,
+      show(r.cls ? "Sinfdagi test natijangiz" : "Siz bu testni topshirgansiz", `${esc(r.name)}, natijangiz: <b>${r.raw}/40</b> (band ${esc(r.band)}).<br>To'g'ri javoblar va audioscriptni ko'ring. Xatoingiz sababini audioscript va audioga qarab o'zingiz toping. Audioni istalgan Part va joyidan qayta eshitishingiz mumkin (savol yonidagi ▶ o'sha javob joyiga olib boradi). Keyin <b>✍️ Error log</b> bo'limida har bir ❌ savolga xato turi va sababini yozib yuboring.` + (r.log ? `<br><br>✅ Error log yuborilgan: ${r.log.done}/${r.log.wrong}.` : ""),
         "📄 Kalit, Audioscript va Audio", () => { hide(); document.getElementById("resultModal").style.display = "flex"; });
       return;
     }
@@ -2699,7 +2800,7 @@
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
       `${esc(r.title)} · Listening<br><br>🎧 Naushnik taqing. <b>Start Audio</b> bosilgach audio to'xtamasdan 4 part davom etadi, 40 daqiqa vaqt bor.<br>` +
-      `Oxirida <b>Finish Test</b> ni bosing: javoblaringiz ustozga (topic'ingizga) yuboriladi, sahifada esa to'g'ri javoblar, audioscript va audio chiqadi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
+      `Oxirida <b>Finish Test</b> ni bosing: javoblaringiz ustozga (topic'ingizga) yuboriladi, sahifada esa to'g'ri javoblar, audioscript va audio chiqadi. Keyin <b>✍️ Error log</b> bo'limida xatolaringizni yozib yuborasiz.<br><br>⚠️ Testni faqat bir marta topshirish mumkin.`,
       "Tushundim");
   }).catch(() => {
     bar.innerHTML = "⚠️ Internet xatosi";
