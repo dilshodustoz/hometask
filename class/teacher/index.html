@@ -1315,7 +1315,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 
   function hwStatus(id) {
     hwCur = id;
-    const h = hwLog[id], t = h.t, W = h.skill === "writing", S = h.skill === "speaking", L = h.skill === "listening", chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
+    const h = hwLog[id], t = h.t, W = h.skill === "writing", S = h.skill === "speaking", L = h.skill === "listening" || !h.skill || h.skill === "reading", chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
     $("hwRmBox").classList.add("hide");
     $("hwStCard").classList.remove("hide");
     $("hwStMsg").textContent = ""; $("hwFbAll").classList.add("hide");
