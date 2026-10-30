@@ -1135,13 +1135,22 @@ async function afterSubmit() {
   .hw-item .meta{color:#475569;font-size:13px}
   .hw-item .quote{margin-top:6px;background:#fefce8;border-radius:6px;padding:6px 8px;font-style:italic}
   .hw-item .exp{margin-top:6px;color:#334155}
+  .el-row{border:1px solid #e5e7eb;border-left:4px solid #dc2626;border-radius:8px;padding:8px 10px;margin:8px 0}
+  .el-row.ok{border-left-color:#16a34a}
+  .el-row .meta{color:#475569;font-size:13px;margin:2px 0 6px}
+  .el-row select,.el-row textarea{width:100%;box-sizing:border-box;font:14px system-ui,sans-serif;border:1px solid #cbd5e1;border-radius:6px;padding:6px}
+  .el-row textarea{margin-top:6px;min-height:52px;resize:vertical}
+  .el-foot{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px;padding:10px 0 70px;border-top:1px solid #e5e7eb}
+  .el-foot button{background:#16a34a;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer}
+  .el-foot button:disabled{opacity:.6}
+  .el-note{background:#eff6ff;border-radius:8px;padding:8px 10px;font-size:13px;color:#1e3a8a}
   body{padding-bottom:46px}
 </style>
 <div id="hwBar">⏳ Yuklanmoqda…</div>
 <div id="hwCover"><div class="card" id="hwCard"></div></div>
 <div id="hwReview"><div class="card">
   <div class="top"><div><h3 id="hwRvTitle">Natija</h3><div id="hwRvScore" class="meta"></div></div><button onclick="document.getElementById('hwReview').style.display='none'">Yopish ✕</button></div>
-  <div class="tabs"><button class="on" data-f="bad">❌ Xatolarim</button><button data-f="all">Hammasi</button></div>
+  <div class="tabs"><button class="on" data-f="bad">❌ Xatolarim</button><button data-f="all">Hammasi</button><button data-f="log">✍️ Error log</button></div>
   <div id="hwRvList"></div>
 </div></div>
 <script>
@@ -1151,6 +1160,10 @@ async function afterSubmit() {
   const bar = document.getElementById("hwBar"), cover = document.getElementById("hwCover"), card = document.getElementById("hwCard");
   const ST = "hwr_" + TID + "_" + KEY + "_st", PEND = "hwr_" + TID + "_" + KEY + "_pend";
   let me = null, sent = false, review = null, filter = "bad";
+  // Error log formasi: faqat ❌ savollar, har biriga xato turi + sababi. Qoralama shu qurilmada saqlanadi.
+  const LOGK = "hwr_log_" + TID + "_" + KEY;
+  const EL_DEF = ["Paraphrase / synonym", "TRUE / FALSE / NOT GIVEN", "Wrong place in text", "Unknown word", "Spelling", "Grammar / plural", "Word limit", "Ran out of time", "Other"];
+  let EL = null;
 
   // sahifa taymeri Boshlash bosilmaguncha yurmaydi
   timerOn = false;
@@ -1178,9 +1191,52 @@ async function afterSubmit() {
   ["input", "change", "click", "drop", "touchend"].forEach(ev => document.addEventListener(ev, () => setTimeout(saveState, 60), true));
   window.addEventListener("beforeunload", saveState);
 
+  function elInit(r) {
+    const items = {};
+    ((r.log && r.log.items) || []).forEach(it => { items[it.q] = { type: it.type || "", why: it.why || "" }; });
+    Object.assign(items, lsGet(LOGK) || {});
+    EL = { wrong: (r.review || []).filter(x => !x.ok).map(x => x.n), items: items, types: r.types || EL_DEF, sent: r.log || null, busy: false, msg: "" };
+  }
+  const elOk = it => it && it.type && (it.why || "").trim().length >= 3;
+  function elDraw(list) {
+    if (!EL.wrong.length) { list.innerHTML = "<p>Xato yo'q, error log kerak emas! 🎉</p>"; return; }
+    const R = {}; review.review.forEach(x => { R[x.n] = x; });
+    const done = EL.wrong.filter(q => elOk(EL.items[q])).length;
+    list.innerHTML = `<div class="el-note">Har bir ❌ savol uchun <b>xato turini</b> tanlang va <b>nega xato qilganingizni</b> qisqa yozing (masalan: "matnda 'rarely' bor edi, men 'never' deb o'ylabman"). Hammasi yozilgach <b>Yuborish</b> ni bosing, log ustozga (topic'ingizga) boradi. Keyin tuzatib qayta yuborsangiz ham bo'ladi.</div>` +
+      (EL.sent ? `<p style="margin:8px 0 0;color:#15803d">✅ Oldin yuborilgan: ${EL.sent.done}/${EL.sent.wrong} (${EL.sent.pct}%).</p>` : "") +
+      EL.wrong.map(q => { const x = R[q] || {}, it = EL.items[q] || {};
+        return `<div class="el-row${elOk(it) ? " ok" : ""}" data-q="${q}"><b>Question ${q}</b><div class="meta">Siz: <b>${esc2(x.you) || "(javob yo'q)"}</b> · To'g'ri: <b style="color:#166534">${esc2(x.ans)}</b>${x.loc ? " · " + esc2(x.loc) : ""}</div>
+          <select><option value="">— xato turi —</option>${EL.types.map(t => `<option${t === it.type ? " selected" : ""}>${esc2(t)}</option>`).join("")}</select>
+          <textarea maxlength="400" placeholder="Nega xato qildim? (qisqa)">${esc2(it.why || "")}</textarea></div>`; }).join("") +
+      `<div class="el-foot"><span id="elCnt">Yozildi: <b>${done} / ${EL.wrong.length}</b></span><span id="elMsg">${EL.msg}</span><button id="elSend"${EL.busy ? " disabled" : ""}>📤 Yuborish</button></div>`;
+    list.querySelectorAll(".el-row").forEach(row => {
+      const q = +row.dataset.q, upd = () => {
+        EL.items[q] = { type: row.querySelector("select").value, why: row.querySelector("textarea").value };
+        row.classList.toggle("ok", elOk(EL.items[q]));
+        lsSet(LOGK, EL.items);
+        document.getElementById("elCnt").innerHTML = `Yozildi: <b>${EL.wrong.filter(z => elOk(EL.items[z])).length} / ${EL.wrong.length}</b>`;
+      };
+      row.querySelector("select").onchange = upd; row.querySelector("textarea").oninput = upd;
+    });
+    document.getElementById("elSend").onclick = elSend;
+  }
+  function elSend() {
+    const items = EL.wrong.map(q => Object.assign({ q: q }, EL.items[q] || {})).filter(it => it.type || (it.why || "").trim());
+    if (!items.length) { EL.msg = "⚠️ Hech bo'lmasa bitta savolga yozing"; drawReview(); return; }
+    const miss = EL.wrong.length - items.filter(elOk).length;
+    if (miss && !confirm(miss + " ta savol to'liq yozilmagan. Shunday yuborilsinmi? (keyin to'ldirib qayta yuborish mumkin)")) return;
+    EL.busy = true; EL.msg = "⏳ Yuborilmoqda…"; drawReview();
+    post({ skill: "reading", log: 1, t: TID, k: KEY, items: items }).then(r => {
+      EL.busy = false;
+      if (!r.ok) { EL.msg = "⚠️ " + esc2(r.error || "Yuborilmadi"); drawReview(); return; }
+      EL.sent = r; EL.msg = `✅ Yuborildi: ${r.done}/${r.wrong} (${r.pct}%)`; lsDel(LOGK); drawReview();
+    }).catch(() => { EL.busy = false; EL.msg = "⚠️ Internet xatosi, qayta bosing"; drawReview(); });
+  }
+
   function drawReview() {
     const list = document.getElementById("hwRvList");
     if (!review) return;
+    if (filter === "log") { if (!EL) elInit(review); elDraw(list); return; }
     const items = review.review.filter(r => filter === "all" || !r.ok);
     list.innerHTML = items.length ? items.map(r => `<div class="hw-item${r.ok ? "" : " bad"}">
       <div class="q">Question ${r.n}: ${r.ok ? "✅ To'g'ri" : "❌ Noto'g'ri"}</div>
@@ -1193,19 +1249,23 @@ async function afterSubmit() {
     document.querySelectorAll("#hwReview .tabs button").forEach(x => x.classList.toggle("on", x === b));
     drawReview();
   });
-  function openReview() { document.getElementById("hwReview").style.display = "flex"; drawReview(); }
+  function openReview(f) {
+    if (f) { filter = f; document.querySelectorAll("#hwReview .tabs button").forEach(x => x.classList.toggle("on", x.dataset.f === f)); }
+    document.getElementById("hwReview").style.display = "flex"; drawReview();
+  }
   function gotResult(r) {
     sent = true;
-    review = r;
+    review = r; elInit(r);
     lsDel(ST); lsDel(PEND);
     document.getElementById("hwRvTitle").textContent = me ? me.title : "Natija";
     document.getElementById("hwRvScore").textContent = `${me ? me.name + " · " : ""}Natija: ${r.raw}/${r.total} · Band ${r.band}`;
-    bar.innerHTML = `✅ <b>${me ? me.name : ""}</b> · Natija: <b>${r.raw}/${r.total}</b> (Band ${r.band}) · ustozga yuborilgan <button id="hwShow">📄 Javoblar va isbotlar</button>`;
-    document.getElementById("hwShow").onclick = openReview;
+    bar.innerHTML = `✅ <b>${me ? me.name : ""}</b> · Natija: <b>${r.raw}/${r.total}</b> (Band ${r.band}) · ustozga yuborilgan <button id="hwShow">📄 Javoblar va isbotlar</button> <button id="hwLog">✍️ Error log</button>`;
+    document.getElementById("hwShow").onclick = () => openReview("bad");
+    document.getElementById("hwLog").onclick = () => openReview("log");
     const msg = document.getElementById("submit-status-msg");
-    if (msg) msg.innerHTML = `<b style='color:#15803d'>✅ Natija: ${r.raw}/${r.total} (Band ${r.band}). Javoblaringiz ustozga yuborildi.</b><br><button id="hwShow2" style="margin-top:8px;background:#2563eb;color:#fff;border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer">📄 Javoblar va isbotlarni ko'rish</button>`;
+    if (msg) msg.innerHTML = `<b style='color:#15803d'>✅ Natija: ${r.raw}/${r.total} (Band ${r.band}). Javoblaringiz ustozga yuborildi.</b><br>Endi ❌ savollarni ko'rib, <b>✍️ Error log</b> bo'limida har biriga xato turi va sababini yozib yuboring.<br><button id="hwShow2" style="margin-top:8px;background:#2563eb;color:#fff;border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer">📄 Javoblar va isbotlarni ko'rish</button>`;
     const b2 = document.getElementById("hwShow2");
-    if (b2) b2.onclick = () => { closeModals(); openReview(); };
+    if (b2) b2.onclick = () => { closeModals(); openReview("bad"); };
   }
 
   function sendResult(payload) {
@@ -1257,7 +1317,7 @@ async function afterSubmit() {
       hide();
       submitted = true; clearInterval(timerId);
       gotResult(r);
-      show("Siz bu testni topshirgansiz", `${esc2(r.name)}, natijangiz: <b>${r.raw}/${r.total}</b> (Band ${r.band}).<br>Javoblar va isbotlarni ko'rib, topic'ingizga error log yozing.`, "📄 Javoblar va isbotlar", () => { hide(); openReview(); });
+      show("Siz bu testni topshirgansiz", `${esc2(r.name)}, natijangiz: <b>${r.raw}/${r.total}</b> (Band ${r.band}).<br>Javoblar va isbotlarni ko'rib, <b>✍️ Error log</b> bo'limida har bir ❌ savolga xato turi va sababini yozib yuboring.` + (r.log ? `<br><br>✅ Error log yuborilgan: ${r.log.done}/${r.log.wrong}.` : ""), "📄 Javoblar va isbotlar", () => { hide(); openReview("bad"); });
       return;
     }
     if (r.closed) { bar.innerHTML = "⛔ Muddat tugagan"; show("Muddat tugagan", "Topshirish muddati (" + esc2(r.deadline) + ") o'tib ketgan."); me = null; return; }
