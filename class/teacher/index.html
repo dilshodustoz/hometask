@@ -1525,6 +1525,12 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         if (v.choice === "speaker") au = `<span class="muted">🔈</span>`;
         else if (v.part >= 100) { au = `<span class="badge b-ok">✓ 100%</span>`; aReady++; aNeed++; }
         else if (v.joined) { au = `<span class="badge b-warn">⏳ ${v.part || 0}%</span>`; aNeed++; }
+        // o'quvchi sahifasidan audio holati ("pastes" maydonida: holat|sabab|qurilma)
+        const [as, aw, ad] = String(v.pastes || "").split("|");
+        if (as && !v.result && !v.submitted) {
+          const lab = { play: ["b-ok", "🔊 eshitilyapti"], tap: ["b-bad", "⛔ bosishi kerak"], err: ["b-bad", "⚠️ xato"], spk: ["b-mut", "🔈"] }[as];
+          if (lab && as !== "spk") au += ` <span class="badge ${lab[0]}" title="${CLS.esc((aw || "") + " · " + (ad || ""))}">${lab[1]}${ad ? " · " + CLS.esc(ad) : ""}</span>`;
+        }
         au = `<td>${au}</td>`;
       }
       return `<tr><td>${i + 1}</td><td>${CLS.esc(roster[k].name)}</td><td>${st}</td>${au}<td>${nA}/40</td><td>${v.leaves || 0}</td><td>${v.result ? "Band " + v.result.band : ""}</td>
@@ -1538,7 +1544,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       if (confirm(`${roster[k].name}: javoblari o'chirilib, testni boshidan ishlashiga ruxsat berilsinmi?`)) db.ref("live/" + sid + "/" + k).remove();
     });
   }
-  // Savollar qiyinligi: natijalar yuborilgandan keyin (result.ok = har savol uchun "1"/"0") eng ko'p xatodan eng kamiga
+  // Savollar qiyinligi: natijalar yuborilgandan keyin (result.ok = har savol uchun "1"/"0") eng ko'p xatodan eng kamiga.
+  // Faqat javob yozilib xato bo'lganlar sanaladi; bo'sh qoldirilgan savol xato hisoblanmaydi (o'quvchi keyin o'zi ishlaydi).
   let qdText = "";
   function drawDifficulty(rows) {
     const res = rows.map(k => live[k] || {}).filter(v => v.result && typeof v.result.ok === "string");
@@ -1546,31 +1553,32 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     if (!res.length) return;
     const n = res.length, total = res[0].result.ok.length, list = [];
     for (let q = 1; q <= total; q++) {
-      let wrong = 0, blank = 0;
+      let wrong = 0, answered = 0;
       const given = {};
       res.forEach(v => {
+        const a = String((v.ans || {})[q] || "").trim();
+        if (!a) return;
+        answered++;
         if (v.result.ok[q - 1] === "1") return;
         wrong++;
-        const a = String((v.ans || {})[q] || "").trim();
-        if (!a) { blank++; return; }
         const key = a.toLowerCase();
         given[key] = given[key] || { a: a, c: 0 }; given[key].c++;
       });
       const top = Object.values(given).sort((x, y) => y.c - x.c).slice(0, 4);
-      list.push({ q: q, wrong: wrong, blank: blank, top: top });
+      list.push({ q: q, wrong: wrong, n: answered, top: top });
     }
     list.sort((a, b) => b.wrong - a.wrong || a.q - b.q);
     let place = 0, prev = -1;
     $("qdBody").innerHTML = list.map((x, i) => {
       if (x.wrong !== prev) { place = i + 1; prev = x.wrong; }
-      const pct = Math.round(x.wrong * 100 / n), col = pct >= 60 ? "var(--red,#dc2626)" : pct >= 30 ? "var(--amber,#d97706)" : "var(--green,#16a34a)";
-      const ans = x.top.map(t => `<b>${CLS.esc(t.a)}</b>${t.c > 1 ? " ×" + t.c : ""}`).join(", ") + (x.blank ? `${x.top.length ? ", " : ""}<span class="muted">bo'sh ×${x.blank}</span>` : "");
-      return `<tr><td>${place}</td><td><b>${x.q}</b></td><td>${x.wrong}/${n}</td><td>${n - x.wrong}/${n}</td>
+      const pct = x.n ? Math.round(x.wrong * 100 / x.n) : 0, col = pct >= 60 ? "var(--red,#dc2626)" : pct >= 30 ? "var(--amber,#d97706)" : "var(--green,#16a34a)";
+      const ans = x.top.map(t => `<b>${CLS.esc(t.a)}</b>${t.c > 1 ? " ×" + t.c : ""}`).join(", ");
+      return `<tr><td>${place}</td><td><b>${x.q}</b></td><td>${x.wrong}/${x.n}</td><td>${x.n - x.wrong}/${x.n}</td>
         <td style="min-width:90px"><div style="height:8px;border-radius:4px;background:var(--line,#e2e8f0)"><div style="height:8px;border-radius:4px;width:${pct}%;background:${col}"></div></div><span class="muted">${pct}%</span></td>
         <td>${ans || '<span class="muted">—</span>'}</td></tr>`;
     }).join("");
-    $("qdInfo").textContent = `${sess.title}: ${n} ta o'quvchi natijasi bo'yicha.` + (res.length < rows.filter(k => (live[k] || {}).result).length ? " (Ba'zi natijalarda savol bo'yicha ma'lumot yo'q.)" : "");
-    qdText = "O'rin\tSavol\tXato\tJami\tXato javoblar\n" + list.map((x, i) => [i + 1, x.q, x.wrong, n, x.top.map(t => t.a + (t.c > 1 ? " x" + t.c : "")).join(", ") + (x.blank ? " bo'sh x" + x.blank : "")].join("\t")).join("\n");
+    $("qdInfo").textContent = `${sess.title}: ${n} ta o'quvchi natijasi bo'yicha. Faqat yozilgan xato javoblar sanaladi, bo'sh qoldirilganlar hisobga olinmaydi (x/y = javob yozgan y kishidan x tasi xato).` + (res.length < rows.filter(k => (live[k] || {}).result).length ? " (Ba'zi natijalarda savol bo'yicha ma'lumot yo'q.)" : "");
+    qdText = "O'rin\tSavol\tXato\tJavob yozgan\tXato javoblar\n" + list.map((x, i) => [i + 1, x.q, x.wrong, x.n, x.top.map(t => t.a + (t.c > 1 ? " x" + t.c : "")).join(", ")].join("\t")).join("\n");
   }
   $("qdCopy").onclick = () => navigator.clipboard.writeText(qdText).then(() => { $("qdCopy").textContent = "✓ Olindi"; setTimeout(() => $("qdCopy").textContent = "Nusxa olish", 1500); });
   function refNow() { return sess.state === "paused" ? sess.pausedAt : sess.state === "stopped" ? sess.stoppedAt : CLS.now(); }
@@ -1898,6 +1906,22 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     });
   }
   ["tbody","stBody"].forEach(id=>{const tb=document.getElementById(id); if(!tb) return; fix(tb); new MutationObserver(()=>fix(tb)).observe(tb,{childList:true});});
+})();
+</script>
+<script>
+// Sahifaning yangi versiyasi chiqsa (ochiq turgan eski sahifa yangilanmay qolmasin) tepada ogohlantirish
+(function () {
+  let base = null;
+  const get = () => fetch(location.pathname + "?nocache=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.text() : null).catch(() => null);
+  get().then(t => { base = t; });
+  setInterval(() => get().then(t => {
+    if (!t || !base || t === base || document.getElementById("verBar")) return;
+    const b = document.createElement("div");
+    b.id = "verBar";
+    b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#2563eb;color:#fff;font:600 15px system-ui;text-align:center;padding:10px 16px";
+    b.innerHTML = "🔄 Sahifaning yangi versiyasi bor. Dars ketmayotgan bo'lsa, sahifani yangilang. <button style='margin-left:10px;padding:5px 12px;border:0;border-radius:6px;font:700 14px system-ui;cursor:pointer' onclick='location.reload()'>Yangilash</button>";
+    document.body.appendChild(b);
+  }), 10 * 60 * 1000);
 })();
 </script>
 </body>
