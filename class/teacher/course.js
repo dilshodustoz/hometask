@@ -7,7 +7,7 @@
     september: "Sentabr", october: "Oktabr", november: "Noyabr", december: "Dekabr" };
   const OYQ = ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avg", "sen", "okt", "noy", "dek"];
   const SK = { listening: "🎧", reading: "📖", writing: "✍️", speaking: "🎙" };
-  let data = null, loading = null, month = null, skill = "all", summer = false, pick = null;
+  let data = null, loading = null, month = null, skill = "all", summer = false, pick = null, edAt = false, edBh = false, curAt = null, curBh = null;
   try { month = localStorage.getItem("cls_c_month"); skill = localStorage.getItem("cls_c_skill") || "all"; } catch (e) {}
 
   const T = () => window.CLS_TP;   // asosiy skript beradi: api, group(), groups
@@ -80,10 +80,12 @@
       ["Oxirgi dars" + (last != null ? " · " + H[last].slice(0, 5) : ""), last != null ? `${lastIn} / ${lastAll}` : "—", ""],
       ["Davomati 70% dan past", low.length, low.length ? "c-bad" : ""]].map(s => `<div class="stat ${s[2]}"><b>${esc(s[1])}</b>${esc(s[0])}</div>`).join("");
     const wd = i => { const d = dOf(H[i]); return `<th class="c-d${i === last ? " c-last" : ""}"><b>${d.getDate()}</b><span>${esc(String(B.sub[i] || "").slice(0, 4))}</span></th>`; };
+    curAt = { sheet: month, B };
+    $("atBody").classList.toggle("c-editing", edAt);
     $("atHead").innerHTML = `<tr><th class="c-n">#</th><th class="c-nm">O'quvchi</th>${dc.map(wd).join("")}<th class="c-r">Keldi</th><th class="c-r">Kelmadi</th><th class="c-pc">Davomat</th></tr>`;
     const mark = v => { v = String(v || "").trim(); return v === "+" ? '<i class="m-y">✓</i>' : v === "-" ? '<i class="m-n">✕</i>' : '<i class="m-0"></i>'; };
     const bar = p => p == null ? '<span class="muted">—</span>' : `<div class="c-bar ${p < 70 ? "lo" : p < 85 ? "mid" : "hi"}"><span style="width:${p}%"></span></div><b>${p}%</b>`;
-    $("atTbody").innerHTML = B.rows.map(r => `<tr><td class="c-n">${esc(r[0])}</td><td class="c-nm">${esc(r[1])}</td>${dc.map(i => `<td class="c-d${i === last ? " c-last" : ""}">${mark(r[i])}</td>`).join("")}
+    $("atTbody").innerHTML = B.rows.map(r => `<tr><td class="c-n">${esc(r[0])}</td><td class="c-nm">${esc(r[1])}</td>${dc.map(i => `<td class="c-d${i === last ? " c-last" : ""}${edAt ? " c-ed" : ""}" data-r="${esc(r[1])}" data-c="${i}">${mark(r[i])}</td>`).join("")}
       <td class="c-r">${esc(r[cK])}</td><td class="c-r">${esc(r[cM])}</td><td class="c-pc">${bar(pct(r))}</td></tr>`).join("");
     const perDay = i => { const n = B.rows.filter(r => String(r[i]).trim() === "+").length, a = B.rows.filter(r => /^[+-]$/.test(String(r[i]).trim())).length; return a ? `${n}<span>/${a}</span>` : ""; };
     $("atFoot").innerHTML = `<tr><td class="c-n"></td><td class="c-nm">Guruh bo'yicha jami</td>${dc.map(i => `<td class="c-d c-day${i === last ? " c-last" : ""}">${perDay(i)}</td>`).join("")}
@@ -169,7 +171,8 @@
       ["E'tibor kerak (<70%)", attn.length, attn.length ? "c-bad" : ""]].map(s => `<div class="stat ${s[2]}"><b>${esc(s[1])}</b>${esc(s[0])}</div>`).join("");
     const th = c => `<th class="c-t" title="${esc(c.name)}"><span class="c-sk">${SK[c.sk] || "☀️"}</span><b>${esc(short(c.name))}</b><span class="c-dt">${c.d ? c.d.getDate() + "-" + OYQ[c.d.getMonth()] : ""}</span></th>`;
     $("bhHead").innerHTML = `<tr><th class="c-n">#</th><th class="c-nm">O'quvchi</th><th class="c-pc">Bajarildi</th><th class="c-r">Writing<br><span class="c-dt">o'rtacha</span></th>${shown.map(th).join("")}</tr>`;
-    const cell = (s, c) => {
+    const cell = (s, c) => edBh ? cellE(s, c).replace("<td class=\"c-v\">", `<td class="c-v c-ed" data-r="${esc(s.name)}" data-c="${c.i}">`) : cellE(s, c);
+    const cellE = (s, c) => {
       const raw = String(s.r[c.i] || "").trim(), v = num(raw);
       if (raw === "") return `<td class="c-v">${!s.start || !c.d || c.d >= s.start ? (c.counts ? '<i class="v-miss">—</i>' : "") : '<i class="v-na">·</i>'}</td>`;
       if (v == null) return `<td class="c-v"><i class="v-txt">${esc(raw)}</i></td>`;
@@ -181,7 +184,9 @@
       <td class="c-r">${s.wAvg != null ? `<i class="v-p v-${lvl(s.wAvg, 9)}">${s.wAvg}</i>` : '<span class="muted">—</span>'}</td>${shown.map(c => cell(s, c)).join("")}</tr>`).join("");
     $("bhFoot").innerHTML = `<tr><td></td><td class="c-nm">Guruh o'rtachasi</td><td class="c-pc"><b>${avg != null ? avg + "%" : ""}</b></td><td></td>${shown.map(c => { const a = colAvg(c);
       return `<td class="c-v c-day">${a != null ? a : ""}<span>${c.n}/${studs.length}</span></td>`; }).join("")}</tr>`;
-    $("bhTbody").querySelectorAll("tr").forEach(tr => tr.onclick = () => { const s = studs[+tr.dataset.k]; pick = pick === norm(s.name) ? null : norm(s.name); drawBh(); });
+    curBh = { sheet: "ASSESSMENT", B: M.B };
+    $("bhBody").classList.toggle("c-editing", edBh);
+    $("bhTbody").querySelectorAll("tr").forEach(tr => tr.onclick = e => { if (e.target.closest(".c-ed")) return; const s = studs[+tr.dataset.k]; pick = pick === norm(s.name) ? null : norm(s.name); drawBh(); });
     // e'tibor kerak
     $("bhAttnList").innerHTML = attn.length ? attn.map(s => { const miss = s.due.filter(c => !((num(s.r[c.i]) || 0) > 0)).slice(-3).reverse();
       return `<div class="c-att"><div><b>${esc(s.name)}</b><span class="muted">${s.done.length} / ${s.due.length} topshiriq</span></div><div class="c-bar lo"><span style="width:${s.pct}%"></span></div><b class="c-attp">${s.pct}%</b>
@@ -209,6 +214,46 @@
     }
   }
 
+  // ---------- saytdan kiritish: katak → Course (Google Sheet) ----------
+  let popAt = 0;
+  function popClose() { $("cPop").classList.add("hide"); }
+  function popOpen(td, html) {
+    const P = $("cPop"); P.innerHTML = html; P.classList.remove("hide"); popAt = Date.now();
+    const r = td.getBoundingClientRect(), w = P.offsetWidth, h = P.offsetHeight;
+    let x = r.left + r.width / 2 - w / 2, y = r.bottom + 6;
+    if (y + h > innerHeight - 8) y = r.top - h - 6;
+    P.style.left = Math.max(8, Math.min(innerWidth - w - 8, x)) + "px"; P.style.top = Math.max(8, y) + "px";
+  }
+  function save(cur, td, value, redraw) {
+    const col = +td.dataset.c, name = td.dataset.r;
+    popClose(); td.classList.add("c-wait");
+    T().api({ admin: "course_set", sheet: cur.sheet, label: label(), name: name, col: col, head: cur.B.head[col], sub: cur.B.sub[col], value: value }).then(r => {
+      if (!r.ok) throw new Error(r.error);
+      data.sheets[r.sheet] = r.values; data.at = r.at; redraw();
+    }).catch(e => { td.classList.remove("c-wait"); alert("Jadvalga yozilmadi: " + e.message); });
+  }
+  function onAt(e) {
+    const td = e.target.closest("td.c-ed"); if (!td || !edAt) return;
+    const d = curAt.B.head[+td.dataset.c];
+    popOpen(td, `<div class="c-pop-h">${esc(td.dataset.r)} · ${esc(d.slice(0, 5))}</div><div class="c-pop-b">
+      <button class="btn btn-sm c-py" data-v="+">✓ Keldi</button><button class="btn btn-sm c-pn" data-v="-">✕ Kelmadi</button><button class="btn btn-secondary btn-sm" data-v="">Bo'sh</button></div>`);
+    $("cPop").querySelectorAll("button").forEach(b => b.onclick = () => save(curAt, td, b.dataset.v, drawAt));
+  }
+  function onBh(e) {
+    const td = e.target.closest("td.c-ed"); if (!td || !edBh) return;
+    e.stopPropagation();
+    const c = +td.dataset.c, row = curBh.B.rows.find(r => r[1] === td.dataset.r), name = String(curBh.B.sub[c] || "");
+    popOpen(td, `<div class="c-pop-h">${esc(td.dataset.r)}</div><div class="c-pop-s">${esc(name)}</div><div class="c-pop-b">
+      <input class="field" id="cPopIn" inputmode="decimal" value="${esc(row ? row[c] : "")}" placeholder="${scaleOf(name) === 40 ? "0–40" : scaleOf(name) === 9 ? "band 0–9" : "0–100"}">
+      <button class="btn btn-primary btn-sm" id="cPopOk">Saqlash</button></div>`);
+    const go = () => { const v = $("cPopIn").value.trim().replace(",", ".");
+      if (v !== "" && (isNaN(+v) || +v < 0 || +v > scaleOf(name))) { $("cPopIn").classList.add("c-bad-in"); return; }
+      save(curBh, td, v, drawBh); };
+    $("cPopOk").onclick = go; $("cPopIn").onkeydown = k => { if (k.key === "Enter") go(); if (k.key === "Escape") popClose(); };
+    setTimeout(() => $("cPopIn").focus({ preventScroll: true }), 30);
+  }
+  function edBtn(id, on) { $(id).textContent = on ? "✓ Tayyor" : "✎ Kiritish"; $(id).classList.toggle("btn-orange", on); $(id).classList.toggle("btn-secondary", !on); }
+
   // ---------- ulash ----------
   function show(t) {
     if (t !== "attend" && t !== "grades") return;
@@ -229,5 +274,11 @@
     moneyShow(mon);
     document.querySelectorAll("#bhSkills button").forEach(b => b.onclick = () => { skill = b.dataset.s; try { localStorage.setItem("cls_c_skill", skill); } catch (e) {} drawBh(); });
     $("bhSummer").onchange = () => { summer = $("bhSummer").checked; drawBh(); };
+    $("atEdit").onclick = () => { edAt = !edAt; edBtn("atEdit", edAt); popClose(); drawAt(); };
+    $("bhEdit").onclick = () => { edBh = !edBh; edBtn("bhEdit", edBh); popClose(); drawBh(); };
+    $("atTbody").addEventListener("click", onAt);
+    $("bhTbody").addEventListener("click", onBh, true);
+    document.addEventListener("click", e => { if (!e.target.closest("#cPop") && !e.target.closest("td.c-ed")) popClose(); });
+    window.addEventListener("scroll", () => { if (Date.now() - popAt > 600) popClose(); }, true);
   }
 })();

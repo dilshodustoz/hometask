@@ -470,6 +470,18 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   .v-hi{background:#DCFCE7;color:#166534}.v-mid{background:#FEF3C7;color:#92400E}.v-lo{background:#FEE2E2;color:#B91C1C}.v-0{background:#FEE2E2;color:#DC2626;outline:1.5px solid #FCA5A5}
   .v-miss{font-style:normal;color:#EF4444;font-weight:700}.v-na{font-style:normal;color:#D4D4D8}.v-txt{font-style:normal;font-size:.75rem;color:var(--muted)}
   .c-bh-tbl tbody tr{cursor:pointer}
+  .c-editing .c-ed{cursor:pointer;outline:1px dashed #F4B183;outline-offset:-3px}
+  .c-editing .c-ed:hover{background:#FFF1E8!important}
+  .c-wait{opacity:.35;pointer-events:none}
+  .c-editing .c-wrap{border-color:#F4B183;box-shadow:0 0 0 3px #FFF1E8}
+  .c-pop{position:fixed;z-index:200;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18);padding:12px;min-width:220px;max-width:300px}
+  .c-pop-h{font-weight:700;color:var(--ink);font-size:.88rem;margin-bottom:8px}
+  .c-pop-s{font-size:.75rem;color:var(--muted);margin:-4px 0 8px}
+  .c-pop-b{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .c-pop .btn{min-height:38px}
+  .c-pop .c-py{background:#DCFCE7;color:#15803D}.c-pop .c-pn{background:#FEE2E2;color:#DC2626}
+  .c-pop .field{width:110px;min-height:38px;font-size:16px}
+  .c-bad-in{border-color:var(--red)!important;box-shadow:0 0 0 3px var(--red-bg)}
   .c-bh-tbl .c-nm a{color:inherit;text-decoration:none;border-bottom:1px dashed var(--border-strong)}
   .c-bh-tbl tr.c-pick td{background:#FFF7F0!important}
   .c-att{display:grid;grid-template-columns:minmax(160px,1fr) 90px 48px;gap:4px 14px;align-items:center;padding:12px 0;border-bottom:1px solid #EEF0F3}
@@ -784,12 +796,12 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   <section data-pane="attend" class="hide">
     <div class="card">
       <div class="card-header"><h3 class="card-title">Yo'qlama <small id="atGroup"></small></h3>
-        <div class="c-tools"><div class="seg" id="atMonths"></div><span class="c-src" id="atAt"></span><button class="btn btn-secondary btn-sm" id="atReload">↻ Yangilash</button></div></div>
+        <div class="c-tools"><div class="seg" id="atMonths"></div><span class="c-src" id="atAt"></span><button class="btn btn-secondary btn-sm" id="atEdit">✎ Kiritish</button><button class="btn btn-secondary btn-sm" id="atReload">↻ Yangilash</button></div></div>
       <div class="msg" id="atMsg" style="margin:0"></div>
       <div id="atBody" class="hide">
         <div class="stats c-stats" id="atStats"></div>
         <div class="tbl-wrap c-wrap"><table class="c-tbl c-att-tbl"><thead id="atHead"></thead><tbody id="atTbody"></tbody><tfoot id="atFoot"></tfoot></table></div>
-        <div class="c-legend"><span><i class="m-y">✓</i> keldi</span><span><i class="m-n">✕</i> kelmadi</span><span><i class="m-0"></i> hali guruhda emas</span><span class="muted">Ma'lumot Course jadvalidan olinadi (Google Sheet ↔ Course.xlsx). O'zgartirish jadvalning o'zida.</span></div>
+        <div class="c-legend"><span><i class="m-y">✓</i> keldi</span><span><i class="m-n">✕</i> kelmadi</span><span><i class="m-0"></i> hali guruhda emas</span><span class="muted">Course jadvali bilan ikki tomonlama: jadvaldagi o'zgarish "↻ Yangilash"da ko'rinadi, "✎ Kiritish" bilan qo'yilgan belgi jadvalga yoziladi.</span></div>
       </div>
     </div>
     <div class="card hide" id="atMoneyCard">
@@ -805,7 +817,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   <section data-pane="grades" class="hide">
     <div class="card">
       <div class="card-header"><h3 class="card-title">Baholar <small id="bhGroup"></small></h3>
-        <div class="c-tools"><span class="c-src" id="bhAt"></span><button class="btn btn-secondary btn-sm" id="bhReload">↻ Yangilash</button></div></div>
+        <div class="c-tools"><span class="c-src" id="bhAt"></span><button class="btn btn-secondary btn-sm" id="bhEdit">✎ Kiritish</button><button class="btn btn-secondary btn-sm" id="bhReload">↻ Yangilash</button></div></div>
       <div class="c-tools c-filter">
         <div class="seg" id="bhSkills"><button data-s="all">Hammasi</button><button data-s="listening">🎧 Listening</button><button data-s="reading">📖 Reading</button><button data-s="writing">✍️ Writing</button><button data-s="speaking">🎙 Speaking</button></div>
         <label class="c-chk"><input type="checkbox" id="bhSummer"> Yozgi Pre-IELTS</label>
@@ -814,7 +826,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <div id="bhBody" class="hide">
         <div class="stats c-stats" id="bhStats"></div>
         <div class="tbl-wrap c-wrap"><table class="c-tbl c-bh-tbl"><thead id="bhHead"></thead><tbody id="bhTbody"></tbody><tfoot id="bhFoot"></tfoot></table></div>
-        <div class="c-legend"><span><i class="v-p v-hi">8</i> yaxshi</span><span><i class="v-p v-mid">6</i> o'rta</span><span><i class="v-p v-lo">4</i> past</span><span><i class="v-p v-0">0</i> bajarilmagan</span><span><i class="v-miss">—</i> topshirmagan</span><span><i class="v-na">·</i> hali guruhda emas</span><span class="muted">Ismni bosing: o'quvchining to'liq tarixi.</span></div>
+        <div class="c-legend"><span><i class="v-p v-hi">8</i> yaxshi</span><span><i class="v-p v-mid">6</i> o'rta</span><span><i class="v-p v-lo">4</i> past</span><span><i class="v-p v-0">0</i> bajarilmagan</span><span><i class="v-miss">—</i> topshirmagan</span><span><i class="v-na">·</i> hali guruhda emas</span><span class="muted">Ismni bosing: o'quvchining to'liq tarixi. "✎ Kiritish" yoqilganda katakni bosib ball qo'yasiz.</span></div>
       </div>
     </div>
     <div class="card hide" id="bhDet"></div>
@@ -824,6 +836,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     </div>
   </section>
 
+  <div class="c-pop hide" id="cPop"></div>
   <section data-pane="students" class="hide">
     <div class="card hide" id="stNewCard">
       <div class="card-header"><h3 class="card-title">Yangi o'quvchi <small id="stGroupName"></small></h3><button class="btn btn-secondary btn-sm" id="stNewClose">✕ Yopish</button></div>
