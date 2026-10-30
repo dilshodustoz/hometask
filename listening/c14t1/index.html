@@ -2521,6 +2521,7 @@
     card.innerHTML = `<h3>${title}</h3><div>${body}</div>` + (btn ? `<button id="hwBtn">${btn}</button>` : "");
     cover.style.display = "flex";
     if (btn) document.getElementById("hwBtn").onclick = fn || hide;
+    try { preDraw(true); } catch (e) {}
   }
   function hide() { cover.style.display = "none"; }
   const get = p => fetch(API + "?" + new URLSearchParams(p), { redirect: "follow" }).then(r => r.json());
@@ -2805,9 +2806,105 @@
     const spent = Math.round((40 * 60 - testTimeRemaining) / 60);
     sendResult({ skill: "listening", t: T, k: KEY, answers: answers, minutes: spent, started: startedAt, timeUp: timeUp });
   };
+
+  // Audio oldindan to'liq yuklanadi (sinf sahifasidagi kabi, kesh "lo-audio-v2" umumiy): 4 Part qurilma xotirasiga tushgach
+  // Start ochiladi. Shundan keyin internet uzilsa ham audio to'xtamaydi.
+  const NET = {}, BLOB = {}, PRE = { p: 0, ok: false, err: 0, wait: null, net: false };
+  for (let n = 1; n <= 4; n++) NET[n] = embeddedAudios[n];
+  const abtn = document.getElementById("audioControlBtn"), abtnHtml = abtn ? abtn.innerHTML : "";
+  function preText() {
+    if (PRE.ok) return PRE.net ? "⚠️ Audio internetdan eshitiladi" : "✅ Audio qurilmangizga to'liq yuklandi";
+    return (PRE.err ? "⚠️ Internet sekin, qayta yuklanmoqda: " : "⏳ Audio yuklanmoqda: ") + Math.floor(PRE.p) + "%";
+  }
+  let preUI = 0;
+  function preDraw(force) {
+    const t = Date.now();
+    if (!force && t - preUI < 300) return;
+    preUI = t;
+    document.querySelectorAll(".hw-pre").forEach(el => el.textContent = preText());
+    if (abtn && !isTestRunning) {
+      abtn.disabled = !PRE.ok;
+      abtn.innerHTML = PRE.ok ? abtnHtml : "<span>⏳</span> " + Math.floor(PRE.p) + "%";
+    }
+    const nb = document.getElementById("hwNet");
+    if (nb) nb.style.display = !PRE.ok && PRE.err >= 8 ? "" : "none";
+  }
+  async function preFetch(n, onPart) {
+    const url = new URL(NET[n], location.href).href;
+    let cache = null;
+    try {
+      cache = await caches.open("lo-audio-v2");
+      const hit = await cache.match(url);
+      if (hit) { const b = await hit.blob(); if (b.size > 100000) return b; }
+    } catch (e) { cache = null; }
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const total = +r.headers.get("content-length") || 0;
+    let blob;
+    if (r.body && r.body.getReader) {
+      const rd = r.body.getReader(), chunks = [];
+      let got = 0;
+      for (;;) {
+        const x = await rd.read();
+        if (x.done) break;
+        chunks.push(x.value); got += x.value.length;
+        if (total) onPart(Math.min(1, got / total));
+      }
+      blob = new Blob(chunks, { type: "audio/mp4" });
+    } else blob = await r.blob();
+    if (blob.size < 100000 || (total && blob.size < total)) throw new Error("audio to'liq kelmadi");
+    if (cache) { try { await cache.put(url, new Response(blob, { headers: { "Content-Type": "audio/mp4" } })); } catch (e) {} }
+    return blob;
+  }
+  let preOn = false;
+  async function preloadAll() {
+    if (preOn) return;
+    preOn = true; preDraw(true);
+    for (let n = 1; n <= 4; n++) {
+      while (!BLOB[n] && !PRE.net) {
+        try {
+          const b = await preFetch(n, f => { PRE.p = (n - 1 + f) * 25; preDraw(); });
+          BLOB[n] = URL.createObjectURL(b); embeddedAudios[n] = BLOB[n];
+          PRE.err = 0;
+        } catch (e) {
+          PRE.err++; preDraw(true);
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      }
+      PRE.p = n * 25; preDraw(true);
+    }
+    preReady();
+  }
+  function preReady() {
+    if (PRE.ok) return;
+    PRE.ok = true; preDraw(true);
+    if (PRE.wait) { const f = PRE.wait; PRE.wait = null; show("✅ Audio yuklandi", "Endi internet uzilsa ham audio to'xtamaydi.", "▶ Boshlash", () => { hide(); f(); }); }
+  }
+  // juda sekin internet: 8 marta urinishdan keyin internetdan eshitish taklif qilinadi (oldingi usul)
+  window.hwUseNet = function () {
+    PRE.net = true;
+    for (let n = 1; n <= 4; n++) if (!BLOB[n]) embeddedAudios[n] = NET[n];
+    preReady();
+  };
+  function whenAudio(fn) {
+    if (PRE.ok) return fn();
+    PRE.wait = fn;
+    show("⏳ Audio yuklanmoqda", `Test boshlanishidan oldin 4 ta Part audiosi qurilmangizga to'liq yuklab olinadi (≈15 MB). Shunda test paytida internet uzilsa ham audio to'xtamaydi. Taymer hali yurmaydi.<br><br><b class="hw-pre"></b><br><br><button id="hwNet" onclick="hwUseNet()" style="display:none">Kutmasdan internetdan eshitish</button>`);
+    preDraw(true);
+  }
+  // oldindan yuklangan nusxa brauzerda ochilmasa internetdagi faylga qaytamiz (asl sahifa .mp3 ga qaytardi, u yo'q)
+  const origPlay = playTrack;
+  playTrack = function (sec) {
+    origPlay(sec);
+    testAudio.onerror = () => {
+      const s = +testAudio.getAttribute("data-sec") || sec;
+      if (embeddedAudios[s] !== NET[s]) { embeddedAudios[s] = NET[s]; const t = testAudio.currentTime || 0; testAudio.src = NET[s]; try { testAudio.currentTime = t; } catch (e) {} testAudio.play().catch(() => {}); }
+    };
+  };
   const origStart = startListeningTest;
   startListeningTest = function () {
     if (!me || sent) return;
+    if (!isTestRunning && !PRE.ok) return whenAudio(() => startListeningTest());
     if (!isTestRunning) startedAt = new Date().toISOString();
     origStart();
   };
@@ -2817,6 +2914,7 @@
   get(Object.assign({ action: "hello", skill: "listening", t: T, k: KEY }, CLS_ID ? { cls: CLS_ID } : {})).then(r => {
     if (!r.ok) { bar.innerHTML = "⛔ " + esc(r.error || "Xato"); show("Kirish mumkin emas", esc(r.error || "Xato")); return; }
     me = r;
+    preloadAll();
     if (r.submitted) {
       showReview(r, r.answers);
       hide();
@@ -2841,13 +2939,13 @@
       updatePaletteBubbles();
       if (typeof st.t === "number") { testTimeRemaining = st.t; showTime(); }
       if (st.run) {
-        show("Davom ettiramiz", `Javoblaringiz saqlangan. Audio Part ${st.sec || 1} dagi joyidan davom etadi, qolgan vaqt: ${Math.floor(testTimeRemaining / 60)} daqiqa.`, "▶ Davom ettirish", () => resumeTest(st));
+        show("Davom ettiramiz", `Javoblaringiz saqlangan. Audio Part ${st.sec || 1} dagi joyidan davom etadi, qolgan vaqt: ${Math.floor(testTimeRemaining / 60)} daqiqa.`, "▶ Davom ettirish", () => whenAudio(() => resumeTest(st)));
         return;
       }
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
       `${esc(r.title)} · Listening<br><br>🎧 Naushnik taqing. <b>Start Audio</b> bosilgach audio to'xtamasdan 4 part davom etadi, 40 daqiqa vaqt bor.<br>` +
-      `Oxirida <b>Finish Test</b> ni bosing: javoblaringiz ustozga (topic'ingizga) yuboriladi, sahifada esa to'g'ri javoblar, audioscript va audio chiqadi. Keyin <b>✍️ Error log</b> bo'limida xatolaringizni yozib yuborasiz.<br><br>⚠️ Testni faqat bir marta topshirish mumkin.`,
+      `Oxirida <b>Finish Test</b> ni bosing: javoblaringiz ustozga (topic'ingizga) yuboriladi, sahifada esa to'g'ri javoblar, audioscript va audio chiqadi. Keyin <b>✍️ Error log</b> bo'limida xatolaringizni yozib yuborasiz.<br><br>⚠️ Testni faqat bir marta topshirish mumkin.<br><br><b class="hw-pre"></b>`,
       "Tushundim");
   }).catch(() => {
     bar.innerHTML = "⚠️ Internet xatosi";
