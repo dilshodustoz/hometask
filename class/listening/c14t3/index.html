@@ -2331,7 +2331,8 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
   const LO = window.LO = {
     me: null, sess: null, done: false, restored: false,
     aStart: null, aPT: 0, stall: 0, stallPend: 0, choice: null,
-    speaker: false, speakerSelf: false, unlocked: false, soundTest: false, audioDone: false, started: false
+    speaker: false, speakerSelf: false, unlocked: false, soundTest: false, audioDone: false, started: false,
+    needTap: false, played: false
   };
   try { LO.choice = localStorage.getItem("lo_choice_" + K); } catch (e) {}
 
@@ -2465,7 +2466,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     const url = NET[n];
     let cache = null;
     try {
-      cache = await caches.open("lo-audio-v1");
+      cache = await caches.open("lo-audio-v2");   // v2: 30.10 audio mono 64k ga o'tkazildi, eski nusxa ishlatilmasin
       const hit = await cache.match(url);
       if (hit) { const b = await hit.blob(); if (b.size > 100000) return b; }
     } catch (e) { cache = null; }
@@ -2504,6 +2505,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
       LO.pre = n * 25; preTick(true);
     }
   }
+  try { caches.delete("lo-audio-v1"); } catch (e) {}   // eski (katta) audio keshi telefondan o'chiriladi
   function ensurePreload() {
     if (preOn || LO.speaker || LO.done || !DURS[0]) return;
     preOn = true; preTick(true);
@@ -2532,9 +2534,22 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     document.getElementById("audioPulseIndicator")?.classList.remove("playing");
     try { updateAudioUI(); } catch (e) {}
   }
-  function audioBlocked() {
-    show("🎧 Audio boshlandi.<br><button id='lo-play' style='margin-top:16px;padding:14px 26px;font:700 18px system-ui;border:0;border-radius:10px;background:#ea580c;color:#fff'>▶ Eshitish uchun bosing</button>");
-    document.getElementById("lo-play").onclick = () => { LO.unlocked = true; hide(); startAudioAt(expectedPos()); };
+  // iPhone (Safari) audioni faqat bosishdan keyin yoqadi. Kech kelgan yoki sahifani yangilagan o'quvchida "Tayyorman" bosilmagan,
+  // shuning uchun avtomatik boshlashga urinmaymiz: katta tugma chiqadi, bosilganda audio kerakli joydan boshlanadi.
+  function audioBlocked(why) {
+    LO.needTap = true;
+    auState("tap", why || "");
+    if (document.getElementById("lo-play")) return;   // tugma allaqachon turibdi: qayta chizilmaydi (bosish yo'qolmasin)
+    show("🎧 Test ketmoqda.<br><small style='font-weight:400'>Quloqchinni taqing va bosing.</small><br><button id='lo-play' style='margin-top:16px;padding:16px 30px;font:700 20px system-ui;border:0;border-radius:12px;background:#ea580c;color:#fff'>▶ Audioni yoqish</button>");
+    document.getElementById("lo-play").onclick = () => { LO.needTap = false; LO.unlocked = true; hide(); startAudioAt(expectedPos()); };
+  }
+  // Audio holati ustoz sahifasiga: play / tap (bosish kutilmoqda) / err. Listening'da "pastes" maydoni ishlatilmaydi, shu qayta ishlatiladi.
+  let auLast = "";
+  function auState(st, why) {
+    const ua = navigator.userAgent, dev = /iPhone|iPad/.test(ua) ? "iPhone" : /Android/.test(ua) ? "Android" : "PC";
+    const v = st + "|" + String(why || "").slice(0, 40) + "|" + dev + (/Telegram/i.test(ua) ? " Telegram" : "");
+    if (v === auLast || !LO.me || LO.done) return;
+    auLast = v; L.child("pastes").set(v).catch(() => { auLast = ""; });
   }
   let audioRetries = 0;
   function startAudioAt(pos) {
@@ -2548,17 +2563,23 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     if (prevSec !== s && currentViewSec === prevSec) switchSection(s);
     const sameSrc = testAudio.getAttribute("data-sec") === String(s) && testAudio.readyState >= 1 && (!BLOB[s] || testAudio.src === BLOB[s]);
     if (!sameSrc) {
-      testAudio.src = embeddedAudios[s] + "#t=" + off.toFixed(1);
+      testAudio.src = BLOB[s] && embeddedAudios[s] === BLOB[s] ? BLOB[s] : embeddedAudios[s] + "#t=" + off.toFixed(1);
       testAudio.setAttribute("data-sec", String(s));
       testAudio.addEventListener("loadedmetadata", () => { try { if (Math.abs(testAudio.currentTime - off) > 1.5) testAudio.currentTime = off; } catch (e) {} }, { once: true });
       // internet uzilsa qayta urinadi; to'xtab qolgan soniyalar qaytariladi (telefon rejimi)
-      testAudio.onerror = () => { if (++audioRetries <= 40) setTimeout(() => { if (st() === "run") startAudioAt(expectedPos()); }, 2000); };
+      testAudio.onerror = () => {
+        // oldindan yuklangan nusxa bu brauzerda ochilmasa, internetdagi faylga qaytamiz
+        const sec = +testAudio.getAttribute("data-sec");
+        if (BLOB[sec] && embeddedAudios[sec] === BLOB[sec]) { embeddedAudios[sec] = NET[sec]; auState("err", "blob"); }
+        else auState("err", testAudio.error ? "code " + testAudio.error.code : "load");
+        if (++audioRetries <= 40) setTimeout(() => { if (st() === "run" && !LO.needTap) startAudioAt(expectedPos()); }, 2000);
+      };
       try { renderExamWaveform(s); } catch (e) {}
     } else if (Math.abs(testAudio.currentTime - off) > (shared() ? 1 : 2)) {
       try { testAudio.currentTime = off; } catch (e) {}
     }
     testAudio.play().then(() => {
-      audioRetries = 0;
+      audioRetries = 0; LO.played = true; LO.needTap = false; auState("play");
       document.getElementById("audioPulseIndicator")?.classList.add("playing");
       const btn = document.getElementById("audioControlBtn");
       if (btn) { btn.innerHTML = "<span>🔊</span> Eshitilmoqda"; btn.disabled = false; }
@@ -2567,16 +2588,24 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
         LO.aStart = CLS.now(); LO.aPT = LO.sess.pausedTotal || 0;
         L.update({ aStart: CLS.TS, aPT: LO.aPT }).catch(() => {});
       }
-    }).catch(err => { if (err && err.name === "NotAllowedError") audioBlocked(); });
+    }).catch(err => {
+      // hali birorta ham eshitilmagan bo'lsa har qanday xato (iPhone'da NotAllowedError yoki AbortError) = bosish kerak
+      const nm = err && err.name || "xato";
+      if (nm === "NotAllowedError" || !LO.played) audioBlocked(nm);
+    });
   }
   // Asl "Start Audio / Pause" tugmasi: pauza yo'q, bosilsa jonli joyga qaytadi
   window.startListeningTest = function () {
     if (st() !== "run") { toast(st() === "paused" ? "Ustoz pauza qilgan." : "Ustoz testni hali boshlamadi."); return; }
     if (LO.speaker) return;
+    LO.unlocked = true; LO.needTap = false;   // bu tugmani bosish ham iPhone'ga ruxsat beradi
+    if (document.getElementById("lo-play")) hide();
     startAudioAt(expectedPos());
   };
   function syncAudio() {
     if (LO.speaker || LO.done || st() !== "run" || LO.soundTest) return;
+    if (LO.sess.mode === "mixed" && !LO.choice) return;   // aralash rejim: avval o'quvchi naushnik/kolonkani tanlaydi
+    if (LO.needTap || !LO.unlocked) { audioBlocked(LO.unlocked ? "" : "kech kirdi"); return; }   // bosilmaguncha qayta urinmaymiz (iPhone'da cheksiz takror bo'lardi)
     if (!shared() && LO.aStart == null) { if (testAudio.paused) startAudioAt(0); return; }
     const exp = expectedPos();
     if (exp >= totalDur()) { if (!LO.audioDone) audioFinished(); return; }
@@ -2658,7 +2687,9 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
   // ---------- kolonka rejimi ----------
   function enterSpeakerMode(fromTeacher) {
     if (LO.speaker) return;
-    LO.speaker = true; LO.speakerSelf = !fromTeacher;
+    LO.speaker = true; LO.speakerSelf = !fromTeacher; LO.needTap = false;
+    if (document.getElementById("lo-play")) hide();
+    auState("spk");
     try { testAudio.pause(); testAudio.removeAttribute("src"); testAudio.removeAttribute("data-sec"); testAudio.load(); } catch (e) {}
     document.getElementById("audioPulseIndicator")?.classList.remove("playing");
     const btn = document.getElementById("audioControlBtn");
@@ -2707,7 +2738,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     L.child("choice").set(c).catch(() => {});
     LO.speakerSelf = false;
     if (c === "speaker") enterSpeakerMode(true);
-    else { if (LO.speaker) exitSpeakerMode(); if (st() === "wait") unlockAudio(); }
+    else { if (st() !== "wait") { LO.unlocked = true; LO.needTap = false; } if (LO.speaker) exitSpeakerMode(); if (st() === "wait") unlockAudio(); }
     render();
   }
   window.loChoose = loChoose;
