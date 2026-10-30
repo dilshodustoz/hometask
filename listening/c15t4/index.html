@@ -2429,15 +2429,7 @@
     sent = true; done = true;
     fillAnswers(answers || {});
     __localSubmitListening();
-    const rows = document.querySelectorAll("#reviewTableBody tr");
-    rows.forEach((row, i) => {
-      const e = ev[i + 1];
-      if (!e || !(e.quote || e.expl)) return;
-      const x = document.createElement("tr");
-      x.className = "hw-ev";
-      x.innerHTML = `<td></td><td colspan="3">${e.quote ? `<div class="q">🎧 “${esc(e.quote)}”</div>` : ""}${e.expl ? `<div>💡 ${esc(e.expl)}</div>` : ""}${e.traps ? `<div class="t">⚠️ ${esc(e.traps)}</div>` : ""}</td>`;
-      row.after(x);
-    });
+    // izoh/isbot qatorlari ko'rsatilmaydi: o'quvchi xatosini audioscript va audioga qarab o'zi topadi
     addPlayer(r.tr || {}, ev);
     resultBar(r.raw);
   }
@@ -2567,7 +2559,7 @@
       showReview(r, r.answers);
       hide();
       document.getElementById("resultModal").style.display = "none";
-      show(r.cls ? "Sinfdagi test natijangiz" : "Siz bu testni topshirgansiz", `${esc(r.name)}, natijangiz: <b>${r.raw}/40</b> (band ${esc(r.band)}).<br>To'g'ri javoblar, audioscript va izohlarni ko'ring. Audioni istalgan Part va joyidan qayta eshitishingiz mumkin (savol yonidagi ▶ o'sha javob joyiga olib boradi). Keyin ❌ savollar uchun topic'ingizga error log yozing.`,
+      show(r.cls ? "Sinfdagi test natijangiz" : "Siz bu testni topshirgansiz", `${esc(r.name)}, natijangiz: <b>${r.raw}/40</b> (band ${esc(r.band)}).<br>To'g'ri javoblar va audioscriptni ko'ring. Xatoingiz sababini audioscript va audioga qarab o'zingiz toping. Audioni istalgan Part va joyidan qayta eshitishingiz mumkin (savol yonidagi ▶ o'sha javob joyiga olib boradi). Keyin ❌ savollar uchun topic'ingizga error log yozing.`,
         "📄 Kalit, Audioscript va Audio", () => { hide(); document.getElementById("resultModal").style.display = "flex"; });
       return;
     }
@@ -2593,7 +2585,7 @@
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
       `${esc(r.title)} · Listening<br><br>🎧 Naushnik taqing. <b>Start Audio</b> bosilgach audio to'xtamasdan 4 part davom etadi, 40 daqiqa vaqt bor.<br>` +
-      `Oxirida <b>Finish Test</b> ni bosing: javoblaringiz ustozga (topic'ingizga) yuboriladi, sahifada esa to'g'ri javoblar, audioscript va izohlar chiqadi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
+      `Oxirida <b>Finish Test</b> ni bosing: javoblaringiz ustozga (topic'ingizga) yuboriladi, sahifada esa to'g'ri javoblar, audioscript va audio chiqadi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
       "Tushundim");
   }).catch(() => {
     bar.innerHTML = "⚠️ Internet xatosi";
