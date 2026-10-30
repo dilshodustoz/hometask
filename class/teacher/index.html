@@ -191,6 +191,8 @@
 .tab-btn[data-tab=writing]::before{content:"✍️"}
 .tab-btn[data-tab=hw]::before{content:"🏠"}
 .tab-btn[data-tab=students]::before{content:"👥"}
+.tab-btn[data-tab=attend]::before{content:"📅"}
+.tab-btn[data-tab=grades]::before{content:"📊"}
 .tab-btn[data-tab=setup]::before{content:"⚙️"}
 body{font-size:16.5px;background:#F1F4F9}
 header.topbar{position:fixed;left:0;top:0;bottom:0;width:250px;overflow-y:auto;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:24px 16px;background:#fff;border-right:1px solid #E3E8F0;border-bottom:0}
@@ -301,6 +303,10 @@ html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=writing]) .container::before{content:"IELTS Practice  /  Writing"}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=hw]) .container::before{content:"IELTS Practice  /  Home task"}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=students]) .container::before{content:"IELTS Practice  /  O'quvchilar"}
+html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=attend]) .container::before{content:"IELTS Practice  /  Yo'qlama"}
+html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=grades]) .container::before{content:"IELTS Practice  /  Baholar"}
+html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) .tab-btn[data-tab=attend]::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%224%22%20width=%2218%22%20height=%2218%22%20rx=%222%22/%3E%3Cpath%20d=%22M16%202v4M8%202v4M3%2010h18%22/%3E%3Cpath%20d=%22m9%2016%202%202%204-4%22/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%224%22%20width=%2218%22%20height=%2218%22%20rx=%222%22/%3E%3Cpath%20d=%22M16%202v4M8%202v4M3%2010h18%22/%3E%3Cpath%20d=%22m9%2016%202%202%204-4%22/%3E%3C/svg%3E")}
+html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) .tab-btn[data-tab=grades]::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22M3%203v18h18%22/%3E%3Crect%20x=%227%22%20y=%2212%22%20width=%223%22%20height=%226%22%20rx=%221%22/%3E%3Crect%20x=%2212%22%20y=%228%22%20width=%223%22%20height=%2210%22%20rx=%221%22/%3E%3Crect%20x=%2217%22%20y=%225%22%20width=%223%22%20height=%2213%22%20rx=%221%22/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22M3%203v18h18%22/%3E%3Crect%20x=%227%22%20y=%2212%22%20width=%223%22%20height=%226%22%20rx=%221%22/%3E%3Crect%20x=%2212%22%20y=%228%22%20width=%223%22%20height=%2210%22%20rx=%221%22/%3E%3Crect%20x=%2217%22%20y=%225%22%20width=%223%22%20height=%2213%22%20rx=%221%22/%3E%3C/svg%3E")}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) body:has(.tab-btn.active[data-tab=setup]) .container::before{content:"IELTS Practice  /  Sozlash"}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) .card{background:var(--cardbg)!important;border:1px solid var(--line)!important;border-radius:var(--r)!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important;padding:20px 22px!important;margin-bottom:14px!important}
 html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) .card-title{font-size:1.02rem!important;font-weight:700!important;color:var(--ink)}
@@ -411,6 +417,93 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 @media (max-width:760px){html[data-th=glass] header.topbar{background:rgba(255,255,255,.7)!important}html[data-th=glass] .tb-right::after{display:none}}
 @media (min-width:761px) and (max-width:1279px){html[data-th=glass] .tb-right{background:transparent!important}html[data-th=glass] .tb-right::after{display:none}}
   #thPick{display:flex;gap:8px;flex-wrap:wrap}
+  /* ==== KURS: Yo'qlama va Baholar (course.js) ==== */
+  .c-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .c-filter{margin-bottom:14px;justify-content:space-between}
+  .c-src{font-size:.75rem;color:var(--faint);font-weight:600}
+  .c-chk{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted);font-weight:600;cursor:pointer}
+  .c-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .c-stats .stat{min-width:0}
+  .c-stats .stat.c-big b{color:var(--primary)}
+  .c-stats .stat.c-bad b{color:var(--red)}
+  .c-wrap{max-height:70vh;overflow:auto;border:1px solid var(--border);border-radius:14px;margin-top:4px}
+  .c-tbl{font-size:.88rem;border-collapse:separate;border-spacing:0}
+  .c-tbl th,.c-tbl td{padding:9px 10px!important;border-bottom:1px solid #EEF0F3;background:var(--card,#fff)}
+  .c-tbl thead th{position:sticky;top:0;z-index:2;background:#F8FAFC;vertical-align:bottom}
+  .c-tbl tfoot td{position:sticky;bottom:0;z-index:2;background:#F8FAFC;font-weight:700;color:var(--ink);border-top:1px solid var(--border);border-bottom:0}
+  .c-tbl .c-n{width:30px;color:var(--faint);text-align:right;position:sticky;left:0;z-index:1}
+  .c-tbl .c-nm{position:sticky;left:30px;z-index:1;min-width:170px;max-width:200px;white-space:normal;font-weight:600;color:var(--ink);box-shadow:1px 0 0 var(--border)}
+  .c-tbl thead .c-n,.c-tbl thead .c-nm,.c-tbl tfoot .c-n,.c-tbl tfoot .c-nm{z-index:3}
+  .c-tbl tfoot .c-nm{color:var(--muted)}
+  .c-tbl .c-r{text-align:right;font-variant-numeric:tabular-nums}
+  .c-tbl tbody tr:hover td{background:#FAFBFC}
+  .c-tbl .c-d{text-align:center;padding:7px 2px!important;min-width:34px}
+  .c-tbl th.c-d b{display:block;font-size:1rem;color:var(--ink);letter-spacing:0;text-transform:none}
+  .c-tbl th.c-d span{display:block;font-size:.62rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--faint)}
+  .c-tbl .c-last{background:#FFF7F0!important}
+  .c-tbl th.c-last b{color:var(--primary)}
+  .m-y,.m-n,.m-0{display:inline-flex;width:24px;height:24px;border-radius:8px;align-items:center;justify-content:center;font-style:normal;font-size:.8rem;font-weight:800;vertical-align:middle}
+  .m-y{background:#DCFCE7;color:#15803D}.m-n{background:#FEE2E2;color:#DC2626}.m-0{background:transparent;border:1.5px dashed #E2E5EA;width:20px;height:20px}
+  .c-day{font-size:.82rem;text-align:center}.c-day span{display:block;font-size:.64rem;color:var(--faint);font-weight:600}
+  .c-tbl .c-pc{min-width:118px;white-space:nowrap}
+  .c-pc .c-bar{width:56px}
+  .c-bar{display:inline-block;width:70px;height:7px;border-radius:9px;background:#EEF0F3;overflow:hidden;vertical-align:middle;margin-right:8px}
+  .c-bar span{display:block;height:100%;border-radius:9px}
+  .c-bar.hi span{background:#22C55E}.c-bar.mid span{background:#F59E0B}.c-bar.lo span{background:#EF4444}
+  .c-pc b{font-variant-numeric:tabular-nums;font-size:.86rem}
+  .c-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:.78rem;color:var(--muted)}
+  .c-legend span{display:inline-flex;align-items:center;gap:6px}
+  .c-legend .m-y,.c-legend .m-n{width:20px;height:20px;font-size:.7rem}
+  .c-subh th{position:static!important;font-size:.64rem!important;text-transform:none!important;padding-top:0!important}
+  .c-m{font-variant-numeric:tabular-nums}
+  .c-money .c-wrap{max-height:none}.c-money .c-tbl tfoot td{position:static}
+  .c-money .stat b{font-size:1.45rem!important;white-space:nowrap}
+  .c-grand td{background:#FFF7F0!important;color:var(--primary)!important}
+  #atMoneyCard.c-hidden .c-m,#atMoneyCard.c-hidden .stat b{filter:blur(7px);user-select:none}
+  /* baholar */
+  .c-tbl th.c-t{min-width:84px;max-width:110px;white-space:normal;text-transform:none;letter-spacing:0;font-size:.7rem;line-height:1.25;color:var(--muted);text-align:center}
+  .c-tbl th.c-t b{display:block;font-weight:700;color:var(--ink);font-size:.72rem}
+  .c-sk{display:block;font-size:.95rem;margin-bottom:2px}
+  .c-dt{display:block;font-size:.64rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0;margin-top:2px}
+  .c-v{text-align:center}
+  .v-p{display:inline-block;min-width:36px;padding:3px 7px;border-radius:8px;font-style:normal;font-weight:700;font-size:.82rem;font-variant-numeric:tabular-nums}
+  .v-hi{background:#DCFCE7;color:#166534}.v-mid{background:#FEF3C7;color:#92400E}.v-lo{background:#FEE2E2;color:#B91C1C}.v-0{background:#FEE2E2;color:#DC2626;outline:1.5px solid #FCA5A5}
+  .v-miss{font-style:normal;color:#EF4444;font-weight:700}.v-na{font-style:normal;color:#D4D4D8}.v-txt{font-style:normal;font-size:.75rem;color:var(--muted)}
+  .c-bh-tbl tbody tr{cursor:pointer}
+  .c-bh-tbl .c-nm a{color:inherit;text-decoration:none;border-bottom:1px dashed var(--border-strong)}
+  .c-bh-tbl tr.c-pick td{background:#FFF7F0!important}
+  .c-att{display:grid;grid-template-columns:minmax(160px,1fr) 90px 48px;gap:4px 14px;align-items:center;padding:12px 0;border-bottom:1px solid #EEF0F3}
+  .c-att:last-child{border-bottom:0}
+  .c-att>div:first-child b{display:block;color:var(--ink)}
+  .c-att .c-bar{width:90px;margin:0}
+  .c-attp{color:var(--red);text-align:right}
+  .c-miss{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+  .c-miss span{font-size:.72rem;font-weight:600;background:#FEF2F2;color:#B91C1C;border-radius:7px;padding:3px 8px}
+  .c-sk-row{padding:12px 0;border-top:1px solid #EEF0F3}
+  .c-sk-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--ink)}
+  .c-spark{width:160px;height:36px;margin-left:auto}
+  .c-spark polyline{fill:none;stroke:var(--primary);stroke-width:2;stroke-linejoin:round}
+  .c-spark circle{fill:#fff;stroke:var(--primary);stroke-width:1.6}
+  .c-chips{display:flex;gap:8px;flex-wrap:wrap}
+  .c-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;padding:5px 6px 5px 10px;font-size:.78rem;background:#fff}
+  .c-chip em{font-style:normal;color:var(--muted);font-weight:600}
+  @media (max-width:760px){
+    .c-wrap{max-height:none;margin:4px -16px 0!important;padding:0!important;border-radius:0;border-left:0;border-right:0}
+    .c-tbl{font-size:.8rem}
+    .c-tbl .c-nm{min-width:118px;max-width:130px;font-size:.8rem}
+    .c-tbl .c-n{width:24px;padding:8px 4px!important}.c-tbl .c-nm{left:24px}
+    .c-tbl .c-d{min-width:32px}
+    .m-y,.m-n{width:22px;height:22px}
+    .c-tbl .c-pc{min-width:84px}.c-bar,.c-pc .c-bar{width:34px;margin-right:5px}
+    .c-stats .stat:last-child:nth-child(odd){grid-column:1/-1}
+    .c-money .stat b{font-size:1.05rem!important}
+    #bhSkills{flex-wrap:wrap}#bhSkills button{flex:1 1 auto}
+    .c-tools{width:100%}.c-tools .seg{max-width:100%}
+    .c-stats{grid-template-columns:repeat(2,1fr)!important}
+    .c-att{grid-template-columns:minmax(0,1fr) 60px 40px}.c-att .c-bar{width:60px}
+    .c-spark{width:110px}
+  }
+  @media (max-width:760px){.nav-tabs{grid-template-columns:repeat(8,minmax(0,1fr))!important}.tab-btn{min-width:0;overflow:hidden;text-overflow:clip;font-size:.54rem!important;letter-spacing:-.02em}}
 </style>
 </head>
 <body>
@@ -422,6 +515,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <button class="tab-btn" data-tab="listening">Listening</button>
       <button class="tab-btn" data-tab="writing">Writing</button>
       <button class="tab-btn" data-tab="hw">Home task</button>
+      <button class="tab-btn" data-tab="attend">Yo'qlama</button>
+      <button class="tab-btn" data-tab="grades">Baholar</button>
       <button class="tab-btn" data-tab="students">O'quvchilar</button>
       <button class="tab-btn" data-tab="setup">Sozlash</button>
     </nav>
@@ -685,6 +780,50 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   </section>
 
   <!-- O'quvchilar bazasi -->
+  <!-- Yo'qlama: Course jadvalidagi davomat va hisob-kitob (faqat ko'rish) -->
+  <section data-pane="attend" class="hide">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Yo'qlama <small id="atGroup"></small></h3>
+        <div class="c-tools"><div class="seg" id="atMonths"></div><span class="c-src" id="atAt"></span><button class="btn btn-secondary btn-sm" id="atReload">↻ Yangilash</button></div></div>
+      <div class="msg" id="atMsg" style="margin:0"></div>
+      <div id="atBody" class="hide">
+        <div class="stats c-stats" id="atStats"></div>
+        <div class="tbl-wrap c-wrap"><table class="c-tbl c-att-tbl"><thead id="atHead"></thead><tbody id="atTbody"></tbody><tfoot id="atFoot"></tfoot></table></div>
+        <div class="c-legend"><span><i class="m-y">✓</i> keldi</span><span><i class="m-n">✕</i> kelmadi</span><span><i class="m-0"></i> hali guruhda emas</span><span class="muted">Ma'lumot Course jadvalidan olinadi (Google Sheet ↔ Course.xlsx). O'zgartirish jadvalning o'zida.</span></div>
+      </div>
+    </div>
+    <div class="card hide" id="atMoneyCard">
+      <div class="card-header"><h3 class="card-title">Hisob-kitob <small>oylik to'lov · o'qituvchi ulushi</small></h3><button class="btn btn-secondary btn-sm" id="mnEye">👁 Ko'rsatish</button></div>
+      <div class="c-money">
+        <div class="stats c-stats" id="mnStats"></div>
+        <div class="tbl-wrap c-wrap"><table class="c-tbl"><thead id="mnHead"></thead><tbody id="mnBody"></tbody><tfoot id="mnFoot"></tfoot></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Baholar: Course ASSESSMENT varag'i (faqat ko'rish) -->
+  <section data-pane="grades" class="hide">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Baholar <small id="bhGroup"></small></h3>
+        <div class="c-tools"><span class="c-src" id="bhAt"></span><button class="btn btn-secondary btn-sm" id="bhReload">↻ Yangilash</button></div></div>
+      <div class="c-tools c-filter">
+        <div class="seg" id="bhSkills"><button data-s="all">Hammasi</button><button data-s="listening">🎧 Listening</button><button data-s="reading">📖 Reading</button><button data-s="writing">✍️ Writing</button><button data-s="speaking">🎙 Speaking</button></div>
+        <label class="c-chk"><input type="checkbox" id="bhSummer"> Yozgi Pre-IELTS</label>
+      </div>
+      <div class="msg" id="bhMsg" style="margin:0"></div>
+      <div id="bhBody" class="hide">
+        <div class="stats c-stats" id="bhStats"></div>
+        <div class="tbl-wrap c-wrap"><table class="c-tbl c-bh-tbl"><thead id="bhHead"></thead><tbody id="bhTbody"></tbody><tfoot id="bhFoot"></tfoot></table></div>
+        <div class="c-legend"><span><i class="v-p v-hi">8</i> yaxshi</span><span><i class="v-p v-mid">6</i> o'rta</span><span><i class="v-p v-lo">4</i> past</span><span><i class="v-p v-0">0</i> bajarilmagan</span><span><i class="v-miss">—</i> topshirmagan</span><span><i class="v-na">·</i> hali guruhda emas</span><span class="muted">Ismni bosing: o'quvchining to'liq tarixi.</span></div>
+      </div>
+    </div>
+    <div class="card hide" id="bhDet"></div>
+    <div class="card hide" id="bhAttn">
+      <div class="card-header"><h3 class="card-title">E'tibor kerak <small>topshiriqlarning 70% dan kamini bajarganlar · oxirgi qoldirilganlari</small></h3></div>
+      <div id="bhAttnList"></div>
+    </div>
+  </section>
+
   <section data-pane="students" class="hide">
     <div class="card hide" id="stNewCard">
       <div class="card-header"><h3 class="card-title">Yangi o'quvchi <small id="stGroupName"></small></h3><button class="btn btn-secondary btn-sm" id="stNewClose">✕ Yopish</button></div>
@@ -786,6 +925,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 <script src="../fb/cls.js"></script>
 <script src="tests.js"></script>
 <script src="../writing/templates.js"></script>
+<script src="course.js"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -823,6 +963,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     return fetch(admin.api || DEFAULT_API, { method: "POST", body: JSON.stringify(Object.assign({ secret: admin.secret }, body)),
       headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" }).then(r => r.json());
   }
+  window.CLS_TP = { api: api, group: () => group, groups: CLS.GROUPS, verified: () => !!admin.verified };   // kurs bo'limlari (course.js) uchun
   function randKey(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, b => "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"[b % 56]).join(""); }
   function drawSecret() {
     $("secretBox").innerHTML = admin.verified
@@ -831,6 +972,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     if (!admin.verified) showTab("setup");
     else if (tab === "hw" && !hwLog) hwLoad();
     else if (tab === "students" && !stData) stLoad();
+    else if (tab === "attend" || tab === "grades") window.dispatchEvent(new CustomEvent("cls-tab", { detail: tab }));
   }
 
   function start() {
@@ -866,6 +1008,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("stMsg").textContent = ""; $("grMsg").textContent = ""; stDraw();
     hwShowList();
     watchGroup();
+    window.dispatchEvent(new CustomEvent("cls-group", { detail: g }));
   }
   function showTab(t) {
     tab = t;
@@ -875,6 +1018,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     layout();
     if (t === "hw" && !hwLog && admin.verified) hwLoad();
     if (t === "students" && !stData && admin.verified) stLoad();
+    window.dispatchEvent(new CustomEvent("cls-tab", { detail: t }));
   }
   // jonli dars qaysi bo'limda ko'rinadi
   function layout() {
