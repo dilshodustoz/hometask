@@ -2554,7 +2554,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     const url = NET[n];
     let cache = null;
     try {
-      cache = await caches.open("lo-audio-v1");
+      cache = await caches.open("lo-audio-v2");   // v2: 30.10 audio mono 64k ga o'tkazildi, eski nusxa ishlatilmasin
       const hit = await cache.match(url);
       if (hit) { const b = await hit.blob(); if (b.size > 100000) return b; }
     } catch (e) { cache = null; }
@@ -2593,6 +2593,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
       LO.pre = n * 25; preTick(true);
     }
   }
+  try { caches.delete("lo-audio-v1"); } catch (e) {}   // eski (katta) audio keshi telefondan o'chiriladi
   function ensurePreload() {
     if (preOn || LO.speaker || LO.done || !DURS[0]) return;
     preOn = true; preTick(true);
