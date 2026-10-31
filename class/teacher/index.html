@@ -951,6 +951,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 <script src="tests.js"></script>
 <script src="../writing/templates.js"></script>
 <script src="course.js"></script>
+<script src="journal.js"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -1002,6 +1003,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   }
 
   function start() {
+    JR.mount(); JR.attach(db);
     if (!admin.secret) { admin.secret = randKey(28); db.ref("admin/secret").set(admin.secret); }
     try { group = localStorage.getItem("cls_group"); mode = localStorage.getItem("cls_mode") || mode; } catch (e) {}
     mergeGroups(admin.groups);   // saytda ulangan yangi guruhlar
@@ -1658,7 +1660,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     const s = { skill: t.skill, test: t.key, title: t.title, group: group, minutes: min, state: "wait", created: CLS.TS };
     if (t.skill === "listening") Object.assign(s, { mode: mode, durs: t.durs, shift: 0 });
     db.ref("sessions/" + id).set(s).then(() => db.ref("current/" + group).set({ sid: id, skill: t.skill, test: t.key }))
-      .then(() => attach(id)).catch(e => { $(p + "Msg").textContent = "⚠️ " + e.message; });
+      .then(() => { attach(id); JR.log(`${CLS.GROUPS[group].name}: ${t.title} darsini ochish`, `✅ Dars ochildi (${min} daqiqa). O'quvchilar kirmoqda; hamma kirgach "Boshlash" ni bosing.`); })
+      .catch(e => { $(p + "Msg").textContent = "⚠️ " + e.message; });
   }
   $("rdOpenBtn").onclick = () => openLesson("reading");
   $("lsOpenBtn").onclick = () => openLesson("listening");
@@ -1682,6 +1685,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   $("rdTaBtn").onclick = () => openTA("reading");
   $("lsTaBtn").onclick = () => openTA("listening");
   function upd(o) { return db.ref("sessions/" + sid).update(o).catch(e => alert(e.message)); }
+  const jg = () => sess ? CLS.GROUPS[sess.group].name + ": " + sess.title.replace(/ · (Reading|Listening)$/, "") : "";
   $("btnStart").onclick = () => {
     if (sess.skill === "listening" && sess.mode !== "speaker") {
       const notReady = Object.keys(live).filter(k => roster[k] && roster[k].group === sess.group && live[k].joined && live[k].online !== false &&
@@ -1693,17 +1697,26 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     // telefon rejimida har o'quvchining vaqti o'z audiosi boshlangandan: umumiy tugash 5 daqiqa zaxira bilan
     const grace = sess.skill === "listening" && sess.mode === "phone" ? 300000 : 0;
     if (sess.skill === "listening") audioUnlock();
-    upd({ state: "run", start: now, end: now + sess.minutes * 60000 + grace, grace: grace, pausedTotal: 0 });
+    upd({ state: "run", start: now, end: now + sess.minutes * 60000 + grace, grace: grace, pausedTotal: 0 })
+      .then(() => JR.log(jg() + " testini boshlash", `✅ ${jg()} boshlandi. ${sess.minutes} daqiqa, vaqt ${JR.hms(now + sess.minutes * 60000)} da tugaydi.` +
+        (grace ? " (Telefon rejimi: har o'quvchining vaqti o'z audiosi boshlangandan hisoblanadi, 5 daqiqa zaxira.)" : "") +
+        "\nVaqt tugasa test avtomatik to'xtaydi. Oldinroq yopish uchun 'To'xtatish' ni bosing."));
   };
   $("btnPause").onclick = () => {
-    if (sess.state === "run") upd({ state: "paused", pausedAt: CLS.now() });
-    else if (sess.state === "paused") { const p = CLS.now() - sess.pausedAt; upd({ state: "run", end: sess.end + p, pausedTotal: (sess.pausedTotal || 0) + p, pausedAt: null }); }
+    if (sess.state === "run") upd({ state: "paused", pausedAt: CLS.now() }).then(() => JR.log(jg() + ": pauza", "⏸ Test pauzaga qo'yildi. Davom ettirish uchun 'Davom ettirish' ni bosing."));
+    else if (sess.state === "paused") { const p = CLS.now() - sess.pausedAt; upd({ state: "run", end: sess.end + p, pausedTotal: (sess.pausedTotal || 0) + p, pausedAt: null })
+      .then(() => JR.log(jg() + ": davom ettirish", `✅ Test davom etmoqda. Yangi tugash vaqti: ${JR.hms(sess.end - (sess.grace || 0))}.`)); }
   };
-  $("btnStop").onclick = () => { if (confirm("Testni hamma uchun yakunlaysizmi? Kiritilgan javoblar avtomatik topshiriladi.")) upd({ state: "stopped", stoppedAt: CLS.now() }); };
+  $("btnStop").onclick = () => { if (confirm("Testni hamma uchun yakunlaysizmi? Kiritilgan javoblar avtomatik topshiriladi.")) upd({ state: "stopped", stoppedAt: CLS.now() }).then(() => JR.log(jg() + ": to'xtatish", `⏹ Test to'xtatildi. ${jDone()}\nEndi "Natijalarni yuborish" ni bosing.`)); };
   $("btnClose").onclick = () => {
     if (!confirm("Darsni yopasizmi? O'quvchilar endi kira olmaydi." + (sess.graded ? "" : "\n⚠️ Natijalar hali yuborilmagan!"))) return;
-    upd({ state: "closed" }).then(() => db.ref("current/" + group).remove()).then(detach);
+    const jt = jg();
+    upd({ state: "closed" }).then(() => db.ref("current/" + group).remove()).then(() => { detach(); JR.log(jt + ": darsni yopish", "✅ Dars yopildi. O'quvchilar endi kira olmaydi."); });
   };
+  function jDone() {
+    const ks = Object.keys(live).filter(k => roster[k] && roster[k].group === sess.group);
+    return `${ks.filter(k => live[k].joined).length} kirdi, ${ks.filter(k => live[k].submitted).length} topshirdi.`;
+  }
   $("btnGrade").onclick = () => {
     const keys = Object.keys(live).filter(k => live[k] && live[k].joined && roster[k] && !(live[k].result));
     if (!keys.length) { $("liveMsg").textContent = "Yuboriladigan yangi natija yo'q."; return; }
@@ -1822,11 +1835,15 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   $("qdCopy").onclick = () => navigator.clipboard.writeText(qdText).then(() => { $("qdCopy").textContent = "✓ Olindi"; setTimeout(() => $("qdCopy").textContent = "Nusxa olish", 1500); });
   function refNow() { return sess.state === "paused" ? sess.pausedAt : sess.state === "stopped" ? sess.stoppedAt : CLS.now(); }
   setInterval(() => {
+    JR.setLive(sess && sess.skill !== "writing" && sess.state !== "closed" && !sess.graded ? Object.assign({}, sess, { group: CLS.GROUPS[sess.group].name, title: sess.title.replace(/ · (Reading|Listening)$/, ""),
+      joined: Object.keys(live).filter(k => roster[k] && roster[k].group === sess.group && live[k].joined).length,
+      done: Object.keys(live).filter(k => roster[k] && roster[k].group === sess.group && live[k].submitted).length }) : null);
     if (!sess) return;
     let left = sess.minutes * 60;
     if (sess.end) left = (sess.end - (sess.grace || 0) - refNow()) / 1000;
     $("timer").textContent = CLS.mmss(left);
-    if (sess.state === "run" && sess.end && CLS.now() >= sess.end && !sess.stoppedAt) upd({ state: "stopped", stoppedAt: sess.end });
+    if (sess.state === "run" && sess.end && CLS.now() >= sess.end && !sess.stoppedAt) upd({ state: "stopped", stoppedAt: sess.end })
+      .then(() => JR.log(jg() + ": vaqt tugadi", `⏹ Vaqt tugadi, test avtomatik to'xtadi. ${jDone()}\nEndi "Natijalarni yuborish" ni bosing.`));
     audioTick();
   }, 500);
 
@@ -1984,11 +2001,13 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("wDetX").onclick = () => { wDetCur = null; $("wlDet").classList.add("hide"); };
     if (!quiet) $("wlDet").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
-  $("wlStart").onclick = () => upd(sess.state === "wait" ? { state: "run", start: CLS.now() } : { state: "run" });
-  $("wlStop").onclick = () => { if (confirm("Tekshiruvni yakunlaysizmi? O'quvchilar endi yangi matn tekshirtira olmaydi (keyin qayta ochish mumkin).")) upd({ state: "stopped" }); };
+  $("wlStart").onclick = () => { const re = sess.state !== "wait"; upd(re ? { state: "run" } : { state: "run", start: CLS.now() })
+    .then(() => JR.log(jg() + (re ? ": tekshiruvni qayta ochish" : ": Writing boshlash"), re ? "✅ Tekshiruv qayta ochildi." : "✅ Writing boshlandi. O'quvchilar yozib, AI'ga tekshirtira oladi. Yakunlash uchun 'To'xtatish' ni bosing.")); };
+  $("wlStop").onclick = () => { if (confirm("Tekshiruvni yakunlaysizmi? O'quvchilar endi yangi matn tekshirtira olmaydi (keyin qayta ochish mumkin).")) upd({ state: "stopped" }).then(() => JR.log(jg() + ": tekshiruvni yakunlash", "⏹ Tekshiruv yakunlandi. Endi natijalarni topic'larga yuboring.")); };
   $("wlClose").onclick = () => {
     if (!confirm("Darsni yopasizmi? O'quvchilar endi kira olmaydi." + (sess.graded ? "" : "\n⚠️ Natijalar hali topic'larga yuborilmagan!"))) return;
-    upd({ state: "closed" }).then(() => db.ref("current/" + group).remove()).then(() => { wDetCur = null; $("wlDet").classList.add("hide"); detach(); });
+    const jt = jg();
+    upd({ state: "closed" }).then(() => db.ref("current/" + group).remove()).then(() => { wDetCur = null; $("wlDet").classList.add("hide"); detach(); JR.log(jt + ": darsni yopish", "✅ Dars yopildi."); });
   };
   $("wlSend").onclick = () => {
     const ks = Object.keys(live).filter(k => roster[k] && Object.values((live[k] || {}).w || {}).some(x => x && x.res));
