@@ -1134,6 +1134,8 @@ async function afterSubmit() {
   .hw-item .q{font-weight:700}
   .hw-item .meta{color:#475569;font-size:13px}
   .hw-item .quote{margin-top:6px;background:#fefce8;border-radius:6px;padding:6px 8px;font-style:italic}
+  .hw-item .qt,.el-row .qt{margin-top:4px;color:#0f172a;font-size:14px}
+  .el-row .quote{margin-top:6px;background:#fefce8;border-radius:6px;padding:6px 8px;font-style:italic;font-size:13px}
   .hw-item .exp{margin-top:6px;color:#334155}
   .el-row{border:1px solid #e5e7eb;border-left:4px solid #dc2626;border-radius:8px;padding:8px 10px;margin:8px 0}
   .el-row.ok{border-left-color:#16a34a}
@@ -1169,6 +1171,20 @@ async function afterSubmit() {
   timerOn = false;
 
   function esc2(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  // savol matni va variantlar sahifadagi TEST dan (javobsiz)
+  function plain_(h) { const d = document.createElement("div"); d.innerHTML = String(h || ""); return (d.textContent || "").replace(/\s+/g, " ").trim(); }
+  function qObj_(n) { try { return (TEST.questions || {})[n] || (TEST.questions || {})[String(n)] || null; } catch (e) { return null; } }
+  function qOpts_(n) {
+    const q = qObj_(n); if (q && q.options) return q.options;
+    try { for (const p in TEST.blocks) for (const b of TEST.blocks[p]) if (b.options && (b.nums || []).indexOf(+n) >= 0) { const o = {}; b.options.forEach(x => { if (x[1]) o[x[0]] = x[1]; }); return o; } } catch (e) {}
+    return {};
+  }
+  function qText_(n) {
+    const q = qObj_(n); if (!q || !q.text) return "";
+    return plain_(String(q.text).replace(/\{\{\d+\}\}/g, " ______ ")).replace(/\b\d+\s*\.{4,}/g, "______").replace(/\.{4,}/g, "______");
+  }
+  function qAns_(n, v) { const o = qOpts_(n), k = String(v || "").trim(); return o[k] ? k + " (" + plain_(o[k]) + ")" : k; }
+  function qLine_(n) { const t = qText_(n); return t ? `<div class="qt">📝 ${esc2(t)}</div>` : ""; }
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
@@ -1205,7 +1221,7 @@ async function afterSubmit() {
     list.innerHTML = `<div class="el-note">Har bir ❌ savol uchun <b>xato turini</b> tanlang va <b>nega xato qilganingizni</b> qisqa yozing (masalan: "matnda 'rarely' bor edi, men 'never' deb o'ylabman"). Hammasi yozilgach <b>Yuborish</b> ni bosing, log ustozga (topic'ingizga) boradi. Keyin tuzatib qayta yuborsangiz ham bo'ladi.</div>` +
       (EL.sent ? `<p style="margin:8px 0 0;color:#15803d">✅ Oldin yuborilgan: ${EL.sent.done}/${EL.sent.wrong} (${EL.sent.pct}%).</p>` : "") +
       EL.wrong.map(q => { const x = R[q] || {}, it = EL.items[q] || {};
-        return `<div class="el-row${elOk(it) ? " ok" : ""}" data-q="${q}"><b>Question ${q}</b><div class="meta">Siz: <b>${esc2(x.you) || "(javob yo'q)"}</b> · To'g'ri: <b style="color:#166534">${esc2(x.ans)}</b>${x.loc ? " · " + esc2(x.loc) : ""}</div>
+        return `<div class="el-row${elOk(it) ? " ok" : ""}" data-q="${q}"><b>Question ${q}</b>${qLine_(q)}<div class="meta">Siz: <b>${esc2(qAns_(q, x.you)) || "(javob yo'q)"}</b> · To'g'ri: <b style="color:#166534">${esc2(qAns_(q, x.ans))}</b>${x.loc ? " · " + esc2(x.loc) : ""}</div>${x.quote ? `<div class="quote">📌 “${esc2(x.quote)}”</div>` : ""}
           <select><option value="">— xato turi —</option>${EL.types.map(t => `<option${t === it.type ? " selected" : ""}>${esc2(t)}</option>`).join("")}</select>
           <textarea maxlength="400" placeholder="Nega xato qildim? (qisqa)">${esc2(it.why || "")}</textarea></div>`; }).join("") +
       `<div class="el-foot"><span id="elCnt">Yozildi: <b>${done} / ${EL.wrong.length}</b></span><span id="elMsg">${EL.msg}</span><button id="elSend"${EL.busy ? " disabled" : ""}>📤 Yuborish</button></div>`;
@@ -1239,8 +1255,8 @@ async function afterSubmit() {
     if (filter === "log") { if (!EL) elInit(review); elDraw(list); return; }
     const items = review.review.filter(r => filter === "all" || !r.ok);
     list.innerHTML = items.length ? items.map(r => `<div class="hw-item${r.ok ? "" : " bad"}">
-      <div class="q">Question ${r.n}: ${r.ok ? "✅ To'g'ri" : "❌ Noto'g'ri"}</div>
-      <div class="meta">Sizning javobingiz: <b>${esc2(r.you) || "(javob yo'q)"}</b> · To'g'ri javob: <b style="color:#166534">${esc2(r.ans)}</b>${r.loc ? " · " + esc2(r.loc) : ""}</div>
+      <div class="q">Question ${r.n}: ${r.ok ? "✅ To'g'ri" : "❌ Noto'g'ri"}</div>${qLine_(r.n)}
+      <div class="meta">Sizning javobingiz: <b>${esc2(qAns_(r.n, r.you)) || "(javob yo'q)"}</b> · To'g'ri javob: <b style="color:#166534">${esc2(qAns_(r.n, r.ans))}</b>${r.loc ? " · " + esc2(r.loc) : ""}</div>
       ${r.quote ? `<div class="quote">📌 “${esc2(r.quote)}”</div>` : ""}
       ${r.exp ? `<div class="exp">💡 ${esc2(r.exp)}</div>` : ""}</div>`).join("") : "<p>Xato yo'q! 🎉</p>";
   }
