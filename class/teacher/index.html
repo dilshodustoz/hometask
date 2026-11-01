@@ -1568,7 +1568,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function groupOfIn(gs, chat) { for (const g in gs) if (String(gs[g].chat) === String(chat)) return g; return null; }
   // server javobi (roster + groups) → Firebase (sinf sahifalari shu ro'yxatdan foydalanadi) va sahifa
   function stApply(r) {
-    stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups, codes: r.codes || (stData && stData.codes) || {} };
+    stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups, codes: r.codes || (stData && stData.codes) || {}, push: r.push || (stData && stData.push) || {} };
     const out = {}; let n = 0;
     Object.keys(r.roster).forEach(k => {
       const st = r.roster[k], g = st.test ? "test" : (st.group && r.groups[st.group] ? st.group : groupOfIn(r.groups, st.chat));
@@ -1605,7 +1605,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("stCount").textContent = `· ${CLS.GROUPS[group].name} · ${ks.length} ta`;
     $("stBody").innerHTML = ks.map((k, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(R[k].name)}${R[k].note ? `<div class="muted">${CLS.esc(R[k].note)}</div>` : ""}</td>
         <td>${CLS.esc(R[k].phone || "")}</td><td>${fdate(R[k].added)}</td>
-        <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi ishlamay qoladi)">🔄</button>` : `<span class="muted">—</span>`}</td>
+        <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi ishlamay qoladi)">🔄</button>` : `<span class="muted">—</span>`}${(stData.push || {})[k] ? ` <span title="Telefon bildirishnomasi yoqilgan (${stData.push[k]} ta qurilma)">🔔</span>` : ""}</td>
         <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-inv="${k}">Taklif havolasi</button>
           <button class="btn btn-warning btn-sm" data-ar="${k}">Arxivlash</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("")
         || `<tr><td colspan="6" class="muted">Bu guruhda hali o'quvchi yo'q.</td></tr>`;
@@ -1620,6 +1620,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         ${["test", "morning", "afternoon"].indexOf(g) < 0 ? ` <button class="btn btn-danger btn-sm" data-grm="${g}">Olib tashlash</button>` : ""}</td></tr>`).join("");
   }
   const KAB_URL = "https://dilshodustoz.github.io/hometask/kabinet/";
+  const KAB_QR = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 35 35" shape-rendering="crispEdges"><path class="qrline" stroke="#000" d="M1 1.5h7m2 0h2m5 0h1m1 0h3m2 0h1m2 0h7m-33 1h1m5 0h1m3 0h2m3 0h2m1 0h1m3 0h1m1 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h4m2 0h2m3 0h3m2 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m2 0h2m5 0h2m2 0h3m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m3 0h5m3 0h1m2 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m1 0h3m1 0h3m2 0h1m1 0h1m2 0h1m3 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h1m1 0h1m1 0h1m1 0h1m1 0h1m2 0h4m1 0h1m-25 1h1m1 0h5m2 0h2m1 0h2m3 0h1m1 0h1m2 0h3m1 0h5m-31 1h2m3 0h1m4 0h1m1 0h2m2 0h4m1 0h1m1 0h1m2 0h2m1 0h2m1 0h1m-32 1h1m3 0h2m1 0h1m1 0h1m2 0h3m1 0h1m3 0h2m3 0h1m1 0h1m1 0h2m-32 1h1m2 0h3m7 0h1m2 0h4m1 0h6m1 0h5m-32 1h1m1 0h1m2 0h4m1 0h2m1 0h1m1 0h1m2 0h2m1 0h1m1 0h1m2 0h3m1 0h2m-32 1h2m1 0h2m2 0h1m1 0h1m1 0h1m2 0h1m1 0h2m2 0h3m2 0h1m2 0h1m1 0h2m-32 1h1m1 0h2m1 0h1m2 0h1m2 0h1m2 0h2m1 0h1m1 0h3m1 0h3m1 0h4m-28 1h1m2 0h1m2 0h1m3 0h2m5 0h1m1 0h5m1 0h2m-29 1h3m1 0h3m1 0h1m2 0h1m1 0h1m1 0h1m2 0h1m1 0h1m2 0h1m1 0h2m3 0h1m-33 1h1m1 0h1m1 0h1m2 0h3m1 0h2m1 0h1m4 0h5m2 0h2m1 0h2m1 0h1m-33 1h2m3 0h4m1 0h2m1 0h3m2 0h1m1 0h3m1 0h5m1 0h2m-32 1h5m3 0h1m2 0h1m2 0h1m4 0h3m3 0h6m-31 1h2m3 0h2m3 0h2m1 0h1m1 0h1m2 0h2m3 0h3m2 0h2m2 0h1m-33 1h1m1 0h1m1 0h1m8 0h1m1 0h2m3 0h2m1 0h1m2 0h1m2 0h2m1 0h1m-33 1h1m2 0h1m2 0h1m4 0h4m4 0h1m1 0h2m2 0h1m3 0h3m-32 1h1m3 0h1m2 0h2m3 0h1m3 0h1m1 0h5m1 0h1m2 0h1m1 0h2m-31 1h1m2 0h4m1 0h1m2 0h1m1 0h1m3 0h1m1 0h1m2 0h1m1 0h6m-22 1h4m1 0h2m1 0h5m1 0h1m1 0h1m3 0h1m1 0h1m1 0h1m-33 1h7m2 0h1m1 0h7m4 0h3m1 0h1m1 0h1m1 0h2m-32 1h1m5 0h1m1 0h3m2 0h6m1 0h5m3 0h5m-33 1h1m1 0h3m1 0h1m1 0h1m5 0h3m4 0h1m2 0h6m1 0h2m-33 1h1m1 0h3m1 0h1m1 0h3m2 0h3m1 0h2m2 0h1m1 0h3m2 0h5m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h3m1 0h1m7 0h2m2 0h1m-31 1h1m5 0h1m5 0h2m1 0h1m2 0h1m2 0h2m3 0h1m1 0h3m-31 1h7m1 0h1m2 0h2m1 0h4m2 0h1m1 0h6m3 0h1"/></svg>';   // KAB_URL uchun QR kod (o'zgarmas havola)
   function stCards() {   // kabinet kodlari bilan chop etiladigan kartochkalar (joriy guruh)
     if (!stData) return;
     const R = stData.roster, C = stData.codes || {}, chat = String(CLS.GROUPS[group].chat);
@@ -1627,7 +1628,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     if (!ks.length) { alert("Bu guruhda kodli o'quvchi yo'q. Avval \"Yangilash\" ni bosing."); return; }
     const e = CLS.esc, card = k => `<div class="c"><div class="h">🎓 Shaxsiy kabinet · Dilshod ustoz</div><div class="n">${e(R[k].name)}</div>
       <div class="l">Kirish kodi</div><div class="k">${e(C[k])}</div>
-      <div class="u">${e(KAB_URL.replace("https://", ""))}</div>
+      <div class="uq"><div class="u">${e(KAB_URL.replace("https://", ""))}<div class="qh">📷 QR kodni telefon kamerasi bilan skanerlang</div></div><div class="qr">${KAB_QR}</div></div>
       <div class="t">Saytni oching, kodni kiriting. Kodni hech kimga bermang. Telefon ekraniga qo'shib qo'ying (Ulashish → Add to Home Screen).</div></div>`;
     const html = `<!DOCTYPE html><html lang="uz"><head><meta charset="utf-8"><title>Kabinet kartochkalari · ${e(CLS.GROUPS[group].name)}</title><style>
       @page{size:A4;margin:10mm}body{font-family:system-ui,-apple-system,sans-serif;margin:0;color:#16181D}
@@ -1635,7 +1636,9 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       .c{border:1px dashed #9CA3AF;padding:14px 16px;height:62mm;box-sizing:border-box;break-inside:avoid;display:flex;flex-direction:column}
       .h{font-size:11px;color:#6B6F76;font-weight:600}.n{font-size:17px;font-weight:800;margin:6px 0 8px}
       .l{font-size:10px;color:#6B6F76;text-transform:uppercase;letter-spacing:.08em}.k{font:700 26px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#E8590C}
-      .u{font:600 12px ui-monospace,Menlo,monospace;margin-top:6px}.t{font-size:10.5px;color:#444;margin-top:auto;line-height:1.35}
+      .u{font:600 12px ui-monospace,Menlo,monospace;margin-top:6px;flex:1;min-width:0;word-break:break-all}
+      .uq{display:flex;align-items:flex-start;gap:10px}.qr{width:24mm;height:24mm;flex:none;margin-top:-30px}.qr svg{width:100%;height:100%;display:block}
+      .qh{font:500 10px system-ui,sans-serif;color:#6B6F76;margin-top:4px}.t{font-size:10.5px;color:#444;margin-top:auto;line-height:1.35}
       .bar{padding:10px;text-align:center;font-size:14px}@media print{.bar{display:none}}</style></head><body>
       <div class="bar">${ks.length} ta kartochka · qaychi bilan kesib, har biriga o'zinikini bering. <button onclick="print()">🖨 Chop etish</button></div>
       <div class="g">${ks.map(card).join("")}</div><script>setTimeout(()=>print(),400)<\/script></body></html>`;
