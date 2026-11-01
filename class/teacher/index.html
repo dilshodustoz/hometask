@@ -537,6 +537,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   tr.hwd-row{cursor:pointer}tr.hwd-row:hover td{background:rgba(232,89,12,.05)}
   @media(max-width:600px){#hwdM{padding:0}.hwd-p{border-radius:0;max-height:100vh;height:100%}}
 </style>
+<script>try{if(new URLSearchParams(location.search).get("cab"))localStorage.setItem("cls_tab","students")}catch(e){}</script>
 </head>
 <body>
 <header class="topbar">
@@ -1570,6 +1571,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function stApply(r) {
     stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups, codes: r.codes || (stData && stData.codes) || {}, push: r.push || (stData && stData.push) || {} };
     if (r.inbox_n != null) cabBadge(r.inbox_n);
+    const want = new URLSearchParams(location.search).get("cab");   // Telegram'dagi "Javob berish" tugmasidan
+    if (want && !stApply.opened && r.roster[want]) { stApply.opened = 1; setTimeout(() => cabOpen("thread", want), 0); history.replaceState(null, "", location.pathname); }
     const out = {}; let n = 0;
     Object.keys(r.roster).forEach(k => {
       const st = r.roster[k], g = st.test ? "test" : (st.group && r.groups[st.group] ? st.group : groupOfIn(r.groups, st.chat));
