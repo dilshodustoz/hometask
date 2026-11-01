@@ -95,7 +95,14 @@
   @keyframes sl{from{transform:translateX(100%)}}
   #drawer .dh{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line)}
   #drawer .dh .btn{padding:6px 12px}
-  #drawer .db{flex:1;overflow-y:auto;padding:12px 14px 40px}
+  #drawer .db{flex:1;overflow-y:auto;padding:12px 14px 16px}
+  #drawer .cmp{display:flex;gap:8px;align-items:flex-end;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+  #drawer .cmp textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font:inherit;font-size:16px;max-height:120px;min-height:42px;background:var(--bg);color:var(--ink)}
+  #drawer .cmp .btn{padding:10px 14px;flex:none}
+  .note.me{border-left:0;border-right:3px solid var(--primary);background:var(--soft);margin-left:18%}
+  .note.me .when{text-align:right}
+  .note.elon{border-left-color:#7c3aed}
+  body:has(#drawer:not(.hide)) .toast{bottom:96px}
   #cover{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
   #cover .card{max-width:420px;text-align:center;padding:24px}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:70;max-width:92vw;text-align:center}
@@ -136,7 +143,8 @@
     <div><button class="btn inst hide" id="inst">📲 Ilova qilib o'rnatish</button></div></div>
   <button class="setb hide" id="setB">⚙️ Sozlamalar</button>
 </main>
-<div id="drawer" class="hide"><div class="dbg" id="dBg"></div><div class="dp"><div class="dh"><b style="display:inline-flex;align-items:center;gap:8px"><svg class="dm" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M22 3 9.2 10.8"/><path d="M22 3 15 21l-5.8-10.2L2 7.5 22 3Z"/></svg> Xabarlar</b><button class="btn sec" id="dX">✕</button></div><div class="db" id="notes"></div></div></div>
+<div id="drawer" class="hide"><div class="dbg" id="dBg"></div><div class="dp"><div class="dh"><b style="display:inline-flex;align-items:center;gap:8px"><svg class="dm" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M22 3 9.2 10.8"/><path d="M22 3 15 21l-5.8-10.2L2 7.5 22 3Z"/></svg> Xabarlar</b><button class="btn sec" id="dX">✕</button></div><div class="db" id="notes"></div>
+  <form class="cmp" id="cmp"><textarea id="cmpT" rows="1" maxlength="1000" placeholder="Ustozga yozish…" aria-label="Ustozga xabar"></textarea><button class="btn" id="cmpGo" type="submit">Yuborish</button></form></div></div>
 <div id="modal" class="hide"><div class="bar"><b id="mT" style="flex:1">Feedback</b><button class="btn sec" id="mX">✕ Yopish</button></div><iframe id="mF" sandbox="allow-same-origin allow-popups"></iframe></div>
 <div id="cover"><div class="card"><h3 style="margin:0 0 6px;font-size:1.1rem;color:var(--ink);text-transform:none;letter-spacing:0" id="cT">⏳ Yuklanmoqda…</h3><div class="mt" id="cB">Bir soniya kuting.</div></div></div>
 <div id="login" class="hide"><form class="card" id="lForm" autocomplete="off">
@@ -246,10 +254,14 @@
       (T.length ? `<h3>Hamma vazifalar</h3>` + T.map(card).join("") : `<div class="empty">Hozircha vazifa yo'q. Ustoz yuborganda shu yerda chiqadi.</div>`);
   }
   function renderNotes() {
-    const N = D.notes;
-    $("notes").innerHTML = N.length ? N.map(n => `<div class="card note${n.read ? "" : " new"}"><div class="when">${n.read ? "" : "🟠 "}${when(n.at)}</div>
+    const N = D.notes.slice().reverse();   // eskisi tepada, yangisi pastda (suhbat kabi)
+    const box = $("notes"), atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    box.innerHTML = N.length ? N.map(n => n.from === "st"
+      ? `<div class="card note me"><div class="when">Siz · ${when(n.at)}</div><div class="tx">${safe(n.text)}</div></div>`
+      : `<div class="card note${n.read ? "" : " new"}${n.kind === "elon" ? " elon" : ""}"><div class="when">${n.read ? "" : "🟠 "}${when(n.at)}</div>
       <div class="tx">${safe(n.text)}</div>${n.btn ? `<div class="act"><a class="btn" href="${esc(n.btn.url)}">${esc(n.btn.text)}</a></div>` : ""}</div>`).join("")
-      : `<div class="empty">Xabarlar yo'q.</div>`;
+      : `<div class="empty">Xabarlar yo'q. Ustozga savolingiz bo'lsa, pastda yozing.</div>`;
+    if (atEnd || renderNotes.jump) { box.scrollTop = box.scrollHeight; renderNotes.jump = 0; }
   }
   function renderRes() {
     const R = D.tasks.filter(x => x.done || (x.skill === "speaking" && x.n));
@@ -284,8 +296,10 @@
     ["tasks", "res"].forEach(s => $(s).classList.toggle("hide", s !== t));
     try { localStorage.setItem("kab_tab", t); } catch (e) {}
   }
+  const isTouch = matchMedia("(pointer: coarse)").matches;
   function openNotes() {
     renderNotes(); $("drawer").classList.remove("hide"); document.body.style.overflow = "hidden";
+    $("notes").scrollTop = $("notes").scrollHeight;
     if (D && D.notes.some(x => !x.read)) {
       setTimeout(() => {   // xabarlarni ko'rgandan keyin o'qilgan qilamiz
         D.notes.forEach(x => x.read = true); badge();
@@ -297,6 +311,20 @@
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.tab));
   $("bell").onclick = openNotes;
   $("sync").onclick = () => { if (D) load(false).then(() => toast("✓ Yangilandi")).catch(e => toast("⚠️ " + e.message)); };
+  $("cmpT").addEventListener("input", () => { const t = $("cmpT"); t.style.height = "auto"; t.style.height = Math.min(120, t.scrollHeight) + "px"; });
+  $("cmpT").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !isTouch) { e.preventDefault(); $("cmp").requestSubmit ? $("cmp").requestSubmit() : $("cmpGo").click(); } });
+  $("cmp").onsubmit = ev => {
+    ev.preventDefault();
+    const t = $("cmpT").value.trim(); if (!t || !D) return;
+    $("cmpGo").disabled = true; $("cmpGo").textContent = "…";
+    post(Object.assign({ cab: "reply", text: t }, auth())).then(r => {
+      if (!r.ok) throw new Error(r.error || "Yuborilmadi");
+      $("cmpT").value = ""; $("cmpT").style.height = "";
+      D.notes.unshift(r.note); renderNotes.jump = 1; renderNotes();
+      try { localStorage.setItem(cacheKey(), JSON.stringify(D)); } catch (e) {}
+      toast("✓ Ustozga yuborildi");
+    }).catch(e => toast("⚠️ " + (isNet(e) ? NETERR : e.message))).finally(() => { $("cmpGo").disabled = false; $("cmpGo").textContent = "Yuborish"; });
+  };
   const closeNotes = () => { $("drawer").classList.add("hide"); document.body.style.overflow = ""; };
   $("dX").onclick = $("dBg").onclick = () => { if (history.state && history.state.layer) history.back(); else closeNotes(); };
   const back = fn => () => { if (history.state && history.state.layer) history.back(); else fn(); };
