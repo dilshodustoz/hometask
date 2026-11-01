@@ -17,7 +17,8 @@
     ["listening", "c14t2", "2026-10-13"], ["listening", "c14t3", "2026-10-20", "uy vazifasi"], ["listening", "c14t4", "2026-10-21"],
     ["listening", "c15t1", "2026-10-29", "uy vazifasi"], ["listening", "c15t2", "2026-10-30"]
   ];
-  let db = null, sessions = {}, hist = {}, hw = null, hwBusy = false, ready = 0, showAll = { reading: false, listening: false }, openChips = {}, chDate = {};
+  let db = null, sessions = {}, hist = {}, hw = null, hwBusy = false, ready = 0, showAll = { reading: false, listening: false }, openChips = {}, chDate = {}, listOpen = false;
+  try { listOpen = localStorage.getItem("cls_hist_open") === "1"; } catch (e) {}
 
   const css = `
   .ch-card .ch-next{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--green-bg,#ECFDF3);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:.9rem;color:var(--ink)}
@@ -119,8 +120,15 @@
     const mine = doneMap(all, sk, g)[t];
     w.innerHTML = mine ? `<span class="ch-w">⚠️ Bu test ${esc(gName(g))} guruhida ${fmtDW(mine)} kuni o'tilgan.</span><button class="btn btn-secondary btn-sm" data-chun="1">✕ O'tilmagan deb belgilash</button>`
       : `<button class="btn btn-secondary btn-sm" data-chmk="1">✓ O'tilgan deb belgilash</button>`;
-    const b = w.querySelector("button");
-    b.onclick = () => (mine ? unmark : mark)(sk, t, all);
+    w.insertAdjacentHTML("beforeend", `<button class="btn btn-secondary btn-sm" data-chtog="1">📚 O'tilganlar ro'yxati ${listOpen ? "▴" : "▾"}</button>`);
+    w.querySelector("[data-chun],[data-chmk]").onclick = () => (mine ? unmark : mark)(sk, t, all);
+    w.querySelector("[data-chtog]").onclick = () => setOpen(!listOpen);
+  }
+  // ro'yxat kartochkasi tugma bilan ochiladi/yopiladi (holat shu qurilmada eslab qolinadi)
+  function setOpen(v) {
+    listOpen = v;
+    try { localStorage.setItem("cls_hist_open", v ? "1" : ""); } catch (e) {}
+    draw();
   }
   // belgilash: bugungi sana bilan qo'lda yozuv; olib tashlash: shu test+guruhning hamma yozuvlari yashiriladi
   function mark(sk, t, all, d) {
@@ -175,7 +183,7 @@
       const dm = doneMap(all, sk, g);
       const chips = total.map(t => `<button class="ch-chip${dm[t.key] ? " on" : ""}" data-chip="${t.key}" title="${dm[t.key] ? "O'tilgan: " + fmtD(dm[t.key]) + ". Bosilsa o'tilmagan bo'ladi" : "Bosilsa o'tilgan deb belgilanadi"}">${dm[t.key] ? "✓ " : ""}${esc(titleOf(sk, t.key).replace("Cambridge ", "C").replace(" Test ", " T"))}</button>`).join("");
       $(c.p + "Hist").innerHTML = `
-        <div class="card-header"><h3 class="card-title">📚 Darsda o'tilganlar · ${esc(gName(g))}</h3><span class="badge b-mut">${done.size} ta o'tilgan · ${left} ta qoldi</span></div>
+        <div class="card-header"><h3 class="card-title">📚 Darsda o'tilganlar · ${esc(gName(g))}</h3><span style="display:flex;gap:8px;align-items:center"><span class="badge b-mut">${done.size} ta o'tilgan · ${left} ta qoldi</span><button class="ch-x" data-chclose="1" title="Yopish">✕</button></span></div>
         ${nx ? `<div class="ch-next">Keyingi o'tilmagan: <b>${esc(titleOf(sk, nx.key))}</b><button class="btn btn-secondary btn-sm" data-chpick="${nx.key}">Tanlash</button><button class="btn btn-secondary btn-sm" data-chskip="${nx.key}" title="Bu test aslida o'tilgan bo'lsa">✓ Bu o'tilgan</button></div>` : `<div class="ch-next">Ro'yxatdagi hamma testlar o'tilgan.</div>`}
         ${rows || `<div class="muted">Bu guruhda hali ${sk === "reading" ? "Reading" : "Listening"} darsi o'tilmagan.</div>`}
         ${mine.length > 8 ? `<button class="ch-more" data-chmore="1">${showAll[sk] ? "Kamroq ko'rsatish" : `Hammasini ko'rsatish (${mine.length})`}</button>` : ""}
@@ -183,6 +191,8 @@
           <div class="ch-add"><label><span class="field-label">Belgilanadigan sana</span><input class="field" type="date" data-chd value="${chDate[sk] || dayKey(Date.now())}"></label></div>
           <div class="ch-chips">${chips}</div></details>`;
       const box = $(c.p + "Hist");
+      box.classList.toggle("hide", !listOpen);
+      box.querySelector("[data-chclose]").onclick = () => setOpen(false);
       box.querySelectorAll("[data-chx]").forEach(b => b.onclick = () => {
         const id = b.dataset.chx, e = mine.find(x => x.id === id);
         if (!confirm(`${titleOf(sk, e.test)} (${fmtD(e.at)}) ro'yxatdan olib tashlansinmi? (Natijalar o'chmaydi, faqat bu ro'yxatdan.)`)) return;
