@@ -144,7 +144,7 @@
     DEV = localStorage.getItem("kab_dv") || "";
     if (!DEV) { DEV = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("kab_dv", DEV); }
   } catch (e) { DEV = DEV || "x" + Date.now().toString(36); }
-  const auth = () => CODE ? { c: CODE, dv: DEV } : { k: KEY };
+  const auth = () => CODE ? { code: CODE, dv: DEV } : { k: KEY };   // "c" nomi Apps Script'da band, shuning uchun "code"
   const SK = { reading: ["📖", "Reading"], listening: ["🎧", "Listening"], speaking: ["🎙", "Speaking"], writing: ["✍️", "Writing"] };
   const OY = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
   let D = null, tab = "tasks", audio = null;
