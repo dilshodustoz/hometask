@@ -884,10 +884,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <div class="msg" id="stMsg"></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><div class="controls"><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button><button class="btn btn-orange btn-sm" id="stNewOpen">＋ Yangi o'quvchi</button></div></div>
+      <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><div class="controls"><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button><button class="btn btn-secondary btn-sm" id="stCards" title="Kabinetga kirish kodlari bilan kartochkalarni chop etish">🖨 Kartochkalar</button><button class="btn btn-orange btn-sm" id="stNewOpen">＋ Yangi o'quvchi</button></div></div>
       <div class="tbl-wrap"><table class="cards">
-        <thead><tr><th>#</th><th>O'quvchi</th><th>Telefon</th><th>Qo'shilgan</th><th></th></tr></thead>
-        <tbody id="stBody"><tr><td colspan="5" class="muted">Yuklanmoqda…</td></tr></tbody>
+        <thead><tr><th>#</th><th>O'quvchi</th><th>Telefon</th><th>Qo'shilgan</th><th title="Shaxsiy kabinetga kirish kodi">Kabinet kodi</th><th></th></tr></thead>
+        <tbody id="stBody"><tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr></tbody>
       </table></div>
       <details id="stArchBox" style="margin-top:14px"><summary class="muted" style="cursor:pointer">Arxiv <span id="stArchN"></span></summary>
         <div class="tbl-wrap"><table><tbody id="stArch"></tbody></table></div>
@@ -1562,7 +1562,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function groupOfIn(gs, chat) { for (const g in gs) if (String(gs[g].chat) === String(chat)) return g; return null; }
   // server javobi (roster + groups) → Firebase (sinf sahifalari shu ro'yxatdan foydalanadi) va sahifa
   function stApply(r) {
-    stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups };
+    stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups, codes: r.codes || (stData && stData.codes) || {} };
     const out = {}; let n = 0;
     Object.keys(r.roster).forEach(k => {
       const st = r.roster[k], g = st.test ? "test" : (st.group && r.groups[st.group] ? st.group : groupOfIn(r.groups, st.chat));
@@ -1575,11 +1575,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     return Promise.all([db.ref("roster").set(out), db.ref("admin/groups").set(r.groups)]).then(() => n);
   }
   function stLoad() {
-    $("stBody").innerHTML = `<tr><td colspan="5" class="muted">Yuklanmoqda…</td></tr>`;
+    $("stBody").innerHTML = `<tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr>`;
     return api({ admin: "st_list" }).then(r => {
-      if (!r.ok) { $("stBody").innerHTML = `<tr><td colspan="5">⚠️ ${CLS.esc(r.error)}</td></tr>`; return 0; }
+      if (!r.ok) { $("stBody").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; return 0; }
       return stApply(r);
-    }).catch(e => { $("stBody").innerHTML = `<tr><td colspan="5">⚠️ ${CLS.esc(e.message)}</td></tr>`; return 0; });
+    }).catch(e => { $("stBody").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(e.message)}</td></tr>`; return 0; });
   }
   function stCall(body, msgEl, busy) {
     $(msgEl).textContent = busy || "Bajarilmoqda…";
@@ -1599,9 +1599,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("stCount").textContent = `· ${CLS.GROUPS[group].name} · ${ks.length} ta`;
     $("stBody").innerHTML = ks.map((k, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(R[k].name)}${R[k].note ? `<div class="muted">${CLS.esc(R[k].note)}</div>` : ""}</td>
         <td>${CLS.esc(R[k].phone || "")}</td><td>${fdate(R[k].added)}</td>
+        <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi ishlamay qoladi)">🔄</button>` : `<span class="muted">—</span>`}</td>
         <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-inv="${k}">Taklif havolasi</button>
           <button class="btn btn-warning btn-sm" data-ar="${k}">Arxivlash</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("")
-        || `<tr><td colspan="5" class="muted">Bu guruhda hali o'quvchi yo'q.</td></tr>`;
+        || `<tr><td colspan="6" class="muted">Bu guruhda hali o'quvchi yo'q.</td></tr>`;
     const A = stData.archive, as = Object.keys(A).filter(k => String(A[k].chat) === chat).sort((a, b) => A[a].name.localeCompare(A[b].name));
     $("stArchN").textContent = as.length ? `(${as.length})` : "(bo'sh)";
     $("stArch").innerHTML = as.map(k => `<tr><td>${CLS.esc(A[k].name)}</td><td class="muted">arxivga: ${fdate(A[k].archived)}</td>
@@ -1612,8 +1613,33 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <td>${g === "test" ? "" : `<button class="btn btn-secondary btn-sm" data-gren="${g}">Nomini o'zgartirish</button>`}
         ${["test", "morning", "afternoon"].indexOf(g) < 0 ? ` <button class="btn btn-danger btn-sm" data-grm="${g}">Olib tashlash</button>` : ""}</td></tr>`).join("");
   }
+  const KAB_URL = "https://dilshodustoz.github.io/hometask/kabinet/";
+  function stCards() {   // kabinet kodlari bilan chop etiladigan kartochkalar (joriy guruh)
+    if (!stData) return;
+    const R = stData.roster, C = stData.codes || {}, chat = String(CLS.GROUPS[group].chat);
+    const ks = Object.keys(R).filter(k => !R[k].test && String(R[k].chat) === chat && C[k]).sort((a, b) => R[a].name.localeCompare(R[b].name));
+    if (!ks.length) { alert("Bu guruhda kodli o'quvchi yo'q. Avval \"Yangilash\" ni bosing."); return; }
+    const e = CLS.esc, card = k => `<div class="c"><div class="h">🎓 Shaxsiy kabinet · Dilshod ustoz</div><div class="n">${e(R[k].name)}</div>
+      <div class="l">Kirish kodi</div><div class="k">${e(C[k])}</div>
+      <div class="u">${e(KAB_URL.replace("https://", ""))}</div>
+      <div class="t">Saytni oching, kodni kiriting. Kodni hech kimga bermang. Telefon ekraniga qo'shib qo'ying (Ulashish → Add to Home Screen).</div></div>`;
+    const html = `<!DOCTYPE html><html lang="uz"><head><meta charset="utf-8"><title>Kabinet kartochkalari · ${e(CLS.GROUPS[group].name)}</title><style>
+      @page{size:A4;margin:10mm}body{font-family:system-ui,-apple-system,sans-serif;margin:0;color:#16181D}
+      .g{display:grid;grid-template-columns:1fr 1fr;gap:0}
+      .c{border:1px dashed #9CA3AF;padding:14px 16px;height:62mm;box-sizing:border-box;break-inside:avoid;display:flex;flex-direction:column}
+      .h{font-size:11px;color:#6B6F76;font-weight:600}.n{font-size:17px;font-weight:800;margin:6px 0 8px}
+      .l{font-size:10px;color:#6B6F76;text-transform:uppercase;letter-spacing:.08em}.k{font:700 26px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#E8590C}
+      .u{font:600 12px ui-monospace,Menlo,monospace;margin-top:6px}.t{font-size:10.5px;color:#444;margin-top:auto;line-height:1.35}
+      .bar{padding:10px;text-align:center;font-size:14px}@media print{.bar{display:none}}</style></head><body>
+      <div class="bar">${ks.length} ta kartochka · qaychi bilan kesib, har biriga o'zinikini bering. <button onclick="print()">🖨 Chop etish</button></div>
+      <div class="g">${ks.map(card).join("")}</div><script>setTimeout(()=>print(),400)<\/script></body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) { alert("Brauzer yangi oynani to'sdi. Ruxsat bering va qayta bosing."); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  }
   function stInit() {
     $("stReload").onclick = () => stLoad();
+    $("stCards").onclick = () => stCards();
     // yangi o'quvchi formasi faqat kerak bo'lganda ochiladi
     const stNew = open => { $("stNewCard").classList.toggle("hide", !open); $("stNewOpen").classList.toggle("hide", open);
       if (open) { $("stNewCard").scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("stFirst").focus(), 300); } else $("stMsg").textContent = ""; };
@@ -1637,8 +1663,16 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       go(false);
     };
     $("stBody").onclick = $("stArch").onclick = ev => {
+      const cd = ev.target.closest("[data-code]");
+      if (cd) { const v = stData.codes[cd.dataset.code]; cd.textContent = cd.textContent === v ? "•••••••" : v; return; }
       const b = ev.target.closest("button"); if (!b) return;
       const R = stData.roster, A = stData.archive;
+      if (b.dataset.regen) {
+        const st = R[b.dataset.regen];
+        if (!confirm(`${st.name} uchun yangi kabinet kodi yaratilsinmi?\n\nEski kod darhol ishlamay qoladi, o'quvchi yangi kod bilan qayta kiradi.`)) return;
+        stCall({ admin: "st_regen", k: b.dataset.regen }, "stMsg").then(r => { if (r) $("stMsg").innerHTML = `✅ ${CLS.esc(st.name)}: yangi kod <code>${CLS.esc(stData.codes[b.dataset.regen] || "")}</code>`; });
+        return;
+      }
       if (b.dataset.ed) {
         const st = R[b.dataset.ed], nm = prompt("Yangi ism-familiya (topic nomi va Course'dagi ism ham o'zgaradi):", st.name);
         if (!nm || nm.trim() === st.name) return;

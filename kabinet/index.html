@@ -30,7 +30,26 @@
   nav button.on{color:var(--ink);border-color:var(--primary)}
   nav i{font-style:normal;background:var(--bad);color:#fff;border-radius:9px;font-size:.7rem;padding:1px 6px;margin-left:4px}
   main{max-width:760px;margin:0 auto;padding:16px 16px 70px}
-  .pilot{background:var(--warnbg);border:1px solid #FDE68A;color:#78350F;border-radius:12px;padding:9px 13px;font-size:.82rem;margin-bottom:14px}
+  .cls{flex:none;border:0;border-radius:12px;height:40px;padding:0 13px;background:var(--primary);color:#fff;font-weight:700;font-size:.86rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+  .cls .s{display:none}
+  .out .s{display:none}
+  .who{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  @media(max-width:430px){.cls .l,.out .l,.sub{display:none}.cls .s{display:inline}.out .s{display:inline;font-size:1.1rem}.cls{padding:0 10px}.top{gap:8px}.who{font-size:.95rem}}
+  .out{border:0;background:none;color:var(--muted);font-weight:600;font-size:.8rem;cursor:pointer;padding:6px 4px}
+  #login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:65}
+  #login .card{width:100%;max-width:380px;padding:26px 22px;text-align:center}
+  #login .logo{width:56px;height:56px;border-radius:16px;margin:0 auto 12px;display:block}
+  #login h2{margin:0 0 4px;font-size:1.25rem}
+  #login .fld{position:relative;margin:18px 0 10px}
+  #login input{width:100%;font:600 1.25rem 'JetBrains Mono',monospace;letter-spacing:.18em;text-align:center;text-transform:uppercase;padding:13px 48px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);outline:none}
+  #login input:focus{border-color:var(--primary)}
+  #login .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:1.15rem;cursor:pointer;width:40px;height:40px;opacity:.6}
+  #login .btn{width:100%;justify-content:center;padding:13px;font-size:1rem}
+  #lCnt{position:absolute;left:14px;top:50%;transform:translateY(-50%);font:600 .72rem 'JetBrains Mono',monospace;color:var(--muted)}
+  #lPeek{position:absolute;left:50%;top:-12px;transform:translateX(-50%);background:var(--ink);color:#fff;font:700 .95rem 'JetBrains Mono',monospace;border-radius:8px;padding:2px 9px;opacity:0;transition:opacity .15s;pointer-events:none}
+  #lPeek.on{opacity:1}
+  .inst{display:inline-flex;margin-top:10px}
+  #lErr{color:var(--bad);font-size:.86rem;min-height:1.3em;margin-bottom:8px}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
   .stat b{display:block;font:600 1.3rem 'JetBrains Mono',monospace}.stat span{color:var(--muted);font-size:.76rem}
@@ -82,7 +101,9 @@
     <div class="av" id="av">?</div>
     <div><div class="who" id="who">Yuklanmoqda…</div><div class="sub">Shaxsiy kabinet · Dilshod ustoz</div></div>
     <div class="sp"></div>
+    <a class="cls hide" id="cls" href="#" title="Onlayn darsdagi testga kirish">🎓 <span class="l">Darsga kirish</span><span class="s">Dars</span></a>
     <button class="bell" id="bell" title="Xabarlar">🔔<b id="bellN" class="hide">0</b></button>
+    <button class="out" id="out" title="Bu qurilmadan chiqish"><span class="l">Chiqish</span><span class="s">🚪</span></button>
   </div>
   <nav>
     <button data-tab="tasks" class="on">📋 Vazifalar</button>
@@ -90,22 +111,40 @@
   </nav>
 </header>
 <main>
-  <div class="pilot">🧪 Sinov rejimi: bu kabinet hozir faqat sinov uchun yoqilgan. Vazifa, natija va xabarlarning hammasi shu yerda, Telegram'ga hech narsa bormaydi.</div>
   <section id="tasks"></section>
   <section id="res" class="hide"></section>
-  <div class="a2hs" id="a2hs">📱 Telefon ekraniga qo'shib qo'ying: iPhone'da Safari → <b>Ulashish</b> → <b>Add to Home Screen</b>, Android'da Chrome → ⋮ → <b>Bosh ekranga qo'shish</b>. Shunda kabinet ilova kabi ochiladi.</div>
+  <div class="a2hs" id="a2hs"><span id="a2hsT">📱 Kabinetni telefon ekraniga qo'shib qo'ying: Android'da Chrome → ⋮ → <b>Bosh ekranga qo'shish</b> (yoki <b>Ilovani o'rnatish</b>), iPhone'da Safari → <b>Ulashish</b> → <b>Add to Home Screen</b>. Noutbukda manzil satridagi o'rnatish belgisini bosing yoki shunchaki saytni xatcho'pga qo'shing.</span>
+    <div><button class="btn inst hide" id="inst">📲 Ilova qilib o'rnatish</button></div></div>
 </main>
 <div id="drawer" class="hide"><div class="dbg" id="dBg"></div><div class="dp"><div class="dh"><b>🔔 Xabarlar</b><button class="btn sec" id="dX">✕</button></div><div class="db" id="notes"></div></div></div>
 <div id="modal" class="hide"><div class="bar"><b id="mT" style="flex:1">Feedback</b><button class="btn sec" id="mX">✕ Yopish</button></div><iframe id="mF" sandbox="allow-same-origin allow-popups"></iframe></div>
 <div id="cover"><div class="card"><h3 style="margin:0 0 6px;font-size:1.1rem;color:var(--ink);text-transform:none;letter-spacing:0" id="cT">⏳ Yuklanmoqda…</h3><div class="mt" id="cB">Bir soniya kuting.</div></div></div>
+<div id="login" class="hide"><form class="card" id="lForm" autocomplete="off">
+  <img class="logo" src="apple-touch-icon.png" alt="">
+  <h2>Shaxsiy kabinet</h2>
+  <div class="mt">Dilshod ustoz bergan kartochkadagi kodni kiriting.</div>
+  <div class="fld"><input id="lCode" type="password" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="12" placeholder="AB12345" aria-label="Kirish kodi">
+    <span id="lCnt"></span><span id="lPeek"></span>
+    <button type="button" class="eye" id="lEye" title="Kodni ko'rsatish">👁</button></div>
+  <div id="lErr"></div>
+  <button class="btn" id="lGo" type="submit">Kirish</button>
+  <div class="mt" style="margin-top:14px">Kodni hech kimga bermang. Yo'qotsangiz, ustozdan yangisini so'rang.</div>
+</form></div>
 <div class="toast" id="toast"></div>
 <script src="../speaking/config.js"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
   const API = window.HW_API, P = new URLSearchParams(location.search);
-  let KEY = P.get("k") || "";
-  try { if (KEY) localStorage.setItem("kab_k", KEY); else KEY = localStorage.getItem("kab_k") || ""; } catch (e) {}
+  // Kirish: kartochkadagi kod (kab_c) yoki sinov havolasi ?k=. Qurilma raqami (kab_dv) xato urinishlarni sanash uchun.
+  let KEY = P.get("k") || "", CODE = "", DEV = "";
+  try {
+    if (KEY) { localStorage.setItem("kab_k", KEY); localStorage.removeItem("kab_c"); }
+    else { CODE = localStorage.getItem("kab_c") || ""; if (!CODE) KEY = localStorage.getItem("kab_k") || ""; }
+    DEV = localStorage.getItem("kab_dv") || "";
+    if (!DEV) { DEV = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("kab_dv", DEV); }
+  } catch (e) { DEV = DEV || "x" + Date.now().toString(36); }
+  const auth = () => CODE ? { c: CODE, dv: DEV } : { k: KEY };
   const SK = { reading: ["📖", "Reading"], listening: ["🎧", "Listening"], speaking: ["🎙", "Speaking"], writing: ["✍️", "Writing"] };
   const OY = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
   let D = null, tab = "tasks", audio = null;
@@ -147,7 +186,7 @@
     const T = D.tasks, todo = T.filter(x => !x.done && left(x.deadline)), done = T.filter(x => x.done);
     const card = x => {
       const [ic, nm] = SK[x.skill] || ["📄", x.skill], [cls, lab] = state(x);
-      const btn = x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
+      const btn = x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : x.skill === "writing" ? "👁 Insho" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
       const can = x.done || left(x.deadline) || D.test;
       return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0">
         <div class="tt">${esc(x.title)}</div><div class="mt">${nm} · muddat: ${esc(x.deadline_text || "—")}</div>
@@ -173,9 +212,12 @@
       if (x.skill === "speaking") {
         const b = x.baho;
         body = (b ? `<div class="bands"><span>FC ${esc(b.fc)}</span><span>LR ${esc(b.lr)}</span><span>GRA ${esc(b.gra)}</span><span>P ${esc(b.p)}</span></div>` : `<div class="mt" style="margin-top:6px">Ustoz hali baholamagan.</div>`) +
-          `<div style="margin-top:10px">` + (x.answers || []).map(a => `<div class="ans"><button class="play" data-t="${esc(x.t)}" data-i="${a.i}" ${a.audio ? "" : "disabled title='Bu javob Telegram orqali yuborilgan'"}>▶</button>
+          `<div style="margin-top:10px">` + (x.answers || []).map(a => `<div class="ans"><button class="play" data-t="${esc(x.t)}" data-i="${a.i}" ${a.audio ? "" : "disabled title='Ovoz topilmadi'"}>▶</button>
             <div class="q"><small>Part ${esc(a.part)} · Q${a.i + 1} · ${Math.floor(a.sec / 60)}:${String(a.sec % 60).padStart(2, "0")}</small>${esc(a.q)}</div></div>`).join("") + `</div>` +
           (b && b.fb ? `<div class="act"><button class="btn" data-fb="${esc(x.t)}" data-title="${esc(x.title)}">📄 Feedback</button></div>` : "");
+      } else if (x.skill === "writing") {
+        body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Insho</a>${x.fb ? `<button class="btn" data-fb="${esc(x.t)}" data-sk="writing" data-title="${esc(x.title)}">📄 Feedback</button>` : ""}</div>` +
+          (x.fb ? "" : `<div class="mt" style="margin-top:6px">Feedback hali tayyor emas.</div>`);
       } else {
         body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Javoblarim, kalit va error log</a></div>`;
       }
@@ -199,7 +241,7 @@
     if (D && D.notes.some(x => !x.read)) {
       setTimeout(() => {   // xabarlarni ko'rgandan keyin o'qilgan qilamiz
         D.notes.forEach(x => x.read = true); badge();
-        post({ cab: "read", k: KEY }).catch(() => {});
+        post(Object.assign({ cab: "read" }, auth())).catch(() => {});
         setTimeout(renderNotes, 4000);
       }, 1500);
     }
@@ -207,14 +249,15 @@
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.tab));
   $("bell").onclick = openNotes;
   const closeNotes = () => { $("drawer").classList.add("hide"); document.body.style.overflow = ""; };
-  $("dX").onclick = closeNotes; $("dBg").onclick = closeNotes;
-  $("mX").onclick = () => { $("modal").classList.add("hide"); $("mF").srcdoc = ""; };
+  $("dX").onclick = $("dBg").onclick = () => { if (history.state && history.state.layer) history.back(); else closeNotes(); };
+  const back = fn => () => { if (history.state && history.state.layer) history.back(); else fn(); };
+  $("mX").onclick = back(() => { $("modal").classList.add("hide"); $("mF").srcdoc = ""; });
   document.addEventListener("click", async e => {
     const p = e.target.closest(".play");
     if (p && !p.disabled) {   // bosilganda yuklanadi va o'rniga oddiy pleer chiqadi (Safari'da avtomatik boshlanmasa, ▶ ni bosing)
       p.textContent = "…"; p.disabled = true;
       try {
-        const r = await api({ action: "cab_audio", k: KEY, t: p.dataset.t, i: p.dataset.i });
+        const r = await api(Object.assign({ action: "cab_audio", t: p.dataset.t, i: p.dataset.i }, auth()));
         if (!r.ok) throw new Error(r.error);
         const bin = atob(r.b64), u8 = new Uint8Array(bin.length);
         for (let j = 0; j < bin.length; j++) u8[j] = bin.charCodeAt(j);
@@ -231,33 +274,84 @@
     if (f) {
       f.disabled = true;
       try {
-        const r = await api({ action: "cab_fb", k: KEY, t: f.dataset.fb });
+        const r = await api(Object.assign({ action: "cab_fb", t: f.dataset.fb, skill: f.dataset.sk || "speaking" }, auth()));
         if (!r.ok) throw new Error(r.error);
-        $("mT").textContent = "🎙 " + f.dataset.title; $("mF").srcdoc = r.html; $("modal").classList.remove("hide");
+        $("mT").textContent = (f.dataset.sk === "writing" ? "✍️ " : "🎙 ") + f.dataset.title; $("mF").srcdoc = r.html; $("modal").classList.remove("hide");
       } catch (err) { toast("⚠️ " + err.message); }
       f.disabled = false;
     }
   });
 
   function load(first) {
-    return api({ action: "cab", k: KEY }).then(r => {
-      if (!r.ok) throw new Error(r.error || "xato");
+    return api(Object.assign({ action: "cab" }, auth())).then(r => {
+      if (!r.ok) { const e = new Error(r.error || "xato"); e.auth = !!r.auth; e.lock = !!r.lock; throw e; }
       const before = D ? D.notes.filter(x => !x.read).length : 0;
       D = r;
+      if (r.k) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
       $("who").textContent = r.name; $("av").textContent = (r.name || "?").trim().charAt(0).toUpperCase();
       render();
       const now = D.notes.filter(x => !x.read).length;
       if (!first && now > before) toast("🔔 Yangi xabar keldi");
-      $("cover").classList.add("hide");
+      $("cover").classList.add("hide"); $("login").classList.add("hide");
     });
   }
-  if (!API || !/^[A-Za-z0-9_-]{6,20}$/.test(KEY)) { $("cT").textContent = "⛔ Havola noto'g'ri"; $("cB").textContent = "Ustoz bergan shaxsiy havola orqali kiring."; return; }
+  function start() {
+    return load(true).then(() => {
+      let t = "tasks"; try { t = localStorage.getItem("kab_tab") || t; } catch (e) {}
+      if (t !== "res") t = "tasks";
+      show(t);
+    });
+  }
+  function forget() { CODE = ""; KEY = ""; D = null; try { localStorage.removeItem("kab_c"); localStorage.removeItem("kab_k"); } catch (e) {} }
+  function showLogin(msg) {
+    $("cover").classList.add("hide"); $("login").classList.remove("hide");
+    $("lErr").textContent = msg || ""; $("lCode").value = "";
+    setTimeout(() => $("lCode").focus(), 50);
+  }
+  $("lEye").onclick = () => { const i = $("lCode"); i.type = i.type === "password" ? "text" : "password"; $("lEye").style.opacity = i.type === "text" ? 1 : .6; i.focus(); };
+  $("lForm").onsubmit = ev => {
+    ev.preventDefault();
+    const c = $("lCode").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!/^[A-Z]{2}\d{5}$/.test(c)) { $("lErr").textContent = "Kod 2 ta harf va 5 ta raqamdan iborat, masalan AB12345."; return; }
+    $("lGo").disabled = true; $("lGo").textContent = "Tekshirilmoqda…"; $("lErr").textContent = "";
+    CODE = c; KEY = "";
+    start().then(() => { try { localStorage.setItem("kab_c", c); localStorage.removeItem("kab_k"); } catch (e) {} })
+      .catch(e => { CODE = ""; $("lErr").textContent = e.message === "Failed to fetch" ? "Internet yo'q. Qayta urinib ko'ring." : e.message; $("lCode").select(); })
+      .finally(() => { $("lGo").disabled = false; $("lGo").textContent = "Kirish"; });
+  };
+  $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; forget(); closeNotes(); showLogin(""); };
+  // Ilova qilib o'rnatish: Android Chrome va noutbukdagi Chrome/Edge o'zi taklif qiladi; iPhone'da faqat qo'lda
+  const UA = navigator.userAgent, isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), isAnd = /Android/.test(UA);
+  if (isIOS) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Safari → <b>Ulashish</b> (⬆︎) → <b>Add to Home Screen</b>. Shunda kabinet ilova kabi ochiladi.";
+  else if (isAnd) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Chrome → <b>⋮</b> → <b>Bosh ekranga qo'shish</b> yoki <b>Ilovani o'rnatish</b>. Shunda kabinet ilova kabi ochiladi.";
+  else $("a2hsT").innerHTML = "💻 Noutbukda: manzil satridagi o'rnatish belgisini bosing yoki saytni xatcho'pga qo'shing (Ctrl+D). Telefonda ham shu kod bilan kirasiz.";
+  let instEv = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instEv = e; $("inst").classList.remove("hide"); });
+  $("inst").onclick = () => { if (!instEv) return; instEv.prompt(); instEv.userChoice.finally(() => { instEv = null; $("inst").classList.add("hide"); }); };
+  window.addEventListener("appinstalled", () => $("a2hs").classList.add("hide"));
+  // Android "Orqaga" tugmasi va noutbukda Esc: avval ochiq oynani yopadi, sahifadan chiqib ketmaydi
+  const layerOpen = () => !$("modal").classList.contains("hide") || !$("drawer").classList.contains("hide");
+  const closeLayer = () => { if (!$("modal").classList.contains("hide")) { $("modal").classList.add("hide"); $("mF").srcdoc = ""; } else closeNotes(); };
+  new MutationObserver(() => { if (layerOpen() && !(history.state && history.state.layer)) history.pushState({ layer: 1 }, ""); })
+    .observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class"] });
+  window.addEventListener("popstate", () => { if (layerOpen()) closeLayer(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && layerOpen()) { if (history.state && history.state.layer) history.back(); else closeLayer(); } });
+  // Kod yopiq kiritiladi; har bosilgan belgi bir lahza ko'rinadi (hamma telefon va noutbukda bir xil)
+  $("lCode").addEventListener("input", e => {
+    const v = $("lCode").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    $("lCnt").textContent = v.length ? v.length + "/7" : "";
+    if ($("lCode").type === "password" && e.data && /^[A-Za-z0-9]$/.test(e.data.slice(-1))) {
+      $("lPeek").textContent = e.data.slice(-1).toUpperCase(); $("lPeek").classList.add("on");
+      clearTimeout($("lPeek").h); $("lPeek").h = setTimeout(() => $("lPeek").classList.remove("on"), 900);
+    }
+  });
+  if (!API) { $("cT").textContent = "⛔ Sozlama topilmadi"; $("cB").textContent = "Sahifani keyinroq yangilang."; return; }
   if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) $("a2hs").classList.add("hide");
-  load(true).then(() => {
-    let t = "tasks"; try { t = localStorage.getItem("kab_tab") || t; } catch (e) {}
-    if (t !== "res") t = "tasks";
-    show(t);
-  }).catch(e => { $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message === "Failed to fetch" ? "Internetni tekshirib, sahifani yangilang." : e.message; });
+  if (!CODE && !/^[A-Za-z0-9_-]{6,20}$/.test(KEY)) showLogin("");
+  else start().catch(e => {
+    if (e.auth) { forget(); showLogin(e.message); return; }
+    $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message === "Failed to fetch" ? "Internetni tekshirib, sahifani yangilang." : e.message;
+  });
   // har 60 soniyada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
   setInterval(() => { if (!document.hidden && D) load(false).catch(() => {}); }, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden && D) load(false).catch(() => {}); });
