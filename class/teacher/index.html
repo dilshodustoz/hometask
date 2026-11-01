@@ -680,6 +680,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
             <button class="btn btn-warning" id="btnPause">Pauza</button>
             <button class="btn btn-danger" id="btnStop">To'xtatish va yig'ish</button>
             <button class="btn btn-primary" id="btnGrade">Natijalarni yuborish</button>
+            <button class="btn btn-secondary hide" id="liveTaBtn" title="Javoblar va tahlil (faqat sizga ko'rinadi)">👩‍🏫 Teacher Analysis</button>
             <button class="btn btn-secondary" id="btnClose">Darsni yopish</button>
           </div>
         </div>
@@ -1763,8 +1764,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 
   // ---------- Teacher Analysis: yopiq Drive'dan LC Panel orqali, yangi oynada ----------
   const taCache = {};
-  function openTA(sk) {
-    const t = $(sk === "reading" ? "rdTest" : "lsTest").value, m = $(sk === "reading" ? "rdMsg" : "lsMsg");
+  function openTA(sk, t, m) {
+    t = t || $(sk === "reading" ? "rdTest" : "lsTest").value; m = m || $(sk === "reading" ? "rdMsg" : "lsMsg");
     if (!t) return;
     const w = window.open("", "_blank");   // bosilgan zahoti ochiladi, aks holda brauzer bloklaydi
     if (!w) { m.textContent = "Brauzer yangi oynani blokladi: bu sayt uchun pop-up'ga ruxsat bering."; return; }
@@ -1779,6 +1780,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   }
   $("rdTaBtn").onclick = () => openTA("reading");
   $("lsTaBtn").onclick = () => openTA("listening");
+  // jonli dars / natijalar oynasida ham: ochiq darsning o'z testi
+  $("liveTaBtn").onclick = () => { if (sess) openTA(sess.skill, sess.test, $("liveMsg")); };
   function upd(o) { return db.ref("sessions/" + sid).update(o).catch(e => alert(e.message)); }
   const jg = () => sess ? CLS.GROUPS[sess.group].name + ": " + sess.title.replace(/ · (Reading|Listening)$/, "") : "";
   $("btnStart").onclick = () => {
@@ -1849,6 +1852,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("btnPause").textContent = sess.state === "paused" ? "Davom ettirish" : "Pauza";
     $("btnStop").classList.toggle("hide", !(sess.state === "run" || sess.state === "paused"));
     $("btnGrade").classList.toggle("hide", sess.state !== "stopped");
+    $("liveTaBtn").classList.toggle("hide", !(sess.skill === "reading" || sess.skill === "listening"));
     drawTable();
   }
   function drawTable() {
