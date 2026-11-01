@@ -40,6 +40,10 @@
   #login input:focus{border-color:var(--primary)}
   #login .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:1.15rem;cursor:pointer;width:40px;height:40px;opacity:.6}
   #login .btn{width:100%;justify-content:center;padding:13px;font-size:1rem}
+  #lCnt{position:absolute;left:14px;top:50%;transform:translateY(-50%);font:600 .72rem 'JetBrains Mono',monospace;color:var(--muted)}
+  #lPeek{position:absolute;left:50%;top:-12px;transform:translateX(-50%);background:var(--ink);color:#fff;font:700 .95rem 'JetBrains Mono',monospace;border-radius:8px;padding:2px 9px;opacity:0;transition:opacity .15s;pointer-events:none}
+  #lPeek.on{opacity:1}
+  .inst{display:inline-flex;margin-top:10px}
   #lErr{color:var(--bad);font-size:.86rem;min-height:1.3em;margin-bottom:8px}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
@@ -103,7 +107,8 @@
 <main>
   <section id="tasks"></section>
   <section id="res" class="hide"></section>
-  <div class="a2hs" id="a2hs">📱 Telefon ekraniga qo'shib qo'ying: iPhone'da Safari → <b>Ulashish</b> → <b>Add to Home Screen</b>, Android'da Chrome → ⋮ → <b>Bosh ekranga qo'shish</b>. Shunda kabinet ilova kabi ochiladi.</div>
+  <div class="a2hs" id="a2hs"><span id="a2hsT">📱 Kabinetni telefon ekraniga qo'shib qo'ying: Android'da Chrome → ⋮ → <b>Bosh ekranga qo'shish</b> (yoki <b>Ilovani o'rnatish</b>), iPhone'da Safari → <b>Ulashish</b> → <b>Add to Home Screen</b>. Noutbukda manzil satridagi o'rnatish belgisini bosing yoki shunchaki saytni xatcho'pga qo'shing.</span>
+    <div><button class="btn inst hide" id="inst">📲 Ilova qilib o'rnatish</button></div></div>
 </main>
 <div id="drawer" class="hide"><div class="dbg" id="dBg"></div><div class="dp"><div class="dh"><b>🔔 Xabarlar</b><button class="btn sec" id="dX">✕</button></div><div class="db" id="notes"></div></div></div>
 <div id="modal" class="hide"><div class="bar"><b id="mT" style="flex:1">Feedback</b><button class="btn sec" id="mX">✕ Yopish</button></div><iframe id="mF" sandbox="allow-same-origin allow-popups"></iframe></div>
@@ -111,8 +116,9 @@
 <div id="login" class="hide"><form class="card" id="lForm" autocomplete="off">
   <img class="logo" src="apple-touch-icon.png" alt="">
   <h2>Shaxsiy kabinet</h2>
-  <div class="mt">Ustoz bergan kartochkadagi kodni kiriting.</div>
+  <div class="mt">Dilshod ustoz bergan kartochkadagi kodni kiriting.</div>
   <div class="fld"><input id="lCode" type="password" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="12" placeholder="AB12345" aria-label="Kirish kodi">
+    <span id="lCnt"></span><span id="lPeek"></span>
     <button type="button" class="eye" id="lEye" title="Kodni ko'rsatish">👁</button></div>
   <div id="lErr"></div>
   <button class="btn" id="lGo" type="submit">Kirish</button>
@@ -174,7 +180,7 @@
     const T = D.tasks, todo = T.filter(x => !x.done && left(x.deadline)), done = T.filter(x => x.done);
     const card = x => {
       const [ic, nm] = SK[x.skill] || ["📄", x.skill], [cls, lab] = state(x);
-      const btn = x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
+      const btn = x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : x.skill === "writing" ? "👁 Insho" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
       const can = x.done || left(x.deadline) || D.test;
       return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0">
         <div class="tt">${esc(x.title)}</div><div class="mt">${nm} · muddat: ${esc(x.deadline_text || "—")}</div>
@@ -237,8 +243,9 @@
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.tab));
   $("bell").onclick = openNotes;
   const closeNotes = () => { $("drawer").classList.add("hide"); document.body.style.overflow = ""; };
-  $("dX").onclick = closeNotes; $("dBg").onclick = closeNotes;
-  $("mX").onclick = () => { $("modal").classList.add("hide"); $("mF").srcdoc = ""; };
+  $("dX").onclick = $("dBg").onclick = () => { if (history.state && history.state.layer) history.back(); else closeNotes(); };
+  const back = fn => () => { if (history.state && history.state.layer) history.back(); else fn(); };
+  $("mX").onclick = back(() => { $("modal").classList.add("hide"); $("mF").srcdoc = ""; });
   document.addEventListener("click", async e => {
     const p = e.target.closest(".play");
     if (p && !p.disabled) {   // bosilganda yuklanadi va o'rniga oddiy pleer chiqadi (Safari'da avtomatik boshlanmasa, ▶ ni bosing)
@@ -306,6 +313,31 @@
       .finally(() => { $("lGo").disabled = false; $("lGo").textContent = "Kirish"; });
   };
   $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; forget(); closeNotes(); showLogin(""); };
+  // Ilova qilib o'rnatish: Android Chrome va noutbukdagi Chrome/Edge o'zi taklif qiladi; iPhone'da faqat qo'lda
+  const UA = navigator.userAgent, isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), isAnd = /Android/.test(UA);
+  if (isIOS) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Safari → <b>Ulashish</b> (⬆︎) → <b>Add to Home Screen</b>. Shunda kabinet ilova kabi ochiladi.";
+  else if (isAnd) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Chrome → <b>⋮</b> → <b>Bosh ekranga qo'shish</b> yoki <b>Ilovani o'rnatish</b>. Shunda kabinet ilova kabi ochiladi.";
+  else $("a2hsT").innerHTML = "💻 Noutbukda: manzil satridagi o'rnatish belgisini bosing yoki saytni xatcho'pga qo'shing (Ctrl+D). Telefonda ham shu kod bilan kirasiz.";
+  let instEv = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instEv = e; $("inst").classList.remove("hide"); });
+  $("inst").onclick = () => { if (!instEv) return; instEv.prompt(); instEv.userChoice.finally(() => { instEv = null; $("inst").classList.add("hide"); }); };
+  window.addEventListener("appinstalled", () => $("a2hs").classList.add("hide"));
+  // Android "Orqaga" tugmasi va noutbukda Esc: avval ochiq oynani yopadi, sahifadan chiqib ketmaydi
+  const layerOpen = () => !$("modal").classList.contains("hide") || !$("drawer").classList.contains("hide");
+  const closeLayer = () => { if (!$("modal").classList.contains("hide")) { $("modal").classList.add("hide"); $("mF").srcdoc = ""; } else closeNotes(); };
+  new MutationObserver(() => { if (layerOpen() && !(history.state && history.state.layer)) history.pushState({ layer: 1 }, ""); })
+    .observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class"] });
+  window.addEventListener("popstate", () => { if (layerOpen()) closeLayer(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && layerOpen()) { if (history.state && history.state.layer) history.back(); else closeLayer(); } });
+  // Kod yopiq kiritiladi; har bosilgan belgi bir lahza ko'rinadi (hamma telefon va noutbukda bir xil)
+  $("lCode").addEventListener("input", e => {
+    const v = $("lCode").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    $("lCnt").textContent = v.length ? v.length + "/7" : "";
+    if ($("lCode").type === "password" && e.data && /^[A-Za-z0-9]$/.test(e.data.slice(-1))) {
+      $("lPeek").textContent = e.data.slice(-1).toUpperCase(); $("lPeek").classList.add("on");
+      clearTimeout($("lPeek").h); $("lPeek").h = setTimeout(() => $("lPeek").classList.remove("on"), 900);
+    }
+  });
   if (!API) { $("cT").textContent = "⛔ Sozlama topilmadi"; $("cB").textContent = "Sahifani keyinroq yangilang."; return; }
   if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) $("a2hs").classList.add("hide");
   if (!CODE && !/^[A-Za-z0-9_-]{6,20}$/.test(KEY)) showLogin("");
