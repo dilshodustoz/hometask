@@ -10,6 +10,10 @@ firebase.initializeApp({
 });
 const messaging = firebase.messaging();
 // Xabarda "notification" bor: Firebase uni o'zi ko'rsatadi (ovoz telefonning odatiy bildirishnoma ovozi), bosilganda kabinet ochiladi.
-messaging.onBackgroundMessage(function () {});
+// Ekrandagi belgida o'qilmagan xabarlar soni (iPhone bosh ekran ilovasi, noutbuk; Android'da nuqta)
+messaging.onBackgroundMessage(function (m) {
+  const n = Number(((m && m.data) || {}).badge || 0);
+  try { if (n && self.navigator.setAppBadge) self.navigator.setAppBadge(n).catch(function () {}); } catch (e) {}
+});
 self.addEventListener("install", function () { self.skipWaiting(); });
 self.addEventListener("activate", function (e) { e.waitUntil(self.clients.claim()); });

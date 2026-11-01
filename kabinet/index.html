@@ -105,6 +105,8 @@
   .pushc .pt b{display:block;font-size:.98rem;margin-bottom:2px}
   .pushc .pb{display:flex;gap:8px;flex-wrap:wrap}
   .pushc .mt{font-size:.82rem}
+  .setb{display:block;margin:28px auto 0;background:none;border:0;color:var(--muted);font-size:.85rem;cursor:pointer;padding:8px 12px;border-radius:10px;font-family:inherit}
+  .setb:hover{background:rgba(0,0,0,.05)}
   .a2hs{font-size:.82rem;color:var(--muted);text-align:center;margin-top:24px}
   @media(max-width:420px){.stats{gap:6px}.stat{padding:8px 10px}.stat b{font-size:1.1rem}nav button{font-size:.84rem}}
 </style>
@@ -132,6 +134,7 @@
     <div class="pb"><button class="btn" id="pushOn">🔔 Yoqish</button><button class="btn sec hide" id="pushTest">Sinab ko'rish</button><button class="btn sec hide" id="pushOff">O'chirish</button></div></div>
   <div class="a2hs" id="a2hs"><span id="a2hsT">📱 Kabinetni telefon ekraniga qo'shib qo'ying: Android'da Chrome → ⋮ → <b>Bosh ekranga qo'shish</b> (yoki <b>Ilovani o'rnatish</b>), iPhone'da Safari → <b>Ulashish</b> → <b>Add to Home Screen</b>. Noutbukda manzil satridagi o'rnatish belgisini bosing yoki shunchaki saytni xatcho'pga qo'shing.</span>
     <div><button class="btn inst hide" id="inst">📲 Ilova qilib o'rnatish</button></div></div>
+  <button class="setb hide" id="setB">⚙️ Sozlamalar</button>
 </main>
 <div id="drawer" class="hide"><div class="dbg" id="dBg"></div><div class="dp"><div class="dh"><b style="display:inline-flex;align-items:center;gap:8px"><svg class="dm" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M22 3 9.2 10.8"/><path d="M22 3 15 21l-5.8-10.2L2 7.5 22 3Z"/></svg> Xabarlar</b><button class="btn sec" id="dX">✕</button></div><div class="db" id="notes"></div></div></div>
 <div id="modal" class="hide"><div class="bar"><b id="mT" style="flex:1">Feedback</b><button class="btn sec" id="mX">✕ Yopish</button></div><iframe id="mF" sandbox="allow-same-origin allow-popups"></iframe></div>
@@ -272,6 +275,7 @@
     const n = D.notes.filter(x => !x.read).length;
     $("bellN").textContent = n; $("bellN").classList.toggle("hide", !n);
     document.title = (n ? "(" + n + ") " : "") + "Shaxsiy kabinet · Dilshod ustoz";
+    try { if (navigator.setAppBadge) (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}); } catch (e) {}   // ekrandagi belgida raqam
   }
   function render() { renderTasks(); renderNotes(); renderRes(); badge(); }
   function show(t) {
@@ -384,7 +388,7 @@
       .catch(e => { CODE = ""; $("lErr").textContent = e.message; $("lCode").select(); })
       .finally(() => { $("lGo").disabled = false; $("lGo").textContent = "Kirish"; });
   };
-  $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; pushOff(true); forget(); pushInit.done = 0; $("push").classList.add("hide"); closeNotes(); showLogin(""); };
+  $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; pushOff(true); forget(); pushInit.done = 0; $("push").classList.add("hide"); $("setB").classList.add("hide"); closeNotes(); showLogin(""); };
   // Ilova qilib o'rnatish: Android Chrome va noutbukdagi Chrome/Edge o'zi taklif qiladi; iPhone'da faqat qo'lda
   const UA = navigator.userAgent, isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), isAnd = /Android/.test(UA);
   if (isIOS) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Safari → <b>Ulashish</b> (⬆︎) → <b>Add to Home Screen</b>. Shunda kabinet ilova kabi ochiladi.";
@@ -424,9 +428,14 @@
       .then(reg => navigator.serviceWorker.ready.then(() => reg))
       .then(reg => fbReady().then(m => m.getToken({ serviceWorkerRegistration: reg })));
   }
+  let setOpen = false;
   function pushUI(state, msg) {
     const box = $("push");
-    box.classList.remove("hide");
+    pushUI.st = state;
+    // yoqilgandan keyin karta yashirinadi, pastdagi "⚙️ Sozlamalar" orqali ochiladi
+    box.classList.toggle("hide", state === "on" && !setOpen);
+    $("setB").classList.toggle("hide", state !== "on");
+    $("setB").textContent = setOpen ? "✕ Sozlamalarni yopish" : "⚙️ Sozlamalar";
     $("pushOn").classList.toggle("hide", state === "on" || state === "na" || state === "ios");
     $("pushTest").classList.toggle("hide", state !== "on");
     $("pushOff").classList.toggle("hide", state !== "on");
@@ -468,7 +477,7 @@
         return post(Object.assign({ cab: "push", token: t, on: true, test: true, ua: navigator.userAgent.slice(0, 120) }, auth())).then(r => {
           if (!r.ok) throw new Error(r.error || "Server xatosi");
           lsS("kab_push", t); lsS("kab_push_who", D && D.k || ""); lsS("kab_push_at", String(Date.now()));
-          pushUI("on");
+          setOpen = false; pushUI("on");
           toast(r.test ? "✅ Yoqildi. Sinov xabari yuborildi." : "✅ Yoqildi. Ustoz serverni sozlagach xabarlar kela boshlaydi.");
         });
       });
@@ -490,7 +499,8 @@
     if (!silent) { pushUI("off"); toast("🔕 Bildirishnomalar o'chirildi"); }
     return p;
   }
-  $("pushOff").onclick = () => pushOff(false);
+  $("pushOff").onclick = () => { setOpen = false; pushOff(false); };
+  $("setB").onclick = () => { setOpen = !setOpen; pushUI(pushUI.st || "on"); if (setOpen) $("push").scrollIntoView({ behavior: "smooth", block: "center" }); };
 
   // Android "Orqaga" tugmasi va noutbukda Esc: avval ochiq oynani yopadi, sahifadan chiqib ketmaydi
   const layerOpen = () => !$("modal").classList.contains("hide") || !$("drawer").classList.contains("hide");
