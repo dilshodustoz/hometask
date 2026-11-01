@@ -516,6 +516,26 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     .c-spark{width:110px}
   }
   @media (max-width:760px){.nav-tabs{grid-template-columns:repeat(8,minmax(0,1fr))!important}.tab-btn{min-width:0;overflow:hidden;text-overflow:clip;font-size:.54rem!important;letter-spacing:-.02em}}
+  #hwdM{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+  #hwdM.hide{display:none}
+  .hwd-bg{position:absolute;inset:0;background:rgba(15,17,21,.55)}
+  .hwd-p{position:relative;background:#fff;color:#18181B;border-radius:16px;width:min(760px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .hwd-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid #E7E7E4}
+  .hwd-h b{font-size:1rem}.hwd-h small{color:#71717A;font-weight:500}
+  .hwd-b{overflow-y:auto;padding:14px 18px 20px}
+  .hwd-sum{background:#F6F6F4;border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .hwd-f{display:inline-flex;gap:6px;align-items:center;font-size:.85rem;margin:2px 0 8px;cursor:pointer}
+  .hwd-t{width:100%;border-collapse:collapse;font-size:.88rem}.hwd-t th,.hwd-t td{padding:6px 8px;border-bottom:1px solid #EFEFEC;text-align:left}
+  .hwd-t tr.bad td{background:#FEF2F2}.hwd-t tr.bad td:nth-child(3){color:#15803D;font-weight:600}.hwd-t tr.lg td{background:#FFFBEB;font-size:.82rem;color:#78350F}
+  .hwd-t tr.hide{display:none}
+  .hwd-q{background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;white-space:pre-wrap}
+  .hwd-txt{white-space:pre-wrap;line-height:1.65;font-size:.95rem}
+  .hwd-sp{border:1px solid #E7E7E4;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  .hwd-sph{display:flex;gap:10px;align-items:flex-start}.hwd-play{min-width:40px;justify-content:center}
+  .hwd-tr{margin-top:8px;background:#F6F6F4;border-radius:8px;padding:8px 10px;font-size:.88rem;font-style:italic}
+  .hwd-if{width:100%;height:calc(100vh - 170px);border:1px solid #E7E7E4;border-radius:10px;background:#fff}
+  tr.hwd-row{cursor:pointer}tr.hwd-row:hover td{background:rgba(232,89,12,.05)}
+  @media(max-width:600px){#hwdM{padding:0}.hwd-p{border-radius:0;max-height:100vh;height:100%}}
 </style>
 </head>
 <body>
@@ -791,6 +811,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       </table></div>
     </div>
   </section>
+  <div id="hwdM" class="hide"><div class="hwd-bg" id="hwdBg"></div><div class="hwd-p"><div class="hwd-h"><b id="hwdT"></b><button class="btn btn-secondary btn-sm" id="hwdX">✕</button></div><div class="hwd-b" id="hwdB"></div></div></div>
 
   <!-- O'quvchilar bazasi -->
   <!-- Yo'qlama: Course jadvalidagi davomat va hisob-kitob (faqat ko'rish) -->
@@ -1270,10 +1291,20 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       .sort((a, b) => (b.at || "").localeCompare(a.at || ""));
     $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${HW_IC[h.skill] || "📖"} ${CLS.esc(h.title)}</td><td>${CLS.esc(h.deadline_text)}</td>
       <td>${fmtAt(h.at)} · ${h.sent.length} ta${h.fail && h.fail.length ? ` <span class="badge b-bad">${h.fail.length} bormadi</span>` : ""}</td>
-      <td id="hwc_${h.id}">—</td><td><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button></td></tr>`).join("")
+      <td id="hwc_${h.id}">—</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button> <button class="btn btn-secondary btn-sm" data-del="${h.id}" title="Vazifani ro'yxatdan (va o'quvchi kabinetidan) o'chirish">🗑</button></td></tr>`).join("")
       : `<tr><td colspan="6" class="muted">Bu guruhga hali ${HW_IC[hwSk] || ""} ${hwSk[0].toUpperCase() + hwSk.slice(1)} uy vazifasi yuborilmagan.</td></tr>`;
     $("hwListSk").textContent = "· " + (HW_IC[hwSk] || "") + " " + hwSk[0].toUpperCase() + hwSk.slice(1);
     $("hwList").querySelectorAll("button[data-id]").forEach(b => b.onclick = () => hwStatus(b.dataset.id));
+    $("hwList").querySelectorAll("button[data-del]").forEach(b => b.onclick = () => {
+      const id = b.dataset.del, h = hwLog[id], gname = CLS.GROUPS[group].name;
+      if (!confirm(`"${h.title}" vazifasini ${gname} ro'yxatidan o'chiramizmi?\n\nVazifa bu ro'yxatdan va o'quvchilar kabinetidan olinadi. Topshirilgan natijalar jadvalda saqlanib qoladi. Telegram'ga yuborilgan xabarlar o'chmaydi.`)) return;
+      b.disabled = true; b.textContent = "…";
+      api({ admin: "hw_delete", id: id, chat: chat }).then(r => {
+        if (!r.ok) { alert("⚠️ " + r.error); b.disabled = false; b.textContent = "🗑"; return; }
+        if (hwCur === id) { hwCur = null; $("hwStCard").classList.add("hide"); }
+        hwLoad();
+      }).catch(e => { alert("⚠️ " + e.message); b.disabled = false; b.textContent = "🗑"; });
+    });
     if (hwCur && !rows.some(h => h.id === hwCur)) { hwCur = null; $("hwStCard").classList.add("hide"); }
     if (hwCur) hwStatus(hwCur);
   }
@@ -1315,6 +1346,64 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     });
   }
 
+  // ---------- O'quvchi topshirig'ining to'liq tahlili (oyna) ----------
+  let hwdAudio = null;
+  function hwdClose() { if (hwdAudio) { hwdAudio.pause(); hwdAudio = null; } $("hwdM").classList.add("hide"); document.body.style.overflow = ""; }
+  function hwDetail(h, k) {
+    const SK = h.skill || "reading", nm = (roster[k] || {}).name || k, E = CLS.esc;
+    $("hwdT").innerHTML = `${HW_IC[SK] || "📖"} ${E(nm)} <small>· ${E(h.title)}</small>`;
+    $("hwdB").innerHTML = `<div class="muted" style="padding:20px">Yuklanmoqda…</div>`;
+    $("hwdM").classList.remove("hide"); document.body.style.overflow = "hidden";
+    api({ admin: "hw_detail", skill: SK, t: h.t, k: k }).then(r => {
+      if (!r.ok) { $("hwdB").innerHTML = `<div style="padding:20px">⚠️ ${E(r.error)}</div>`; return; }
+      const fbBtn = r.fb ? `<button class="btn btn-sm" id="hwdFb">📄 Feedback</button>` : `<span class="muted">Feedback hali yo'q</span>`;
+      if (SK === "reading" || SK === "listening") {
+        const wrong = r.items.filter(x => !x.ok);
+        const logBy = {}; ((r.log || {}).items || []).forEach(x => { logBy[x.q] = x; });
+        $("hwdB").innerHTML = `<div class="hwd-sum"><b>${r.raw}/${r.total}</b> · Band <b>${E(r.band)}</b> · ❌ ${wrong.length} ta xato${r.log ? ` · ✍️ error log ${r.log.done}/${r.log.wrong} (${r.log.pct}%)` : " · ✍️ error log yozilmagan"}</div>
+          <label class="hwd-f"><input type="checkbox" id="hwdOnly" checked> Faqat xatolar</label>
+          <table class="hwd-t"><thead><tr><th>#</th><th>O'quvchi javobi</th><th>To'g'ri javob</th><th></th></tr></thead><tbody>${r.items.map(x => `<tr class="${x.ok ? "ok" : "bad"}"><td>${x.n}</td><td>${x.you ? E(x.you) : '<span class="muted">(bo\'sh)</span>'}</td><td>${E(x.ans)}</td><td>${x.ok ? "✅" : "❌"}</td></tr>` +
+            (!x.ok && logBy[x.n] ? `<tr class="bad lg"><td></td><td colspan="3">✍️ ${E(logBy[x.n].type || "")}${logBy[x.n].why ? " — " + E(logBy[x.n].why) : ""}</td></tr>` : "")).join("")}</tbody></table>`;
+        const only = () => $("hwdB").querySelectorAll("tr.ok").forEach(tr => tr.classList.toggle("hide", $("hwdOnly").checked));
+        $("hwdOnly").onchange = only; only();
+      } else if (SK === "writing") {
+        $("hwdB").innerHTML = `<div class="hwd-sum">${E(r.task)} · <b>${r.words}</b> so'z · ${r.minutes} daqiqa · ${fmtAt(r.at)} &nbsp; ${fbBtn}</div>
+          ${r.prompt ? `<div class="hwd-q">${E(r.prompt)}</div>` : ""}<div class="hwd-txt">${E(r.text)}</div>`;
+      } else {
+        const b = r.baho;
+        $("hwdB").innerHTML = `<div class="hwd-sum">🎙 ${r.items.length}/${r.total} javob${b ? ` · Band <b>${E(b.band)}</b> (FC ${E(b.fc)} · LR ${E(b.lr)} · GRA ${E(b.gra)} · P ${E(b.p)})` : ""} &nbsp; ${fbBtn}</div>` +
+          r.items.map(x => `<div class="hwd-sp"><div class="hwd-sph"><button class="btn btn-sm hwd-play" data-i="${x.i}" ${x.audio ? "" : "disabled"}>▶</button><div><small class="muted">Part ${E(x.part)} · Q${x.i + 1}${x.topic ? " · " + E(x.topic) : ""} · ${Math.floor(x.sec / 60)}:${String(x.sec % 60).padStart(2, "0")}</small><div><b>${E(x.q)}</b></div>${x.cue && x.cue.length ? `<div class="muted">${x.cue.map(c => "• " + E(c)).join("<br>")}</div>` : ""}</div></div>
+            ${x.tr ? `<div class="hwd-tr">${E(x.tr)}</div>` : ""}${x.pron ? `<div class="muted" style="font-size:.8rem;margin-top:4px">🗣 ${E(x.pron)}</div>` : ""}</div>`).join("");
+        $("hwdB").querySelectorAll(".hwd-play").forEach(p => p.onclick = async () => {
+          if (hwdAudio && hwdAudio._b === p) { hwdAudio.pause(); p.textContent = "▶"; hwdAudio = null; return; }
+          if (hwdAudio) { hwdAudio.pause(); hwdAudio._b.textContent = "▶"; hwdAudio = null; }
+          p.textContent = "…"; p.disabled = true;
+          try {
+            const a = await api({ admin: "hw_audio", t: h.t, k: k, i: p.dataset.i });
+            if (!a.ok) throw new Error(a.error);
+            hwdAudio = new Audio("data:" + a.mime + ";base64," + a.b64); hwdAudio._b = p;
+            hwdAudio.onended = () => { p.textContent = "▶"; hwdAudio = null; };
+            await hwdAudio.play(); p.textContent = "❚❚";
+          } catch (e) { p.textContent = "▶"; alert("⚠️ " + (e.message || "Ovoz ochilmadi")); }
+          p.disabled = false;
+        });
+      }
+      const fb = $("hwdFb");
+      if (fb) fb.onclick = () => {
+        fb.disabled = true;
+        api({ admin: "hw_fb", skill: SK, t: h.t, k: k }).then(f => {
+          fb.disabled = false;
+          if (!f.ok) { alert("⚠️ " + f.error); return; }
+          $("hwdB").innerHTML = `<button class="btn btn-secondary btn-sm" id="hwdBack" style="margin-bottom:8px">← Orqaga</button><iframe class="hwd-if" sandbox="allow-same-origin allow-popups"></iframe>`;
+          $("hwdB").querySelector("iframe").srcdoc = f.html;
+          $("hwdBack").onclick = () => hwDetail(h, k);
+        }).catch(e => { fb.disabled = false; alert("⚠️ " + e.message); });
+      };
+    }).catch(e => { $("hwdB").innerHTML = `<div style="padding:20px">⚠️ ${E(e.message)}</div>`; });
+  }
+  $("hwdX").onclick = hwdClose; $("hwdBg").onclick = hwdClose;
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("hwdM").classList.contains("hide")) hwdClose(); });
+
   function hwStatus(id) {
     hwCur = id;
     const h = hwLog[id], t = h.t, W = h.skill === "writing", S = h.skill === "speaking", L = h.skill === "listening" || !h.skill || h.skill === "reading", chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
@@ -1346,12 +1435,12 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
           const tr = !x ? "—" : (x.tr || 0) >= x.n ? `<span class="badge b-ok">${x.tr}/${x.n}</span>` : `<span class="badge b-warn" title="AI band bo'lgan: Home task ochilganda o'zi to'ldiriladi">${x.tr || 0}/${x.n}</span>`;
           const bd = !x ? "—" : x.band ? `<b>${CLS.esc(x.band)}</b> ` + (x.sent ? `<span class="badge b-ok">yuborildi</span>` : `<button class="btn btn-sm" data-fb="${CLS.esc(k)}" title="Feedback fayli va baho o'quvchining topic'iga boradi">📤 Yuborish</button>`)
             : `<span class="badge b-mut">${x.n >= x.total ? "baholanmoqda" : "—"}</span>`;
-          return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${sst}</td><td>${x ? `${x.n}/${x.total} <span class="muted">· ${m}</span>` : "—"}</td><td>${tr}</td><td>${bd}</td><td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Yuborilgan javoblar ro'yxatdan olinadi (Telegram'dagi ovozlar qoladi), o'quvchi hammasini qaytadan yuboradi">↺ Qayta ochish</button>` : ""}</td></tr>`;
+          return `<tr${x ? ` data-det="${CLS.esc(k)}" class="hwd-row"` : ""}><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${sst}</td><td>${x ? `${x.n}/${x.total} <span class="muted">· ${m}</span>` : "—"}</td><td>${tr}</td><td>${bd}</td><td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Yuborilgan javoblar ro'yxatdan olinadi (Telegram'dagi ovozlar qoladi), o'quvchi hammasini qaytadan yuboradi">↺ Qayta ochish</button>` : ""}</td></tr>`;
         }
         if (x) { n++; sum += Number(W ? x.words : x.band) || 0; }
         const st = x ? `<span class="badge b-ok">Topshirdi</span>` + (x.timeUp ? ` <span class="badge b-warn">vaqt tugadi</span>` : "")
           : late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`;
-        return `<tr><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${!x ? "—" : W ? x.words : x.raw + "/40"}</td><td>${!x ? "—" : W ? (x.pastes || 0) + " · " + (x.leaves || 0) : CLS.esc(x.band)}</td><td>${x ? x.minutes : "—"}</td>${L ? lgCell(k, x) : ""}<td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Topshirig'i o'chiriladi (zaxira nusxasi qoladi), o'quvchi testni boshidan qayta ishlaydi">↺ Qayta ochish</button>` : ""}</td></tr>`;
+        return `<tr${x ? ` data-det="${CLS.esc(k)}" class="hwd-row"` : ""}><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${!x ? "—" : W ? x.words : x.raw + "/40"}</td><td>${!x ? "—" : W ? (x.pastes || 0) + " · " + (x.leaves || 0) : CLS.esc(x.band)}</td><td>${x ? x.minutes : "—"}</td>${L ? lgCell(k, x) : ""}<td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Topshirig'i o'chiriladi (zaxira nusxasi qoladi), o'quvchi testni boshidan qayta ishlaydi">↺ Qayta ochish</button>` : ""}</td></tr>`;
       }).join("");
       const fbSend = (k, b) => {
         const one = !!k, nm = one ? ((roster[k] || {}).name || k) : "";
@@ -1364,6 +1453,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         }).catch(e => { alert("⚠️ " + e.message); hwStatus(id); });
       };
       $("hwStBody").querySelectorAll("[data-fb]").forEach(b => b.onclick = () => fbSend(b.dataset.fb, b));
+      $("hwStBody").querySelectorAll("tr[data-det]").forEach(tr => tr.onclick = e => { if (e.target.closest("button")) return; hwDetail(h, tr.dataset.det); });
       $("hwStBody").querySelectorAll("[data-log]").forEach(b => b.onclick = () => {
         const k = b.dataset.log, g = logs[k], box = $("hwRmBox");
         box.classList.remove("hide");
