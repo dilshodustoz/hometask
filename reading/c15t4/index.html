@@ -1159,11 +1159,12 @@ async function afterSubmit() {
 (function () {
   const API = window.HW_API, TID = window.HW_TEST;
   const KEY = new URLSearchParams(location.search).get("k") || "";
+  const CLSID = new URLSearchParams(location.search).get("cls") || "";   // darsdagi test natijasi (kabinet / natija xabaridan)
   const bar = document.getElementById("hwBar"), cover = document.getElementById("hwCover"), card = document.getElementById("hwCard");
   const ST = "hwr_" + TID + "_" + KEY + "_st", PEND = "hwr_" + TID + "_" + KEY + "_pend";
   let me = null, sent = false, review = null, filter = "bad";
   // Error log formasi: faqat ❌ savollar, har biriga xato turi + sababi. Qoralama shu qurilmada saqlanadi.
-  const LOGK = "hwr_log_" + TID + "_" + KEY;
+  const LOGK = "hwr_log_" + TID + "_" + KEY + (CLSID ? "_" + CLSID : "");
   const EL_DEF = ["Paraphrase / synonym", "TRUE / FALSE / NOT GIVEN", "Wrong place in text", "Unknown word", "Spelling", "Grammar / plural", "Word limit", "Ran out of time", "Other"];
   let EL = null;
 
@@ -1242,7 +1243,7 @@ async function afterSubmit() {
     const miss = EL.wrong.length - items.filter(elOk).length;
     if (miss && !confirm(miss + " ta savol to'liq yozilmagan. Shunday yuborilsinmi? (keyin to'ldirib qayta yuborish mumkin)")) return;
     EL.busy = true; EL.msg = "⏳ Yuborilmoqda…"; drawReview();
-    post({ skill: "reading", log: 1, t: TID, k: KEY, items: items }).then(r => {
+    post(Object.assign({ skill: "reading", log: 1, t: TID, k: KEY, items: items }, CLSID ? { cls: CLSID } : {})).then(r => {
       EL.busy = false;
       if (!r.ok) { EL.msg = "⚠️ " + esc2(r.error || "Yuborilmadi"); drawReview(); return; }
       EL.sent = r; EL.msg = `✅ Yuborildi: ${r.done}/${r.wrong} (${r.pct}%)`; lsDel(LOGK); drawReview();
@@ -1325,7 +1326,7 @@ async function afterSubmit() {
 
   if (!KEY || !API || !TID) { bar.innerHTML = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
   show("Yuklanmoqda…", "Bir soniya kuting.");
-  api({ action: "hello", k: KEY, t: TID }).then(r => {
+  api(Object.assign({ action: "hello", k: KEY, t: TID }, CLSID ? { cls: CLSID } : {})).then(r => {
     if (!r.ok) { bar.innerHTML = "⛔ " + esc2(r.error || "Xato"); show("Kirish mumkin emas", esc2(r.error || "Xato")); return; }
     me = r;
     const nm = document.getElementById("student-display-name"); if (nm) nm.textContent = r.name;
@@ -1333,7 +1334,7 @@ async function afterSubmit() {
       hide();
       submitted = true; clearInterval(timerId);
       gotResult(r);
-      show("Siz bu testni topshirgansiz", `${esc2(r.name)}, natijangiz: <b>${r.raw}/${r.total}</b> (Band ${r.band}).<br>Javoblar va isbotlarni ko'rib, <b>✍️ Error log</b> bo'limida har bir ❌ savolga xato turi va sababini yozib yuboring.` + (r.log ? `<br><br>✅ Error log yuborilgan: ${r.log.done}/${r.log.wrong}.` : ""), "📄 Javoblar va isbotlar", () => { hide(); openReview("bad"); });
+      show(r.cls ? "Darsdagi natijangiz" : "Siz bu testni topshirgansiz", `${esc2(r.name)}, natijangiz: <b>${r.raw}/${r.total}</b> (Band ${r.band}).<br>` + (r.cls && r.deadline ? `Error log muddati: <b>${esc2(r.deadline)}</b>.<br>` : "") + `Javoblar va isbotlarni ko'rib, <b>✍️ Error log</b> bo'limida har bir ❌ savolga xato turi va sababini yozib yuboring.` + (r.log ? `<br><br>✅ Error log yuborilgan: ${r.log.done}/${r.log.wrong}.` : ""), "📄 Javoblar va isbotlar", () => { hide(); openReview("bad"); });
       return;
     }
     if (r.closed) { bar.innerHTML = "⛔ Muddat tugagan"; show("Muddat tugagan", "Topshirish muddati (" + esc2(r.deadline) + ") o'tib ketgan."); me = null; return; }

@@ -64,6 +64,11 @@
   .tt{font-weight:700;line-height:1.3}.mt{color:var(--muted);font-size:.82rem;margin-top:2px}
   .chip{display:inline-block;font-size:.74rem;font-weight:700;border-radius:8px;padding:2px 8px;margin-top:6px}
   .chip.ok{background:var(--okbg);color:var(--ok)}.chip.todo{background:var(--warnbg);color:var(--warn)}.chip.late{background:var(--badbg);color:var(--bad)}.chip.part{background:#EFF6FF;color:#1D4ED8}
+  .tbar{height:8px;border-radius:5px;background:var(--soft);overflow:hidden;margin-top:10px}
+  .tbar i{display:block;height:100%;border-radius:5px;transition:width .6s}
+  .tlab{display:flex;justify-content:space-between;gap:6px;font-size:.7rem;color:var(--muted);margin-top:3px}
+  .chip.urg{background:#FEE2E2;color:#B91C1C;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 4px rgba(220,38,38,.12)}}
   .act{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .btn{border:0;border-radius:11px;padding:9px 14px;font-weight:700;font-size:.88rem;cursor:pointer;background:var(--primary);color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
   .btn.sec{background:var(--soft);color:var(--ink)}
@@ -171,17 +176,26 @@
     if (m < 60 * 24 && d.getDate() === now.getDate()) return "bugun " + d.toTimeString().slice(0, 5);
     return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5);
   }
-  function left(iso) {
+  function left(iso) {   // muddatgacha qolgan vaqt (har 30 soniyada qayta hisoblanadi)
     const ms = new Date(iso) - new Date();
     if (!(ms > 0)) return null;
-    const h = Math.floor(ms / 3600000);
-    return h >= 48 ? Math.floor(h / 24) + " kun qoldi" : h >= 1 ? h + " soat qoldi" : Math.max(1, Math.round(ms / 60000)) + " daqiqa qoldi";
+    const m = Math.floor(ms / 60000), h = Math.floor(m / 60), dd = Math.floor(h / 24);
+    return dd >= 2 ? dd + " kun " + (h % 24) + " soat qoldi" : h >= 1 ? h + " soat " + (m % 60) + " daqiqa qoldi" : Math.max(1, m) + " daqiqa qoldi";
   }
+  // vaqt lentasi: berilgan paytdan muddatgacha, qolgan qismi (yashil → to'q sariq → qizil)
+  function tbar(from, to) {
+    const a = new Date(from).getTime(), b = new Date(to).getTime(), now = Date.now();
+    if (!(a < b) || !(b > now)) return "";
+    const f = Math.max(0, Math.min(1, (b - now) / (b - a))), col = urgent(to) || f < .25 ? "var(--bad)" : f < .5 ? "#F59E0B" : "var(--ok)";
+    return `<div class="tbar" title="Qolgan vaqt"><i style="width:${(f * 100).toFixed(1)}%;background:${col}"></i></div><div class="tlab"><span>${dt(from)}</span><span>${Math.round(f * 100)}% vaqt qoldi</span><span>${dt(to)}</span></div>`;
+  }
+  const urgent = iso => { const ms = new Date(iso) - new Date(); return ms > 0 && ms < 24 * 3600000; };   // 24 soatdan kam: qizil
+  const dt = iso => { if (!iso) return ""; const d = new Date(iso); return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5); };
   function state(x) {
     if (x.done) return ["ok", "✅ Topshirilgan"];
     if (x.skill === "speaking" && x.n) return ["part", "🎙 " + x.n + " / " + x.total + " javob"];
     const l = left(x.deadline);
-    return l ? ["todo", "⏳ " + l] : ["late", "⛔ Muddat o'tgan"];
+    return l ? [urgent(x.deadline) ? "urg" : "todo", "⏳ " + l] : ["late", "⛔ Muddat o'tgan"];
   }
   function scoreHtml(x) {
     if (!x.done) return "";
@@ -193,15 +207,27 @@
   function open(url) { location.href = url; }
 
   function renderTasks() {
-    const T = D.tasks, todo = T.filter(x => !x.done && left(x.deadline)), done = T.filter(x => x.done);
+    // darsdagi test (🏫): natija bor, vazifa = error log (muddat ustoz belgilagan)
+    const elOpen = x => x.klass && !(x.log >= 100) && left(x.deadline);
+    const T = D.tasks, todo = T.filter(x => (!x.done && left(x.deadline)) || elOpen(x)), done = T.filter(x => x.done && !elOpen(x));
     const card = x => {
+      if (x.klass) {
+        const [ic, nm] = SK[x.skill] || ["📄", x.skill], l = left(x.deadline), ok = x.log >= 100;
+        const cc = l ? (urgent(x.deadline) ? "urg" : "todo") : "late";
+        const chip = ok ? `<span class="chip ok">✍️ Error log ${x.log}%</span>` : x.log != null ? `<span class="chip ${cc}">✍️ Error log ${x.log}%${l ? " · ⏳ " + l : " · ⛔ muddat o'tgan"}</span>`
+          : `<span class="chip ${cc}">✍️ Error log yozilmagan${l ? " · ⏳ " + l : " · ⛔ muddat o'tgan"}</span>`;
+        return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0">
+          <div class="tt">${esc(x.title)}</div><div class="mt">🏫 Dars: ${dt(x.at)} · ${nm}</div><div class="mt">✍️ Error log muddati: ${esc(x.deadline_text || "—")}</div>${chip}
+          </div>${scoreHtml(x)}</div>${ok ? "" : tbar(x.at, x.deadline)}
+          <div class="act"><a class="btn${ok ? " sec" : ""}" href="${esc(x.url)}">${ok ? "👁 Natija va kalit" : "✍️ Error log yozish"}</a></div></div>`;
+      }
       const [ic, nm] = SK[x.skill] || ["📄", x.skill], [cls, lab] = state(x);
       const btn = x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : x.skill === "writing" ? "👁 Insho" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
       const can = x.done || left(x.deadline) || D.test;
       return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0">
-        <div class="tt">${esc(x.title)}</div><div class="mt">${nm} · muddat: ${esc(x.deadline_text || "—")}</div>
+        <div class="tt">${esc(x.title)}</div><div class="mt">${nm}${x.at ? " · 📨 yuborildi: " + dt(x.at) : ""}</div><div class="mt">⏰ Muddat: ${esc(x.deadline_text || "—")}</div>
         <span class="chip ${cls}">${lab}</span>${x.log != null && x.done ? ` <span class="chip ${x.log >= 100 ? "ok" : "todo"}">✍️ Error log ${x.log}%</span>` : (x.done && (x.skill === "reading" || x.skill === "listening") ? ' <span class="chip todo">✍️ Error log yozilmagan</span>' : "")}
-        </div>${scoreHtml(x)}</div>
+        </div>${scoreHtml(x)}</div>${x.done ? "" : tbar(x.at, x.deadline)}
         ${can ? `<div class="act"><a class="btn${x.done ? " sec" : ""}" href="${esc(x.url)}">${btn}</a></div>` : ""}</div>`;
     };
     $("tasks").innerHTML =
@@ -231,7 +257,7 @@
       } else {
         body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Javoblarim, kalit va error log</a></div>`;
       }
-      return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0"><div class="tt">${esc(x.title)}</div><div class="mt">${nm}</div></div>${scoreHtml(x)}</div>${body}</div>`;
+      return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0"><div class="tt">${esc(x.title)}</div><div class="mt">${x.klass ? "🏫 Dars: " + dt(x.at) + " · " : x.at ? "📨 " + dt(x.at) + " · " : ""}${nm}</div></div>${scoreHtml(x)}</div>${body}</div>`;
     }).join("") : `<div class="empty">Natijalar topshirganingizdan keyin shu yerda chiqadi.</div>`;
   }
   function badge() {
@@ -384,6 +410,7 @@
   });
   // har 60 soniyada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
   setInterval(() => { if (!document.hidden && D) load(false).catch(() => {}); }, 60000);
+  setInterval(() => { if (!document.hidden && D) renderTasks(); }, 30000);   // qolgan vaqt yozuvlari jonli yangilanadi
   document.addEventListener("visibilitychange", () => { if (!document.hidden && D) load(false).catch(() => {}); });
 })();
 </script>
