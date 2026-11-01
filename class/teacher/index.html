@@ -721,6 +721,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <div class="stats" id="stats"></div>
       <div class="notice hide" id="autoBox" style="margin:0 0 10px"><span id="autoText"></span><button class="btn btn-secondary btn-sm" id="autoCancel">Bekor qilish</button></div>
       <div class="msg" id="liveMsg" style="margin:0 0 10px"></div>
+      <div class="hide" id="elDueBox" style="margin:0 0 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.88rem">
+        <b>✍️ Error log muddati:</b> <input type="datetime-local" id="elDue" style="padding:6px 8px;border:1px solid var(--line,#ddd);border-radius:8px;font:inherit">
+        <button class="btn btn-secondary btn-sm" id="elDueDef" title="Keyingi dars kuni 08:00">Keyingi dars</button>
+        <span class="muted" id="elDueMsg">O'quvchi natijasi bilan birga kabinetida ko'rinadi.</span></div>
       <div class="tbl-wrap"><table>
         <thead id="thead"><tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>Javob</th><th>Chiqish</th><th>Natija</th><th></th></tr></thead>
         <tbody id="tbody"></tbody>
@@ -1853,6 +1857,30 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     return `${ks.filter(k => live[k].joined).length} kirdi, ${ks.filter(k => live[k].submitted).length} topshirdi.`;
   }
   $("btnGrade").onclick = () => doGrade(false);
+  // ---------- Darsdagi test: error log muddati (ustoz belgilaydi; standart: keyingi dars kuni 08:00) ----------
+  function elDueDefault(from) {
+    const d = new Date(from || CLS.now()); d.setHours(8, 0, 0, 0); d.setDate(d.getDate() + 2);
+    if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+    return d.getTime();
+  }
+  const toInp = ms => { const d = new Date(ms), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+  const elDueMs = () => { const v = $("elDue").value; const ms = v ? new Date(v).getTime() : NaN; return isNaN(ms) ? null : ms; };
+  function elDueDraw() {
+    const on = sess && (sess.skill === "reading" || sess.skill === "listening");
+    $("elDueBox").classList.toggle("hide", !on);
+    if (!on || document.activeElement === $("elDue")) return;
+    const ms = sess.elDue || elDueDefault(sess.created || sess.start);
+    const v = toInp(ms); if ($("elDue").value !== v) $("elDue").value = v;
+  }
+  function elDueSave(ms) {
+    if (!sid || !ms) return;
+    $("elDueMsg").textContent = "⏳ Saqlanmoqda…";
+    upd({ elDue: ms }).then(() => sess.graded ? api({ admin: "cls_due", sid: sid, at: new Date(ms).toISOString() }) : { ok: true })
+      .then(r => { if (!r.ok) throw new Error(r.error); $("elDueMsg").textContent = sess.graded ? "✅ Saqlandi, o'quvchilar kabinetida yangilandi." : "✅ Saqlandi. Natijalar shu muddat bilan yuboriladi."; })
+      .catch(e => { $("elDueMsg").textContent = "⚠️ " + e.message; });
+  }
+  $("elDue").onchange = () => { const ms = elDueMs(); if (ms) elDueSave(ms); };
+  $("elDueDef").onclick = () => { const ms = elDueDefault(); $("elDue").value = toInp(ms); elDueSave(ms); };
   function doGrade(auto) {
     const keys = Object.keys(live).filter(k => live[k] && live[k].joined && roster[k] && !(live[k].result));
     if (!keys.length) { $("liveMsg").textContent = "Yuboriladigan yangi natija yo'q."; return; }
@@ -1865,7 +1893,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       const end = live[k].submitted || sess.stoppedAt || CLS.now();
       return { k: k, answers: live[k].ans || {}, minutes: Math.min(sess.minutes, Math.round((end - startT - (sess.pausedTotal || 0)) / 60000)) };
     });
-    api({ admin: "class_grade", skill: sess.skill || "reading", t: sess.test, sid: sid, entries: entries }).then(r => {
+    const elAt = elDueMs() || sess.elDue || elDueDefault(sess.created || sess.start);
+    api({ admin: "class_grade", skill: sess.skill || "reading", t: sess.test, sid: sid, entries: entries, el_due: new Date(elAt).toISOString() }).then(r => {
       if (!r.ok) throw new Error(r.error);
       const up = {}; let tg = 0;
       r.results.forEach(x => { if (x.raw != null) { up[x.k + "/result"] = Object.assign({ raw: x.raw, band: x.band }, x.ok ? { ok: x.ok } : {}); if (x.telegram || x.already) tg++; } });
@@ -1924,6 +1953,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("btnStop").classList.toggle("hide", !(sess.state === "run" || sess.state === "paused"));
     $("btnGrade").classList.toggle("hide", sess.state !== "stopped");
     $("liveTaBtn").classList.toggle("hide", !(sess.skill === "reading" || sess.skill === "listening"));
+    elDueDraw();
     drawTable();
   }
   function drawTable() {

@@ -193,8 +193,19 @@
   function open(url) { location.href = url; }
 
   function renderTasks() {
-    const T = D.tasks, todo = T.filter(x => !x.done && left(x.deadline)), done = T.filter(x => x.done);
+    // darsdagi test (🏫): natija bor, vazifa = error log (muddat ustoz belgilagan)
+    const elOpen = x => x.klass && !(x.log >= 100) && left(x.deadline);
+    const T = D.tasks, todo = T.filter(x => (!x.done && left(x.deadline)) || elOpen(x)), done = T.filter(x => x.done && !elOpen(x));
     const card = x => {
+      if (x.klass) {
+        const [ic, nm] = SK[x.skill] || ["📄", x.skill], l = left(x.deadline), ok = x.log >= 100;
+        const chip = ok ? `<span class="chip ok">✍️ Error log ${x.log}%</span>` : x.log != null ? `<span class="chip ${l ? "todo" : "late"}">✍️ Error log ${x.log}%${l ? " · ⏳ " + l : " · ⛔ muddat o'tgan"}</span>`
+          : `<span class="chip ${l ? "todo" : "late"}">✍️ Error log yozilmagan${l ? " · ⏳ " + l : " · ⛔ muddat o'tgan"}</span>`;
+        return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0">
+          <div class="tt">${esc(x.title)}</div><div class="mt">🏫 Darsda · ${nm}${x.deadline_text ? " · error log: " + esc(x.deadline_text) : ""}</div>${chip}
+          </div>${scoreHtml(x)}</div>
+          <div class="act"><a class="btn${ok ? " sec" : ""}" href="${esc(x.url)}">${ok ? "👁 Natija va kalit" : "✍️ Error log yozish"}</a></div></div>`;
+      }
       const [ic, nm] = SK[x.skill] || ["📄", x.skill], [cls, lab] = state(x);
       const btn = x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : x.skill === "writing" ? "👁 Insho" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
       const can = x.done || left(x.deadline) || D.test;
@@ -231,7 +242,7 @@
       } else {
         body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Javoblarim, kalit va error log</a></div>`;
       }
-      return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0"><div class="tt">${esc(x.title)}</div><div class="mt">${nm}</div></div>${scoreHtml(x)}</div>${body}</div>`;
+      return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0"><div class="tt">${esc(x.title)}</div><div class="mt">${x.klass ? "🏫 Darsda · " : ""}${nm}</div></div>${scoreHtml(x)}</div>${body}</div>`;
     }).join("") : `<div class="empty">Natijalar topshirganingizdan keyin shu yerda chiqadi.</div>`;
   }
   function badge() {
