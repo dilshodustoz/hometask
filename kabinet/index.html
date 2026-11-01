@@ -33,7 +33,10 @@
   .cls .s{display:none}
   .out .s{display:none}
   .who{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-  @media(max-width:430px){.cls .l,.out .l,.sub{display:none}.cls .s{display:inline}.out .s{display:inline;font-size:1.1rem}.cls{padding:0 10px}.top{gap:8px}.who{font-size:.95rem}}
+  @media(max-width:430px){.cls .l,.out .l,.sub{display:none}.cls .s{display:inline}.out .s{display:inline;font-size:1.1rem}.cls{padding:0 10px}.top{gap:6px;padding:10px 12px 6px}.who{font-size:.92rem}.brand{height:28px}.bell{width:36px;height:36px}.cls{height:36px}.out{padding:6px 0}}
+  #sync{font-size:1.25rem;font-weight:700;color:var(--ink)}
+  #sync.busy{animation:spin .8s linear infinite;color:var(--primary);pointer-events:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .out{border:0;background:none;color:var(--muted);font-weight:600;font-size:.8rem;cursor:pointer;padding:6px 4px}
   #login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:65}
   #login .card{width:100%;max-width:380px;padding:26px 22px;text-align:center}
@@ -102,6 +105,7 @@
     <div><div class="who" id="who">Yuklanmoqda…</div><div class="sub">Shaxsiy kabinet · Dilshod ustoz</div></div>
     <div class="sp"></div>
     <a class="cls hide" id="cls" href="#" title="Onlayn darsdagi testga kirish">🎓 <span class="l">Darsga kirish</span><span class="s">Dars</span></a>
+    <button class="bell" id="sync" title="Yangilash">↻</button>
     <button class="bell" id="bell" title="Xabarlar">🔔<b id="bellN" class="hide">0</b></button>
     <button class="out" id="out" title="Bu qurilmadan chiqish"><span class="l">Chiqish</span><span class="s">🚪</span></button>
   </div>
@@ -254,6 +258,7 @@
   }
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.tab));
   $("bell").onclick = openNotes;
+  $("sync").onclick = () => { if (D) load(false).then(() => toast("✓ Yangilandi")).catch(e => toast("⚠️ " + e.message)); };
   const closeNotes = () => { $("drawer").classList.add("hide"); document.body.style.overflow = ""; };
   $("dX").onclick = $("dBg").onclick = () => { if (history.state && history.state.layer) history.back(); else closeNotes(); };
   const back = fn => () => { if (history.state && history.state.layer) history.back(); else fn(); };
@@ -288,9 +293,24 @@
     }
   });
 
+  // Oxirgi ma'lumot qurilmada saqlanadi: kabinet darhol ochiladi, yangisi orqada yuklanadi
+  const cacheKey = () => "kab_d_" + (CODE || KEY);
+  function apply(r) {
+    D = r;
+    if (r.k) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
+    $("who").textContent = r.name;
+    render();
+    $("cover").classList.add("hide"); $("login").classList.add("hide");
+  }
+  function fromCache() {
+    try { const r = JSON.parse(localStorage.getItem(cacheKey()) || "null"); if (r && r.ok && r.tasks) { apply(r); return true; } } catch (e) {}
+    return false;
+  }
   function load(first) {
-    return api(Object.assign({ action: "cab" }, auth())).then(r => {
+    $("sync").classList.add("busy");
+    return api(Object.assign({ action: "cab" }, auth())).finally(() => $("sync").classList.remove("busy")).then(r => {
       if (!r.ok) { const e = new Error(r.error || "xato"); e.auth = !!r.auth; e.lock = !!r.lock; throw e; }
+      try { localStorage.setItem(cacheKey(), JSON.stringify(r)); } catch (e) {}
       const before = D ? D.notes.filter(x => !x.read).length : 0;
       D = r;
       if (r.k) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
@@ -301,14 +321,18 @@
       $("cover").classList.add("hide"); $("login").classList.add("hide");
     });
   }
+  function tab0() { let t = "tasks"; try { t = localStorage.getItem("kab_tab") || t; } catch (e) {} show(t === "res" ? "res" : "tasks"); }
   function start() {
-    return load(true).then(() => {
-      let t = "tasks"; try { t = localStorage.getItem("kab_tab") || t; } catch (e) {}
-      if (t !== "res") t = "tasks";
-      show(t);
-    });
+    if (fromCache()) {   // darhol ko'rsatamiz, keyin yangilaymiz
+      tab0();
+      return load(false).catch(e => { if (e.auth) throw e; toast("⚠️ Yangilab bo'lmadi: " + e.message); });
+    }
+    return load(true).then(tab0);
   }
-  function forget() { CODE = ""; KEY = ""; D = null; try { localStorage.removeItem("kab_c"); localStorage.removeItem("kab_k"); } catch (e) {} }
+  function forget() {
+    try { localStorage.removeItem(cacheKey()); localStorage.removeItem("kab_c"); localStorage.removeItem("kab_k"); } catch (e) {}
+    CODE = ""; KEY = ""; D = null;
+  }
   function showLogin(msg) {
     $("cover").classList.add("hide"); $("login").classList.remove("hide");
     $("lErr").textContent = msg || ""; $("lCode").value = "";
