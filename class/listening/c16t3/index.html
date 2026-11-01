@@ -2992,5 +2992,108 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
 })();
 </script>
 
+<!-- screen-fit v1: telefonda ekrandan maksimal foydalanish (Listening + Reading sinf sahifalari) -->
+<style>
+  /* pastki yozuv: bitta qator, bir necha soniyadan keyin yashirinadi */
+  #clBar{transition:transform .35s ease,opacity .35s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block!important;text-align:center}
+  #clBar.sf-hide{transform:translateY(110%);opacity:0;pointer-events:none}
+  html.sf-barhid body{padding-bottom:0!important}
+  @media (max-width:760px){ #clBar{font-size:12px!important;padding:5px 10px calc(5px + env(safe-area-inset-bottom))!important} }
+  /* to'liq ekran tugmasi (Listening sarlavhasida) */
+  #sf-fs{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:3px 8px;font:700 15px/1 system-ui,sans-serif;cursor:pointer;min-width:32px;height:28px}
+  #sf-fs.on{background:#2563eb;border-color:#2563eb}
+  /* Listening sarlavhasi telefonda ixcham: 2 ta yupqa qator */
+  @media (max-width:760px), (max-height:520px){
+    html.sf-L header{padding:4px 8px!important;gap:4px 6px!important;flex-wrap:wrap!important}
+    html.sf-L .brand-title, html.sf-L .tg-channel-badge, html.sf-L .test-badge{display:none!important}
+    html.sf-L .header-left{flex:1 1 0!important;min-width:0!important;gap:4px!important}
+    html.sf-L #lo-student{margin:0!important;font-size:.7rem!important;padding:2px 8px!important;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+    html.sf-L .header-right{gap:5px!important;flex-wrap:nowrap!important}
+    html.sf-L .timer-badge{padding:2px 7px!important;font-size:.82rem!important}
+    html.sf-L .btn-submit{padding:4px 8px!important;font-size:.74rem!important}
+    html.sf-L #sf-fs{height:26px;padding:2px 7px;font-size:14px}
+    html.sf-L .header-center{order:3;flex:1 1 100%!important}
+    html.sf-L .audio-cd-box{flex-wrap:nowrap!important;gap:5px!important;padding:3px 6px!important;border-radius:10px!important}
+    html.sf-L .audio-cd-box .audio-start-btn{padding:3px 8px!important;font-size:.7rem!important;white-space:nowrap}
+    html.sf-L #audioPulseIndicator{display:none!important}
+    html.sf-L #audioTrackLabel{font-size:.7rem!important;white-space:nowrap}
+    html.sf-L .exam-waveform-container{display:none!important}
+    html.sf-L .audio-time{font-size:.66rem!important;white-space:nowrap;letter-spacing:-.02em}
+    html.sf-L #lo-speaker-btn{padding:3px 7px!important;font-size:.66rem!important;margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+    html.sf-L .sec-tab-btn{padding:4px 2px!important;font-size:.7rem!important}
+    html.sf-L .test-content-scroll{padding:6px!important}
+    html.sf-L .section-container{padding:12px 10px!important}
+  }
+</style>
+<script>
+(function () {
+  const R = document.documentElement, bar = document.getElementById("clBar");
+  if (!bar) return;
+  const isL = !!document.querySelector(".audio-cd-box");
+  if (isL) R.classList.add("sf-L");
+  const K = new URLSearchParams(location.search).get("k") || "";
+
+  // ---------- 1) pastki yozuv: o'zgarganda 4 soniya ko'rinadi, keyin yashirinadi; ogohlantirish (⚠️) turadi ----------
+  let hideT = null, lastKey = null, lastWarn = false;
+  function setHidden(h) { bar.classList.toggle("sf-hide", h); R.classList.toggle("sf-barhid", h); }
+  function reveal(ms) {
+    setHidden(false); clearTimeout(hideT); hideT = null;
+    if (ms) hideT = setTimeout(() => setHidden(true), ms);
+  }
+  function mainText() { const c = bar.cloneNode(true); c.querySelectorAll(".lo-pre").forEach(e => e.remove()); return c.textContent.trim(); }
+  function check() {
+    const k = mainText(), warn = /⚠️|⛔/.test(bar.textContent);
+    if (warn) { if (!lastWarn || k !== lastKey) reveal(0); lastWarn = true; lastKey = k; return; }
+    if (k !== lastKey || lastWarn) reveal(/Yuklanmoqda/.test(k) ? 0 : 4000);
+    lastKey = k; lastWarn = false;
+  }
+  new MutationObserver(check).observe(bar, { childList: true, subtree: true, characterData: true });
+  bar.addEventListener("click", () => { if (!/⚠️|⛔/.test(bar.textContent)) setHidden(true); });
+  check();
+
+  // ---------- 2) to'liq ekran: test sahifasidagi birinchi bosishda o'zi yoqiladi; o'quvchi chiqsa, tugma bilan qaytadi ----------
+  const canFS = !!(R.requestFullscreen || R.webkitRequestFullscreen);
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const OUT = "sf_out_" + K;
+  let optOut = false, btn = null;
+  try { optOut = sessionStorage.getItem(OUT) === "1"; } catch (e) {}
+  function active() { return /avtomatik saqlanadi/.test(bar.textContent); }   // o'quvchi tanildi va test topshirilmagan
+  function enter() {
+    if (!canFS || fsEl()) return;
+    try {
+      const p = R.requestFullscreen ? R.requestFullscreen({ navigationUI: "hide" }) : R.webkitRequestFullscreen();
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
+  }
+  function leave() { try { const p = (document.exitFullscreen || document.webkitExitFullscreen).call(document); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+  function setOut(v) { optOut = v; try { sessionStorage.setItem(OUT, v ? "1" : "0"); } catch (e) {} }
+  function paint() {
+    if (!btn) return;
+    const on = !!fsEl();
+    btn.classList.toggle("on", on);
+    btn.textContent = on ? "⤡" : "⛶";
+    btn.title = on ? "To'liq ekrandan chiqish" : "To'liq ekran";
+  }
+  if (canFS) {
+    window.addEventListener("click", e => {
+      if (optOut || fsEl() || !active()) return;
+      if (e.target && e.target.closest && e.target.closest("#sf-fs, .fs-btn, a[href]")) return;
+      enter();
+    });
+    const onChange = () => { if (fsEl()) setOut(false); else setOut(true); paint(); };
+    document.addEventListener("fullscreenchange", onChange);
+    document.addEventListener("webkitfullscreenchange", onChange);
+    // Listening: sarlavhaga tugma (Reading sahifasida o'z ⛶ tugmasi bor)
+    const host = document.querySelector(".header-right");
+    if (isL && host && !document.querySelector(".fs-btn")) {
+      btn = document.createElement("button");
+      btn.id = "sf-fs"; btn.type = "button";
+      btn.onclick = e => { e.stopPropagation(); if (fsEl()) leave(); else enter(); };
+      host.appendChild(btn); paint();
+    }
+  }
+})();
+</script>
+
 </body>
 </html>
