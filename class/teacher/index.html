@@ -723,7 +723,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <div class="msg" id="liveMsg" style="margin:0 0 10px"></div>
       <div class="hide" id="elDueBox" style="margin:0 0 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.88rem">
         <b>✍️ Error log muddati:</b> <input type="datetime-local" id="elDue" style="padding:6px 8px;border:1px solid var(--line,#ddd);border-radius:8px;font:inherit">
-        <button class="btn btn-secondary btn-sm" id="elDueDef" title="Keyingi dars kuni 08:00">Keyingi dars</button>
+        <button class="btn btn-secondary btn-sm" id="elDueDef" title="Dars kunidan keyingi kun 08:00">Ertaga 08:00</button>
         <span class="muted" id="elDueMsg">O'quvchi natijasi bilan birga kabinetida ko'rinadi.</span></div>
       <div class="tbl-wrap"><table>
         <thead id="thead"><tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>Javob</th><th>Chiqish</th><th>Natija</th><th></th></tr></thead>
@@ -1423,7 +1423,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("hwRmBox").classList.add("hide");
     $("hwStCard").classList.remove("hide");
     $("hwStMsg").textContent = ""; $("hwFbAll").classList.add("hide");
-    $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
+    $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · yuborildi ${fmtAt(info.at)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
     $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
     $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Matnga o'girildi" : "Band"}</th><th>${S ? "Baho (Claude)" : "Daqiqa"}</th>${L ? "<th>Error log</th>" : ""}<th>Qachon</th><th></th></tr>`;
     api({ admin: "status", skill: h.skill, t: t }).then(r => {
@@ -1489,7 +1489,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         }).catch(e => { alert("⚠️ " + e.message); b.disabled = false; b.textContent = "↺ Qayta ochish"; });
       });
       $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div>` + (L ? `<div class="stat"><b>${lgN} / ${n}</b>error log to'liq</div>` : "") + (S ? `<div class="stat"><b>${trN} / ${ansN}</b>matnga o'girildi</div><div class="stat"><b>${gN} / ${n}</b>baholandi · ${sentN} yuborildi</div><div class="stat"><b>${gN ? (gSum / gN).toFixed(1) : "—"}</b>o'rtacha band</div>` : "") + `<div class="stat"><b>${n ? (S ? Math.round(sum / n / 60 * 10) / 10 : W ? Math.round(sum / n) : (sum / n).toFixed(1)) : "—"}</b>${S ? "o'rtacha daqiqa" : W ? "o'rtacha so'z" : "o'rtacha band"}</div>` +
-        `<div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
+        `<div class="stat"><b>${fmtAt(info.at)}</b>yuborilgan</div><div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
       const c = $("hwc_" + id); if (c) c.textContent = n + " / " + keys.length;
     }).catch(e => { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
   }
@@ -1859,8 +1859,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   $("btnGrade").onclick = () => doGrade(false);
   // ---------- Darsdagi test: error log muddati (ustoz belgilaydi; standart: keyingi dars kuni 08:00) ----------
   function elDueDefault(from) {
-    const d = new Date(from || CLS.now()); d.setHours(8, 0, 0, 0); d.setDate(d.getDate() + 2);
-    if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+    const d = new Date(from || CLS.now()); d.setHours(8, 0, 0, 0); d.setDate(d.getDate() + 1);   // dars kunidan keyingi kun 08:00
     return d.getTime();
   }
   const toInp = ms => { const d = new Date(ms), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
