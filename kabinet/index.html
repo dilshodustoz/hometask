@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Shaxsiy kabinet · Dilshod ustoz</title>
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
@@ -38,7 +37,8 @@
   .out{border:0;background:none;color:var(--muted);font-weight:600;font-size:.8rem;cursor:pointer;padding:6px 4px}
   #login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:65}
   #login .card{width:100%;max-width:380px;padding:26px 22px;text-align:center}
-  #login .logo{width:56px;height:56px;border-radius:16px;margin:0 auto 12px;display:block}
+  #login .logo{height:60px;width:auto;margin:0 auto 14px;display:block}
+  .brand{height:34px;width:auto;flex:none;display:block}
   #login h2{margin:0 0 4px;font-size:1.25rem}
   #login .fld{position:relative;margin:18px 0 10px}
   #login input{width:100%;font:600 1.25rem 'JetBrains Mono',monospace;letter-spacing:.18em;text-align:center;text-transform:uppercase;padding:13px 48px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);outline:none}
@@ -98,7 +98,7 @@
 <body>
 <header>
   <div class="top">
-    <div class="av" id="av">?</div>
+    <img class="brand" src="logo.png" alt="Dilshod ustoz">
     <div><div class="who" id="who">Yuklanmoqda…</div><div class="sub">Shaxsiy kabinet · Dilshod ustoz</div></div>
     <div class="sp"></div>
     <a class="cls hide" id="cls" href="#" title="Onlayn darsdagi testga kirish">🎓 <span class="l">Darsga kirish</span><span class="s">Dars</span></a>
@@ -120,7 +120,7 @@
 <div id="modal" class="hide"><div class="bar"><b id="mT" style="flex:1">Feedback</b><button class="btn sec" id="mX">✕ Yopish</button></div><iframe id="mF" sandbox="allow-same-origin allow-popups"></iframe></div>
 <div id="cover"><div class="card"><h3 style="margin:0 0 6px;font-size:1.1rem;color:var(--ink);text-transform:none;letter-spacing:0" id="cT">⏳ Yuklanmoqda…</h3><div class="mt" id="cB">Bir soniya kuting.</div></div></div>
 <div id="login" class="hide"><form class="card" id="lForm" autocomplete="off">
-  <img class="logo" src="apple-touch-icon.png" alt="">
+  <img class="logo" src="logo.png" alt="Dilshod ustoz">
   <h2>Shaxsiy kabinet</h2>
   <div class="mt">Dilshod ustoz bergan kartochkadagi kodni kiriting.</div>
   <div class="fld"><input id="lCode" type="password" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" maxlength="12" placeholder="AB12345" aria-label="Kirish kodi">
@@ -152,7 +152,13 @@
   // server xabarlari Telegram HTML'ida (b, i, code); boshqa teglarni olib tashlaymiz
   const safe = s => String(s || "").replace(/<(?!\/?(b|i|code)>)[^>]*>/g, "");
   function toast(t) { const e = $("toast"); e.textContent = t; e.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(() => e.style.display = "none", 2600); }
-  function api(q) { return fetch(API + "?" + new URLSearchParams(q), { redirect: "follow" }).then(r => r.json()); }
+  // Tarmoq xatosida (Safari: "Load failed", Chrome: "Failed to fetch") bir marta qayta urinadi
+  const NETERR = "Server javob bermadi. Internetni tekshirib, qayta urinib ko'ring.";
+  const isNet = e => e instanceof TypeError || /load failed|failed to fetch|networkerror|network request failed/i.test(String(e && e.message));
+  function api(q, again) {
+    return fetch(API + "?" + new URLSearchParams(q), { redirect: "follow", cache: "no-store" }).then(r => r.json())
+      .catch(e => { if (!again && isNet(e)) return new Promise(ok => setTimeout(ok, 1500)).then(() => api(q, true)); throw isNet(e) ? new Error(NETERR) : e instanceof SyntaxError ? new Error("Server hozir band. Bir daqiqadan keyin qayta urinib ko'ring.") : e; });
+  }
   function post(b) { return fetch(API, { method: "POST", body: JSON.stringify(b), headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" }).then(r => r.json()); }
   function when(iso) {
     if (!iso) return "";
@@ -288,7 +294,7 @@
       const before = D ? D.notes.filter(x => !x.read).length : 0;
       D = r;
       if (r.k) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
-      $("who").textContent = r.name; $("av").textContent = (r.name || "?").trim().charAt(0).toUpperCase();
+      $("who").textContent = r.name; 
       render();
       const now = D.notes.filter(x => !x.read).length;
       if (!first && now > before) toast("🔔 Yangi xabar keldi");
@@ -316,7 +322,7 @@
     $("lGo").disabled = true; $("lGo").textContent = "Tekshirilmoqda…"; $("lErr").textContent = "";
     CODE = c; KEY = "";
     start().then(() => { try { localStorage.setItem("kab_c", c); localStorage.removeItem("kab_k"); } catch (e) {} })
-      .catch(e => { CODE = ""; $("lErr").textContent = e.message === "Failed to fetch" ? "Internet yo'q. Qayta urinib ko'ring." : e.message; $("lCode").select(); })
+      .catch(e => { CODE = ""; $("lErr").textContent = e.message; $("lCode").select(); })
       .finally(() => { $("lGo").disabled = false; $("lGo").textContent = "Kirish"; });
   };
   $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; forget(); closeNotes(); showLogin(""); };
@@ -350,7 +356,7 @@
   if (!CODE && !/^[A-Za-z0-9_-]{6,20}$/.test(KEY)) showLogin("");
   else start().catch(e => {
     if (e.auth) { forget(); showLogin(e.message); return; }
-    $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message === "Failed to fetch" ? "Internetni tekshirib, sahifani yangilang." : e.message;
+    $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message;
   });
   // har 60 soniyada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
   setInterval(() => { if (!document.hidden && D) load(false).catch(() => {}); }, 60000);
