@@ -531,7 +531,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   .hwd-q{background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;white-space:pre-wrap}
   .hwd-txt{white-space:pre-wrap;line-height:1.65;font-size:.95rem}
   .hwd-sp{border:1px solid #E7E7E4;border-radius:12px;padding:10px 12px;margin-bottom:8px}
-  .hwd-sph{display:flex;gap:10px;align-items:flex-start}.hwd-play{min-width:40px;justify-content:center}
+  .hwd-sph{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}.hwd-au{width:100%;max-width:340px;height:40px;order:3}.hwd-play{min-width:40px;justify-content:center}
   .hwd-tr{margin-top:8px;background:#F6F6F4;border-radius:8px;padding:8px 10px;font-size:.88rem;font-style:italic}
   .hwd-if{width:100%;height:calc(100vh - 170px);border:1px solid #E7E7E4;border-radius:10px;background:#fff}
   tr.hwd-row{cursor:pointer}tr.hwd-row:hover td{background:rgba(232,89,12,.05)}
@@ -1374,18 +1374,23 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         $("hwdB").innerHTML = `<div class="hwd-sum">🎙 ${r.items.length}/${r.total} javob${b ? ` · Band <b>${E(b.band)}</b> (FC ${E(b.fc)} · LR ${E(b.lr)} · GRA ${E(b.gra)} · P ${E(b.p)})` : ""} &nbsp; ${fbBtn}</div>` +
           r.items.map(x => `<div class="hwd-sp"><div class="hwd-sph"><button class="btn btn-sm hwd-play" data-i="${x.i}" ${x.audio ? "" : "disabled"}>▶</button><div><small class="muted">Part ${E(x.part)} · Q${x.i + 1}${x.topic ? " · " + E(x.topic) : ""} · ${Math.floor(x.sec / 60)}:${String(x.sec % 60).padStart(2, "0")}</small><div><b>${E(x.q)}</b></div>${x.cue && x.cue.length ? `<div class="muted">${x.cue.map(c => "• " + E(c)).join("<br>")}</div>` : ""}</div></div>
             ${x.tr ? `<div class="hwd-tr">${E(x.tr)}</div>` : ""}${x.pron ? `<div class="muted" style="font-size:.8rem;margin-top:4px">🗣 ${E(x.pron)}</div>` : ""}</div>`).join("");
+        // Ovoz: bosilganda yuklanadi va o'sha joyda oddiy pleer (▶ / pauza / surish) chiqadi.
+        // Safari tarmoqdan kelgan ovozni avtomatik boshlamasligi mumkin: unda pleerdagi ▶ ni bosish kifoya.
         $("hwdB").querySelectorAll(".hwd-play").forEach(p => p.onclick = async () => {
-          if (hwdAudio && hwdAudio._b === p) { hwdAudio.pause(); p.textContent = "▶"; hwdAudio = null; return; }
-          if (hwdAudio) { hwdAudio.pause(); hwdAudio._b.textContent = "▶"; hwdAudio = null; }
           p.textContent = "…"; p.disabled = true;
           try {
             const a = await api({ admin: "hw_audio", t: h.t, k: k, i: p.dataset.i });
             if (!a.ok) throw new Error(a.error);
-            hwdAudio = new Audio("data:" + a.mime + ";base64," + a.b64); hwdAudio._b = p;
-            hwdAudio.onended = () => { p.textContent = "▶"; hwdAudio = null; };
-            await hwdAudio.play(); p.textContent = "❚❚";
-          } catch (e) { p.textContent = "▶"; alert("⚠️ " + (e.message || "Ovoz ochilmadi")); }
-          p.disabled = false;
+            const bin = atob(a.b64), u8 = new Uint8Array(bin.length);
+            for (let j = 0; j < bin.length; j++) u8[j] = bin.charCodeAt(j);
+            const el = document.createElement("audio");
+            el.controls = true; el.preload = "auto"; el.className = "hwd-au";
+            el.src = URL.createObjectURL(new Blob([u8], { type: a.mime }));
+            el.onplay = () => { if (hwdAudio && hwdAudio !== el) hwdAudio.pause(); hwdAudio = el; };
+            el.onerror = () => alert("⚠️ Bu brauzer ovoz formatini (" + a.mime + ") o'ynata olmadi. Chrome'da ochib ko'ring.");
+            p.replaceWith(el);
+            el.play().catch(() => {});
+          } catch (e) { p.textContent = "▶"; p.disabled = false; alert("⚠️ " + (e.message || "Ovoz ochilmadi")); }
         });
       }
       const fb = $("hwdFb");
