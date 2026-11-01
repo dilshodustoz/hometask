@@ -51,7 +51,7 @@
   .note .when{color:var(--muted);font-size:.76rem;margin-bottom:4px}
   .note .tx{white-space:pre-wrap;word-break:break-word;font-size:.9rem}
   .note code{font:500 .8rem 'JetBrains Mono',monospace;background:var(--soft);border-radius:6px;padding:1px 4px;white-space:pre-wrap}
-  .ans{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+  .ans{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
   .ans:first-child{border-top:0}
   .ans .q{flex:1;font-size:.85rem}.ans .q small{color:var(--muted);display:block}
   .play{flex:none;border:0;width:36px;height:36px;border-radius:50%;background:var(--soft);cursor:pointer;font-size:.95rem}
@@ -211,17 +211,20 @@
   $("mX").onclick = () => { $("modal").classList.add("hide"); $("mF").srcdoc = ""; };
   document.addEventListener("click", async e => {
     const p = e.target.closest(".play");
-    if (p && !p.disabled) {
-      if (audio && audio._btn === p) { audio.pause(); p.classList.remove("on"); p.textContent = "▶"; audio = null; return; }
-      if (audio) { audio.pause(); audio._btn.classList.remove("on"); audio._btn.textContent = "▶"; }
-      p.textContent = "…";
+    if (p && !p.disabled) {   // bosilganda yuklanadi va o'rniga oddiy pleer chiqadi (Safari'da avtomatik boshlanmasa, ▶ ni bosing)
+      p.textContent = "…"; p.disabled = true;
       try {
         const r = await api({ action: "cab_audio", k: KEY, t: p.dataset.t, i: p.dataset.i });
         if (!r.ok) throw new Error(r.error);
-        audio = new Audio("data:" + r.mime + ";base64," + r.b64); audio._btn = p;
-        audio.onended = () => { p.classList.remove("on"); p.textContent = "▶"; audio = null; };
-        await audio.play(); p.classList.add("on"); p.textContent = "❚❚";
-      } catch (err) { p.textContent = "▶"; toast("⚠️ " + (err.message || "Ovoz ochilmadi")); }
+        const bin = atob(r.b64), u8 = new Uint8Array(bin.length);
+        for (let j = 0; j < bin.length; j++) u8[j] = bin.charCodeAt(j);
+        const el = document.createElement("audio");
+        el.controls = true; el.preload = "auto"; el.style.cssText = "width:100%;max-width:260px;height:36px;flex:none";
+        el.src = URL.createObjectURL(new Blob([u8], { type: r.mime }));
+        el.onplay = () => { if (audio && audio !== el) audio.pause(); audio = el; };
+        p.replaceWith(el);
+        el.play().catch(() => {});
+      } catch (err) { p.textContent = "▶"; p.disabled = false; toast("⚠️ " + (err.message || "Ovoz ochilmadi")); }
       return;
     }
     const f = e.target.closest("[data-fb]");
