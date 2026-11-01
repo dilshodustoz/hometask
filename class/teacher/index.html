@@ -975,6 +975,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 <script src="../writing/templates.js"></script>
 <script src="course.js"></script>
 <script src="journal.js"></script>
+<script src="history.js"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id);
@@ -1027,6 +1028,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 
   function start() {
     JR.mount(); JR.attach(db);
+    CH.init(db);   // darsda o'tilgan testlar (history.js)
     if (!admin.secret) { admin.secret = randKey(28); db.ref("admin/secret").set(admin.secret); }
     try { group = localStorage.getItem("cls_group"); mode = localStorage.getItem("cls_mode") || mode; } catch (e) {}
     mergeGroups(admin.groups);   // saytda ulangan yangi guruhlar
