@@ -1705,18 +1705,44 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <div class="l">Kirish kodi</div><div class="k">${e(C[k])}</div>
       <div class="uq"><div class="u">${e(KAB_URL.replace("https://", ""))}<div class="qh">📷 QR kodni telefon kamerasi bilan skanerlang</div></div><div class="qr">${KAB_QR}</div></div>
       <div class="t">Saytni oching, kodni kiriting. Kodni hech kimga bermang. Telefon ekraniga qo'shib qo'ying (Ulashish → Add to Home Screen).</div></div>`;
+    const pages = []; for (let i = 0; i < ks.length; i += 8) pages.push(ks.slice(i, i + 8));   // A4 sahifaga 8 ta (2 x 4), sahifa chegarasida bo'linmaydi
+    const fname = ("Kabinet_kartochkalari_" + CLS.GROUPS[group].name).replace(/[^\w\u0400-\u04FF'-]+/g, "_") + ".pdf";
     const html = `<!DOCTYPE html><html lang="uz"><head><meta charset="utf-8"><title>Kabinet kartochkalari · ${e(CLS.GROUPS[group].name)}</title><style>
-      @page{size:A4;margin:10mm}body{font-family:system-ui,-apple-system,sans-serif;margin:0;color:#16181D}
-      .g{display:grid;grid-template-columns:1fr 1fr;gap:0}
-      .c{border:1px dashed #9CA3AF;padding:14px 16px;height:62mm;box-sizing:border-box;break-inside:avoid;display:flex;flex-direction:column}
-      .h{font-size:11px;color:#6B6F76;font-weight:600}.n{font-size:17px;font-weight:800;margin:6px 0 8px}
-      .l{font-size:10px;color:#6B6F76;text-transform:uppercase;letter-spacing:.08em}.k{font:700 26px ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#E8590C}
-      .u{font:600 12px ui-monospace,Menlo,monospace;margin-top:6px;flex:1;min-width:0;word-break:break-all}
+      @page{size:A4;margin:0}*{box-sizing:border-box}body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;color:#16181D;background:#E5E7EB}
+      .pg{width:210mm;height:297mm;padding:10mm;background:#fff;margin:0 auto 8mm;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+      .g{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,69mm)}
+      .c{border:1px dashed #9CA3AF;padding:12px 14px;height:69mm;overflow:hidden;display:flex;flex-direction:column}
+      .h{font-size:11px;color:#6B6F76;font-weight:600}.n{font-size:17px;font-weight:800;margin:6px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .l{font-size:10px;color:#6B6F76;text-transform:uppercase;letter-spacing:.08em}.k{font:700 26px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.12em;color:#E8590C}
+      .u{font:600 12px ui-monospace,Menlo,Consolas,monospace;margin-top:6px;flex:1;min-width:0;word-break:break-all}
       .uq{display:flex;align-items:flex-start;gap:10px}.qr{width:24mm;height:24mm;flex:none;margin-top:-30px}.qr svg{width:100%;height:100%;display:block}
       .qh{font:500 10px system-ui,sans-serif;color:#6B6F76;margin-top:4px}.t{font-size:10.5px;color:#444;margin-top:auto;line-height:1.35}
-      .bar{padding:10px;text-align:center;font-size:14px}@media print{.bar{display:none}}</style></head><body>
-      <div class="bar">${ks.length} ta kartochka · qaychi bilan kesib, har biriga o'zinikini bering. <button onclick="print()">🖨 Chop etish</button></div>
-      <div class="g">${ks.map(card).join("")}</div><script>setTimeout(()=>print(),400)<\/script></body></html>`;
+      .bar{position:sticky;top:0;z-index:5;padding:10px;text-align:center;font-size:14px;background:#fff;border-bottom:1px solid #ddd;margin-bottom:8mm}
+      .bar button{font:inherit;padding:8px 14px;margin:0 4px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer}.bar .pdf{background:#E8590C;color:#fff;border-color:#E8590C}
+      @media print{body{background:#fff}.bar{display:none}.pg{margin:0;box-shadow:none;break-after:page}.pg:last-child{break-after:auto}}</style></head><body>
+      <div class="bar">${ks.length} ta kartochka · ${pages.length} sahifa · qaychi bilan kesib, har biriga o'zinikini bering.<br><button class="pdf" id="pdf">⬇️ PDF yuklab olish</button><button onclick="print()">🖨 Chop etish</button> <span id="st"></span></div>
+      ${pages.map(pg => `<div class="pg"><div class="g">${pg.map(card).join("")}</div></div>`).join("")}
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+      <script>
+        document.getElementById("pdf").onclick = async function () {
+          const b = this, st = document.getElementById("st");
+          if (!window.html2canvas || !window.jspdf) { st.textContent = "⚠️ PDF kutubxonasi yuklanmadi, internetni tekshiring yoki 🖨 Chop etish → PDF sifatida saqlang."; return; }
+          b.disabled = true;
+          try {
+            const pdf = new jspdf.jsPDF({ unit: "mm", format: "a4" }), P = document.querySelectorAll(".pg");
+            for (let i = 0; i < P.length; i++) {
+              st.textContent = "⏳ " + (i + 1) + "/" + P.length + " sahifa…";
+              const c = await html2canvas(P[i], { scale: 2.5, backgroundColor: "#ffffff", useCORS: true });
+              if (i) pdf.addPage();
+              pdf.addImage(c.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, 210, 297);
+            }
+            pdf.save(${JSON.stringify(fname)});
+            st.textContent = "✅ PDF saqlandi";
+          } catch (err) { st.textContent = "⚠️ " + err.message; }
+          b.disabled = false;
+        };
+      <\/script></body></html>`;
     const w = window.open("", "_blank");
     if (!w) { alert("Brauzer yangi oynani to'sdi. Ruxsat bering va qayta bosing."); return; }
     w.document.open(); w.document.write(html); w.document.close();
