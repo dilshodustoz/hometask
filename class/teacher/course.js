@@ -128,6 +128,8 @@
     });
     return st;
   }
+  const AVG_SC = { listening: 40, reading: 40, writing: 9, speaking: 9 };
+  const SKN = { listening: "Listening", reading: "Reading", writing: "Writing", speaking: "Speaking" };
   function model() {
     const lbl = label(); if (!lbl) return null;
     const B = block(data.sheets.ASSESSMENT || [], lbl); if (!B) return null;
@@ -140,8 +142,14 @@
       const s = st[norm(r[1])] || (() => { const c = cols.find(c => !c.summer && String(r[c.i] || "").trim() !== ""); return c ? c.d : null; })();
       const due = cols.filter(c => c.counts && (!s || !c.d || c.d >= s)), done = due.filter(c => (num(r[c.i]) || 0) > 0);
       const w = cols.filter(c => c.sk === "writing" && !c.summer && (num(r[c.i]) || 0) > 0).map(c => num(r[c.i]));
-      return { r, name: r[1], start: s, due, done, pct: due.length ? Math.round(100 * done.length / due.length) : null,
-        wAvg: w.length ? Math.round(w.reduce((a, b) => a + b, 0) / w.length * 2) / 2 : null, wLast: w.length ? w[w.length - 1] : null };
+      // har bir skill bo'yicha o'rtacha: Listening/Reading — /40 lik ballar, Writing/Speaking — band /9 (error log /100 kirmaydi)
+      const sAvg = {};
+      ["listening", "reading", "writing", "speaking"].forEach(k => {
+        const sc = AVG_SC[k], v = cols.filter(c => c.sk === k && !c.summer && c.scale === sc && (num(r[c.i]) || 0) > 0 && num(r[c.i]) <= sc).map(c => num(r[c.i]));
+        sAvg[k] = v.length ? (sc === 9 ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 2) / 2 : Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10) : null;
+      });
+      return { r, name: r[1], start: s, due, done, pct: due.length ? Math.round(100 * done.length / due.length) : null, sAvg,
+        wAvg: sAvg.writing, wLast: w.length ? w[w.length - 1] : null };
     });
     return { B, cols, studs };
   }
@@ -169,8 +177,11 @@
       [ll ? "Oxirgi Listening · /40" : "Listening", ll ? colAvg(ll) : "—", ""],
       [lr ? "Oxirgi Reading · /40" : "Reading", lr ? colAvg(lr) : "—", ""],
       ["E'tibor kerak (<70%)", attn.length, attn.length ? "c-bad" : ""]].map(s => `<div class="stat ${s[2]}"><b>${esc(s[1])}</b>${esc(s[0])}</div>`).join("");
+    // o'rtacha ustuni tanlangan skill bo'yicha; "Hammasi" va Yozgi rejimda ko'rsatilmaydi (shkalalar aralash)
+    const avSk = !summer && AVG_SC[skill] ? skill : null;
+    const grpAv = avSk ? (v => v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null)(studs.map(s => s.sAvg[avSk]).filter(v => v != null)) : null;
     const th = c => `<th class="c-t" title="${esc(c.name)}"><span class="c-sk">${SK[c.sk] || "☀️"}</span><b>${esc(short(c.name))}</b><span class="c-dt">${c.d ? c.d.getDate() + "-" + OYQ[c.d.getMonth()] : ""}</span></th>`;
-    $("bhHead").innerHTML = `<tr><th class="c-n">#</th><th class="c-nm">O'quvchi</th><th class="c-pc">Bajarildi</th><th class="c-r">Writing<br><span class="c-dt">o'rtacha</span></th>${shown.map(th).join("")}</tr>`;
+    $("bhHead").innerHTML = `<tr><th class="c-n">#</th><th class="c-nm">O'quvchi</th><th class="c-pc">Bajarildi</th>${avSk ? `<th class="c-r">${SKN[avSk]}<br><span class="c-dt">o'rtacha /${AVG_SC[avSk]}</span></th>` : ""}${shown.map(th).join("")}</tr>`;
     const cell = (s, c) => edBh ? cellE(s, c).replace("<td class=\"c-v\">", `<td class="c-v c-ed" data-r="${esc(s.name)}" data-c="${c.i}">`) : cellE(s, c);
     const cellE = (s, c) => {
       const raw = String(s.r[c.i] || "").trim(), v = num(raw);
@@ -181,8 +192,8 @@
     };
     const bar = p => p == null ? '<span class="muted">—</span>' : `<div class="c-bar ${p < 70 ? "lo" : p < 85 ? "mid" : "hi"}"><span style="width:${p}%"></span></div><b>${p}%</b>`;
     $("bhTbody").innerHTML = studs.map((s, k) => `<tr data-k="${k}" class="${pick === norm(s.name) ? "c-pick" : ""}"><td class="c-n">${esc(s.r[0])}</td><td class="c-nm"><a>${esc(s.name)}</a></td><td class="c-pc">${bar(s.pct)}</td>
-      <td class="c-r">${s.wAvg != null ? `<i class="v-p v-${lvl(s.wAvg, 9)}">${s.wAvg}</i>` : '<span class="muted">—</span>'}</td>${shown.map(c => cell(s, c)).join("")}</tr>`).join("");
-    $("bhFoot").innerHTML = `<tr><td></td><td class="c-nm">Guruh o'rtachasi</td><td class="c-pc"><b>${avg != null ? avg + "%" : ""}</b></td><td></td>${shown.map(c => { const a = colAvg(c);
+      ${avSk ? `<td class="c-r">${s.sAvg[avSk] != null ? `<i class="v-p v-${lvl(s.sAvg[avSk], AVG_SC[avSk])}">${s.sAvg[avSk]}</i>` : '<span class="muted">—</span>'}</td>` : ""}${shown.map(c => cell(s, c)).join("")}</tr>`).join("");
+    $("bhFoot").innerHTML = `<tr><td></td><td class="c-nm">Guruh o'rtachasi</td><td class="c-pc"><b>${avg != null ? avg + "%" : ""}</b></td>${avSk ? `<td class="c-r c-day">${grpAv != null ? grpAv : ""}</td>` : ""}${shown.map(c => { const a = colAvg(c);
       return `<td class="c-v c-day">${a != null ? a : ""}<span>${c.n}/${studs.length}</span></td>`; }).join("")}</tr>`;
     curBh = { sheet: "ASSESSMENT", B: M.B };
     $("bhBody").classList.toggle("c-editing", edBh);
