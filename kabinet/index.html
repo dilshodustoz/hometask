@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shaxsiy kabinet · Dilshod ustoz</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kabinet">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F6F6F4;--card:#FFF;--ink:#16181D;--muted:#6B6F76;--line:#E4E4E0;--soft:#F1F1EE;--primary:#E8590C;--ok:#15803D;--okbg:#F0FDF4;--bad:#DC2626;--badbg:#FEF2F2;--warn:#B45309;--warnbg:#FFFBEB}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  button{font:inherit}
+  header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+  .top{display:flex;align-items:center;gap:12px;max-width:760px;margin:0 auto;padding:12px 16px 8px}
+  .av{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+  .who{font-weight:800;font-size:1.02rem;line-height:1.2}.sub{color:var(--muted);font-size:.8rem}
+  .sp{flex:1}
+  .bell{position:relative;border:0;background:var(--soft);width:40px;height:40px;border-radius:12px;font-size:1.1rem;cursor:pointer}
+  .bell b{position:absolute;top:-4px;right:-4px;background:var(--bad);color:#fff;font-size:.68rem;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  nav{display:flex;gap:4px;max-width:760px;margin:0 auto;padding:0 12px}
+  nav button{flex:1;border:0;background:none;padding:10px 4px 11px;font-weight:700;font-size:.9rem;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+  nav button.on{color:var(--ink);border-color:var(--primary)}
+  nav i{font-style:normal;background:var(--bad);color:#fff;border-radius:9px;font-size:.7rem;padding:1px 6px;margin-left:4px}
+  main{max-width:760px;margin:0 auto;padding:16px 16px 70px}
+  .pilot{background:var(--warnbg);border:1px solid #FDE68A;color:#78350F;border-radius:12px;padding:9px 13px;font-size:.82rem;margin-bottom:14px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+  .stat b{display:block;font:600 1.3rem 'JetBrains Mono',monospace}.stat span{color:var(--muted);font-size:.76rem}
+  h3{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 2px 8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:10px}
+  .row{display:flex;gap:12px;align-items:flex-start}
+  .ic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--soft)}
+  .ic.reading{background:#EFF6FF}.ic.listening{background:#F5F3FF}.ic.speaking{background:#FFF7ED}.ic.writing{background:#F0FDF4}
+  .tt{font-weight:700;line-height:1.3}.mt{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .chip{display:inline-block;font-size:.74rem;font-weight:700;border-radius:8px;padding:2px 8px;margin-top:6px}
+  .chip.ok{background:var(--okbg);color:var(--ok)}.chip.todo{background:var(--warnbg);color:var(--warn)}.chip.late{background:var(--badbg);color:var(--bad)}.chip.part{background:#EFF6FF;color:#1D4ED8}
+  .act{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btn{border:0;border-radius:11px;padding:9px 14px;font-weight:700;font-size:.88rem;cursor:pointer;background:var(--primary);color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .btn.sec{background:var(--soft);color:var(--ink)}
+  .btn:disabled{opacity:.5}
+  .score{flex:none;text-align:right}.score b{display:block;font:600 1.15rem 'JetBrains Mono',monospace}.score span{color:var(--muted);font-size:.74rem}
+  .note{border-left:3px solid var(--line)}.note.new{border-left-color:var(--primary);background:#FFFCFA}
+  .note .when{color:var(--muted);font-size:.76rem;margin-bottom:4px}
+  .note .tx{white-space:pre-wrap;word-break:break-word;font-size:.9rem}
+  .note code{font:500 .8rem 'JetBrains Mono',monospace;background:var(--soft);border-radius:6px;padding:1px 4px;white-space:pre-wrap}
+  .ans{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+  .ans:first-child{border-top:0}
+  .ans .q{flex:1;font-size:.85rem}.ans .q small{color:var(--muted);display:block}
+  .play{flex:none;border:0;width:36px;height:36px;border-radius:50%;background:var(--soft);cursor:pointer;font-size:.95rem}
+  .play.on{background:var(--primary);color:#fff}
+  .empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:.92rem}
+  .bands{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.bands span{background:var(--soft);border-radius:8px;padding:2px 8px;font-size:.78rem;font-weight:600}
+  #modal{position:fixed;inset:0;background:rgba(22,24,29,.6);z-index:40;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 0}
+  #modal .bar{display:flex;align-items:center;gap:10px;background:var(--card);padding:10px 14px;border-bottom:1px solid var(--line)}
+  #modal iframe{flex:1;border:0;background:#fff;width:100%}
+  #cover{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
+  #cover .card{max-width:420px;text-align:center;padding:24px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:70;max-width:92vw;text-align:center}
+  .hide{display:none!important}
+  .a2hs{font-size:.82rem;color:var(--muted);text-align:center;margin-top:24px}
+  @media(max-width:420px){.stats{gap:6px}.stat{padding:8px 10px}.stat b{font-size:1.1rem}nav button{font-size:.84rem}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="av" id="av">?</div>
+    <div><div class="who" id="who">Yuklanmoqda…</div><div class="sub">Shaxsiy kabinet · Dilshod ustoz</div></div>
+    <div class="sp"></div>
+    <button class="bell" id="bell" title="Xabarlar">🔔<b id="bellN" class="hide">0</b></button>
+  </div>
+  <nav>
+    <button data-tab="tasks" class="on">📋 Vazifalar</button>
+    <button data-tab="notes">🔔 Xabarlar<i id="tabN" class="hide">0</i></button>
+    <button data-tab="res">📊 Natijalar</button>
+  </nav>
+</header>
+<main>
+  <div class="pilot">🧪 Sinov rejimi: bu kabinet hozir faqat sinov uchun yoqilgan. Vazifa, natija va xabarlarning hammasi shu yerda, Telegram'ga hech narsa bormaydi.</div>
+  <section id="tasks"></section>
+  <section id="notes" class="hide"></section>
+  <section id="res" class="hide"></section>
+  <div class="a2hs" id="a2hs">📱 Telefon ekraniga qo'shib qo'ying: iPhone'da Safari → <b>Ulashish</b> → <b>Add to Home Screen</b>, Android'da Chrome → ⋮ → <b>Bosh ekranga qo'shish</b>. Shunda kabinet ilova kabi ochiladi.</div>
+</main>
+<div id="modal" class="hide"><div class="bar"><b id="mT" style="flex:1">Feedback</b><button class="btn sec" id="mX">✕ Yopish</button></div><iframe id="mF" sandbox="allow-same-origin allow-popups"></iframe></div>
+<div id="cover"><div class="card"><h3 style="margin:0 0 6px;font-size:1.1rem;color:var(--ink);text-transform:none;letter-spacing:0" id="cT">⏳ Yuklanmoqda…</h3><div class="mt" id="cB">Bir soniya kuting.</div></div></div>
+<div class="toast" id="toast"></div>
+<script src="../speaking/config.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const API = window.HW_API, P = new URLSearchParams(location.search);
+  let KEY = P.get("k") || "";
+  try { if (KEY) localStorage.setItem("kab_k", KEY); else KEY = localStorage.getItem("kab_k") || ""; } catch (e) {}
+  const SK = { reading: ["📖", "Reading"], listening: ["🎧", "Listening"], speaking: ["🎙", "Speaking"], writing: ["✍️", "Writing"] };
+  const OY = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
+  let D = null, tab = "tasks", audio = null;
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // server xabarlari Telegram HTML'ida (b, i, code); boshqa teglarni olib tashlaymiz
+  const safe = s => String(s || "").replace(/<(?!\/?(b|i|code)>)[^>]*>/g, "");
+  function toast(t) { const e = $("toast"); e.textContent = t; e.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(() => e.style.display = "none", 2600); }
+  function api(q) { return fetch(API + "?" + new URLSearchParams(q), { redirect: "follow" }).then(r => r.json()); }
+  function post(b) { return fetch(API, { method: "POST", body: JSON.stringify(b), headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" }).then(r => r.json()); }
+  function when(iso) {
+    if (!iso) return "";
+    const d = new Date(iso), now = new Date(), m = Math.round((now - d) / 60000);
+    if (m < 1) return "hozirgina"; if (m < 60) return m + " daqiqa oldin";
+    if (m < 60 * 24 && d.getDate() === now.getDate()) return "bugun " + d.toTimeString().slice(0, 5);
+    return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5);
+  }
+  function left(iso) {
+    const ms = new Date(iso) - new Date();
+    if (!(ms > 0)) return null;
+    const h = Math.floor(ms / 3600000);
+    return h >= 48 ? Math.floor(h / 24) + " kun qoldi" : h >= 1 ? h + " soat qoldi" : Math.max(1, Math.round(ms / 60000)) + " daqiqa qoldi";
+  }
+  function state(x) {
+    if (x.done) return ["ok", "✅ Topshirilgan"];
+    if (x.skill === "speaking" && x.n) return ["part", "🎙 " + x.n + " / " + x.total + " javob"];
+    const l = left(x.deadline);
+    return l ? ["todo", "⏳ " + l] : ["late", "⛔ Muddat o'tgan"];
+  }
+  function scoreHtml(x) {
+    if (!x.done) return "";
+    if (x.skill === "reading" || x.skill === "listening") return `<div class="score"><b>${esc(x.raw)}/40</b><span>Band ${esc(x.band)}</span></div>`;
+    if (x.skill === "speaking" && x.baho) return `<div class="score"><b>${esc(x.baho.band)}</b><span>Band</span></div>`;
+    if (x.skill === "writing") return `<div class="score"><b>${esc(x.words)}</b><span>so'z</span></div>`;
+    return "";
+  }
+  function open(url) { location.href = url; }
+
+  function renderTasks() {
+    const T = D.tasks, todo = T.filter(x => !x.done && left(x.deadline)), done = T.filter(x => x.done);
+    const card = x => {
+      const [ic, nm] = SK[x.skill] || ["📄", x.skill], [cls, lab] = state(x);
+      const btn = x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
+      const can = x.done || left(x.deadline) || D.test;
+      return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0">
+        <div class="tt">${esc(x.title)}</div><div class="mt">${nm} · muddat: ${esc(x.deadline_text || "—")}</div>
+        <span class="chip ${cls}">${lab}</span>${x.log != null && x.done ? ` <span class="chip ${x.log >= 100 ? "ok" : "todo"}">✍️ Error log ${x.log}%</span>` : (x.done && (x.skill === "reading" || x.skill === "listening") ? ' <span class="chip todo">✍️ Error log yozilmagan</span>' : "")}
+        </div>${scoreHtml(x)}</div>
+        ${can ? `<div class="act"><a class="btn${x.done ? " sec" : ""}" href="${esc(x.url)}">${btn}</a></div>` : ""}</div>`;
+    };
+    $("tasks").innerHTML =
+      `<div class="stats"><div class="stat"><b>${todo.length}</b><span>bajarilishi kerak</span></div><div class="stat"><b>${done.length}</b><span>topshirilgan</span></div><div class="stat"><b>${T.length ? Math.round(100 * done.length / T.length) : 0}%</b><span>bajarilish</span></div></div>` +
+      (T.length ? `<h3>Hamma vazifalar</h3>` + T.map(card).join("") : `<div class="empty">Hozircha vazifa yo'q. Ustoz yuborganda shu yerda chiqadi.</div>`);
+  }
+  function renderNotes() {
+    const N = D.notes;
+    $("notes").innerHTML = N.length ? N.map(n => `<div class="card note${n.read ? "" : " new"}"><div class="when">${n.read ? "" : "🟠 "}${when(n.at)}</div>
+      <div class="tx">${safe(n.text)}</div>${n.btn ? `<div class="act"><a class="btn" href="${esc(n.btn.url)}">${esc(n.btn.text)}</a></div>` : ""}</div>`).join("")
+      : `<div class="empty">Xabarlar yo'q.</div>`;
+  }
+  function renderRes() {
+    const R = D.tasks.filter(x => x.done || (x.skill === "speaking" && x.n));
+    $("res").innerHTML = R.length ? R.map(x => {
+      const [ic, nm] = SK[x.skill] || ["📄", x.skill];
+      let body = "";
+      if (x.skill === "speaking") {
+        const b = x.baho;
+        body = (b ? `<div class="bands"><span>FC ${esc(b.fc)}</span><span>LR ${esc(b.lr)}</span><span>GRA ${esc(b.gra)}</span><span>P ${esc(b.p)}</span></div>` : `<div class="mt" style="margin-top:6px">Ustoz hali baholamagan.</div>`) +
+          `<div style="margin-top:10px">` + (x.answers || []).map(a => `<div class="ans"><button class="play" data-t="${esc(x.t)}" data-i="${a.i}" ${a.audio ? "" : "disabled title='Bu javob Telegram orqali yuborilgan'"}>▶</button>
+            <div class="q"><small>Part ${esc(a.part)} · Q${a.i + 1} · ${Math.floor(a.sec / 60)}:${String(a.sec % 60).padStart(2, "0")}</small>${esc(a.q)}</div></div>`).join("") + `</div>` +
+          (b && b.fb ? `<div class="act"><button class="btn" data-fb="${esc(x.t)}" data-title="${esc(x.title)}">📄 Feedback</button></div>` : "");
+      } else {
+        body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Javoblarim, kalit va error log</a></div>`;
+      }
+      return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0"><div class="tt">${esc(x.title)}</div><div class="mt">${nm}</div></div>${scoreHtml(x)}</div>${body}</div>`;
+    }).join("") : `<div class="empty">Natijalar topshirganingizdan keyin shu yerda chiqadi.</div>`;
+  }
+  function badge() {
+    const n = D.notes.filter(x => !x.read).length;
+    [$("bellN"), $("tabN")].forEach(e => { e.textContent = n; e.classList.toggle("hide", !n); });
+    document.title = (n ? "(" + n + ") " : "") + "Shaxsiy kabinet · Dilshod ustoz";
+  }
+  function render() { renderTasks(); renderNotes(); renderRes(); badge(); }
+  function show(t) {
+    tab = t;
+    document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+    ["tasks", "notes", "res"].forEach(s => $(s).classList.toggle("hide", s !== t));
+    try { localStorage.setItem("kab_tab", t); } catch (e) {}
+    if (t === "notes" && D && D.notes.some(x => !x.read)) {
+      setTimeout(() => {   // xabarlarni ko'rgandan keyin o'qilgan qilamiz
+        D.notes.forEach(x => x.read = true); badge();
+        post({ cab: "read", k: KEY }).catch(() => {});
+        setTimeout(renderNotes, 4000);
+      }, 1500);
+    }
+  }
+  document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.tab));
+  $("bell").onclick = () => show("notes");
+  $("mX").onclick = () => { $("modal").classList.add("hide"); $("mF").srcdoc = ""; };
+  document.addEventListener("click", async e => {
+    const p = e.target.closest(".play");
+    if (p && !p.disabled) {
+      if (audio && audio._btn === p) { audio.pause(); p.classList.remove("on"); p.textContent = "▶"; audio = null; return; }
+      if (audio) { audio.pause(); audio._btn.classList.remove("on"); audio._btn.textContent = "▶"; }
+      p.textContent = "…";
+      try {
+        const r = await api({ action: "cab_audio", k: KEY, t: p.dataset.t, i: p.dataset.i });
+        if (!r.ok) throw new Error(r.error);
+        audio = new Audio("data:" + r.mime + ";base64," + r.b64); audio._btn = p;
+        audio.onended = () => { p.classList.remove("on"); p.textContent = "▶"; audio = null; };
+        await audio.play(); p.classList.add("on"); p.textContent = "❚❚";
+      } catch (err) { p.textContent = "▶"; toast("⚠️ " + (err.message || "Ovoz ochilmadi")); }
+      return;
+    }
+    const f = e.target.closest("[data-fb]");
+    if (f) {
+      f.disabled = true;
+      try {
+        const r = await api({ action: "cab_fb", k: KEY, t: f.dataset.fb });
+        if (!r.ok) throw new Error(r.error);
+        $("mT").textContent = "🎙 " + f.dataset.title; $("mF").srcdoc = r.html; $("modal").classList.remove("hide");
+      } catch (err) { toast("⚠️ " + err.message); }
+      f.disabled = false;
+    }
+  });
+
+  function load(first) {
+    return api({ action: "cab", k: KEY }).then(r => {
+      if (!r.ok) throw new Error(r.error || "xato");
+      const before = D ? D.notes.filter(x => !x.read).length : 0;
+      D = r;
+      $("who").textContent = r.name; $("av").textContent = (r.name || "?").trim().charAt(0).toUpperCase();
+      render();
+      const now = D.notes.filter(x => !x.read).length;
+      if (!first && now > before) toast("🔔 Yangi xabar keldi");
+      $("cover").classList.add("hide");
+    });
+  }
+  if (!API || !/^[A-Za-z0-9_-]{6,20}$/.test(KEY)) { $("cT").textContent = "⛔ Havola noto'g'ri"; $("cB").textContent = "Ustoz bergan shaxsiy havola orqali kiring."; return; }
+  if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) $("a2hs").classList.add("hide");
+  load(true).then(() => {
+    let t = "tasks"; try { t = localStorage.getItem("kab_tab") || t; } catch (e) {}
+    show(t);
+  }).catch(e => { $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message === "Failed to fetch" ? "Internetni tekshirib, sahifani yangilang." : e.message; });
+  // har 60 soniyada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
+  setInterval(() => { if (!document.hidden && D) load(false).catch(() => {}); }, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && D) load(false).catch(() => {}); });
+})();
+</script>
+</body>
+</html>
