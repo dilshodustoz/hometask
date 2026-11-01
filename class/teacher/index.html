@@ -1568,7 +1568,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function groupOfIn(gs, chat) { for (const g in gs) if (String(gs[g].chat) === String(chat)) return g; return null; }
   // server javobi (roster + groups) → Firebase (sinf sahifalari shu ro'yxatdan foydalanadi) va sahifa
   function stApply(r) {
-    stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups, codes: r.codes || (stData && stData.codes) || {} };
+    stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups, codes: r.codes || (stData && stData.codes) || {}, push: r.push || (stData && stData.push) || {} };
     const out = {}; let n = 0;
     Object.keys(r.roster).forEach(k => {
       const st = r.roster[k], g = st.test ? "test" : (st.group && r.groups[st.group] ? st.group : groupOfIn(r.groups, st.chat));
@@ -1605,7 +1605,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("stCount").textContent = `· ${CLS.GROUPS[group].name} · ${ks.length} ta`;
     $("stBody").innerHTML = ks.map((k, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(R[k].name)}${R[k].note ? `<div class="muted">${CLS.esc(R[k].note)}</div>` : ""}</td>
         <td>${CLS.esc(R[k].phone || "")}</td><td>${fdate(R[k].added)}</td>
-        <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi ishlamay qoladi)">🔄</button>` : `<span class="muted">—</span>`}</td>
+        <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi ishlamay qoladi)">🔄</button>` : `<span class="muted">—</span>`}${(stData.push || {})[k] ? ` <span title="Telefon bildirishnomasi yoqilgan (${stData.push[k]} ta qurilma)">🔔</span>` : ""}</td>
         <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-inv="${k}">Taklif havolasi</button>
           <button class="btn btn-warning btn-sm" data-ar="${k}">Arxivlash</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("")
         || `<tr><td colspan="6" class="muted">Bu guruhda hali o'quvchi yo'q.</td></tr>`;

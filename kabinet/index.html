@@ -100,6 +100,11 @@
   #cover .card{max-width:420px;text-align:center;padding:24px}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:70;max-width:92vw;text-align:center}
   .hide{display:none!important}
+  .pushc{margin-top:22px;border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;background:var(--card,#fff)}
+  .pushc .pt{flex:1 1 220px;font-size:.9rem;line-height:1.4}
+  .pushc .pt b{display:block;font-size:.98rem;margin-bottom:2px}
+  .pushc .pb{display:flex;gap:8px;flex-wrap:wrap}
+  .pushc .mt{font-size:.82rem}
   .a2hs{font-size:.82rem;color:var(--muted);text-align:center;margin-top:24px}
   @media(max-width:420px){.stats{gap:6px}.stat{padding:8px 10px}.stat b{font-size:1.1rem}nav button{font-size:.84rem}}
 </style>
@@ -123,6 +128,8 @@
 <main>
   <section id="tasks"></section>
   <section id="res" class="hide"></section>
+  <div class="pushc hide" id="push"><div class="pt"><b id="pushH">🔔 Telefonga bildirishnoma</b><span class="mt" id="pushT">Yangi vazifa, dars natijasi, feedback va eslatma kelganda telefoningiz ovoz bilan xabar beradi (kabinet yopiq bo'lsa ham).</span></div>
+    <div class="pb"><button class="btn" id="pushOn">🔔 Yoqish</button><button class="btn sec hide" id="pushTest">Sinab ko'rish</button><button class="btn sec hide" id="pushOff">O'chirish</button></div></div>
   <div class="a2hs" id="a2hs"><span id="a2hsT">📱 Kabinetni telefon ekraniga qo'shib qo'ying: Android'da Chrome → ⋮ → <b>Bosh ekranga qo'shish</b> (yoki <b>Ilovani o'rnatish</b>), iPhone'da Safari → <b>Ulashish</b> → <b>Add to Home Screen</b>. Noutbukda manzil satridagi o'rnatish belgisini bosing yoki shunchaki saytni xatcho'pga qo'shing.</span>
     <div><button class="btn inst hide" id="inst">📲 Ilova qilib o'rnatish</button></div></div>
 </main>
@@ -341,7 +348,8 @@
       const before = D ? D.notes.filter(x => !x.read).length : 0;
       D = r;
       if (r.k) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
-      $("who").textContent = r.name; 
+      $("who").textContent = r.name;
+      if (!pushInit.done) { pushInit.done = 1; try { pushInit(); } catch (e) {} }
       render();
       const now = D.notes.filter(x => !x.read).length;
       if (!first && now > before) toast("✉️ Yangi xabar keldi");
@@ -376,7 +384,7 @@
       .catch(e => { CODE = ""; $("lErr").textContent = e.message; $("lCode").select(); })
       .finally(() => { $("lGo").disabled = false; $("lGo").textContent = "Kirish"; });
   };
-  $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; forget(); closeNotes(); showLogin(""); };
+  $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; pushOff(true); forget(); pushInit.done = 0; $("push").classList.add("hide"); closeNotes(); showLogin(""); };
   // Ilova qilib o'rnatish: Android Chrome va noutbukdagi Chrome/Edge o'zi taklif qiladi; iPhone'da faqat qo'lda
   const UA = navigator.userAgent, isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), isAnd = /Android/.test(UA);
   if (isIOS) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Safari → <b>Ulashish</b> (⬆︎) → <b>Add to Home Screen</b>. Shunda kabinet ilova kabi ochiladi.";
@@ -386,6 +394,104 @@
   window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instEv = e; $("inst").classList.remove("hide"); });
   $("inst").onclick = () => { if (!instEv) return; instEv.prompt(); instEv.userChoice.finally(() => { instEv = null; $("inst").classList.add("hide"); }); };
   window.addEventListener("appinstalled", () => $("a2hs").classList.add("hide"));
+  // ---------- Telefon bildirishnomalari (push) ----------
+  // Android/noutbuk: Chrome, Edge, Firefox. iPhone/iPad: faqat bosh ekranga qo'shilgan ilovada (iOS 16.4+).
+  const PUSH_OK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const STANDALONE = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+  const lsG = k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
+  const lsS = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+  let fbMsg = null;
+  function loadJs(src) { return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("Fayl yuklanmadi")); document.head.appendChild(s); }); }
+  function fbReady() {
+    if (fbMsg) return Promise.resolve(fbMsg);
+    const base = "../class/fb/";
+    return (window.firebase ? Promise.resolve() : loadJs(base + "firebase-app-compat.js"))
+      .then(() => window.FB_CONFIG ? null : loadJs(base + "config.js"))
+      .then(() => firebase.messaging ? null : loadJs(base + "firebase-messaging-compat.js"))
+      .then(() => {
+        if (!firebase.apps.length) firebase.initializeApp(window.FB_CONFIG);
+        fbMsg = firebase.messaging();
+        fbMsg.onMessage(m => {   // kabinet ochiq turganda: ekranda xabar + yangilash
+          const n = (m && m.notification) || {};
+          toast((n.title || "✉️ Yangi xabar") + (n.body ? " · " + n.body : ""));
+          if (D) load(false).catch(() => {});
+        });
+        return fbMsg;
+      });
+  }
+  function pushToken() {
+    return navigator.serviceWorker.register("firebase-messaging-sw.js", { scope: "./" })
+      .then(reg => navigator.serviceWorker.ready.then(() => reg))
+      .then(reg => fbReady().then(m => m.getToken({ serviceWorkerRegistration: reg })));
+  }
+  function pushUI(state, msg) {
+    const box = $("push");
+    box.classList.remove("hide");
+    $("pushOn").classList.toggle("hide", state === "on" || state === "na" || state === "ios");
+    $("pushTest").classList.toggle("hide", state !== "on");
+    $("pushOff").classList.toggle("hide", state !== "on");
+    $("pushOn").disabled = false; $("pushOn").textContent = "🔔 Yoqish";
+    const T = {
+      off: "Yangi vazifa, dars natijasi, feedback va eslatma kelganda telefoningiz ovoz bilan xabar beradi (kabinet yopiq bo'lsa ham).",
+      on: "✅ Yoqilgan. Yangi vazifa, natija va eslatmalar shu qurilmaga keladi. Ovoz telefoningizning bildirishnoma ovozi bo'ladi.",
+      ios: "iPhone'da bildirishnoma faqat <b>bosh ekranga qo'shilgan</b> kabinetda ishlaydi: Safari → <b>Ulashish</b> (⬆︎) → <b>Add to Home Screen</b>, keyin ekrandagi «Kabinet» belgisidan kirib, shu yerda «Yoqish»ni bosing.",
+      na: "Bu brauzer bildirishnomani qo'llamaydi. Telefonda Chrome (Android) yoki bosh ekrandagi kabinetni (iPhone, iOS 16.4+) ishlating.",
+      denied: "Bildirishnoma bloklangan. Ruxsat bering: manzil satridagi 🔒 (yoki ⋮ → Sozlamalar → Sayt sozlamalari) → <b>Bildirishnomalar → Ruxsat</b>, keyin «Yoqish»ni bosing. iPhone'da: Sozlamalar → Bildirishnomalar → Kabinet."
+    };
+    $("pushT").innerHTML = msg || T[state] || "";
+  }
+  function pushInit() {
+    if (!PUSH_OK) { pushUI(isIOS ? (STANDALONE ? "na" : "ios") : "na"); if (!isIOS && !isAnd) $("push").classList.add("hide"); return; }
+    if (Notification.permission === "denied") { pushUI("denied"); return; }
+    if (Notification.permission === "granted" && lsG("kab_push") && lsG("kab_push_who") === (D && D.k || "")) {
+      pushUI("on");
+      // token vaqti-vaqti bilan yangilanadi: o'zgargan bo'lsa serverga qayta yozamiz (kuniga bir marta)
+      if (Date.now() - Number(lsG("kab_push_at") || 0) > 86400000) pushToken().then(t => {
+        if (!t) return;
+        return post(Object.assign({ cab: "push", token: t, on: true, ua: navigator.userAgent.slice(0, 120) }, auth())).then(r => {
+          if (r.ok) { lsS("kab_push", t); lsS("kab_push_at", String(Date.now())); }
+        });
+      }).catch(() => {});
+      else fbReady().catch(() => {});
+      return;
+    }
+    pushUI("off");
+  }
+  $("pushOn").onclick = () => {
+    const b = $("pushOn");
+    b.disabled = true; b.textContent = "⏳ Yoqilmoqda…";
+    // ruxsat so'rovi tugma bosilgan zahoti bo'lishi kerak (iPhone talabi)
+    Promise.resolve(Notification.requestPermission()).then(p => {
+      if (p !== "granted") { pushUI(p === "denied" ? "denied" : "off"); return; }
+      return pushToken().then(t => {
+        if (!t) throw new Error("Qurilma tokeni olinmadi");
+        return post(Object.assign({ cab: "push", token: t, on: true, test: true, ua: navigator.userAgent.slice(0, 120) }, auth())).then(r => {
+          if (!r.ok) throw new Error(r.error || "Server xatosi");
+          lsS("kab_push", t); lsS("kab_push_who", D && D.k || ""); lsS("kab_push_at", String(Date.now()));
+          pushUI("on");
+          toast(r.test ? "✅ Yoqildi. Sinov xabari yuborildi." : "✅ Yoqildi. Ustoz serverni sozlagach xabarlar kela boshlaydi.");
+        });
+      });
+    }).catch(e => { pushUI("off"); toast("⚠️ Yoqib bo'lmadi: " + (e.message || e)); });
+  };
+  $("pushTest").onclick = () => {
+    const t = lsG("kab_push"); if (!t) return;
+    $("pushTest").disabled = true;
+    post(Object.assign({ cab: "push", token: t, on: true, test: true, ua: navigator.userAgent.slice(0, 120) }, auth()))
+      .then(r => toast(!r.ok ? "⚠️ " + (r.error || "xato") : r.test ? "📨 Sinov xabari yuborildi. Bir necha soniyada keladi." : "⚠️ Hozircha yuborilmadi (server hali sozlanmagan)."))
+      .catch(e => toast("⚠️ " + e.message)).finally(() => $("pushTest").disabled = false);
+  };
+  function pushOff(silent) {
+    const t = lsG("kab_push");
+    lsS("kab_push", ""); lsS("kab_push_who", ""); lsS("kab_push_at", "");
+    if (!t) return Promise.resolve();
+    const p = post(Object.assign({ cab: "push", token: t, on: false }, auth())).catch(() => {});
+    if (fbMsg) fbMsg.deleteToken().catch(() => {});
+    if (!silent) { pushUI("off"); toast("🔕 Bildirishnomalar o'chirildi"); }
+    return p;
+  }
+  $("pushOff").onclick = () => pushOff(false);
+
   // Android "Orqaga" tugmasi va noutbukda Esc: avval ochiq oynani yopadi, sahifadan chiqib ketmaydi
   const layerOpen = () => !$("modal").classList.contains("hide") || !$("drawer").classList.contains("hide");
   const closeLayer = () => { if (!$("modal").classList.contains("hide")) { $("modal").classList.add("hide"); $("mF").srcdoc = ""; } else closeNotes(); };
