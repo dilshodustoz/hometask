@@ -451,10 +451,33 @@
         return fbMsg;
       });
   }
-  function pushToken() {
+  function pushToken1() {
     return navigator.serviceWorker.register("firebase-messaging-sw.js", { scope: "./" })
       .then(reg => navigator.serviceWorker.ready.then(() => reg))
-      .then(reg => fbReady().then(m => m.getToken({ serviceWorkerRegistration: reg })));
+      .then(reg => fbReady().then(m => m.getToken({ serviceWorkerRegistration: reg }).then(t => [t, reg, m])));
+  }
+  // Ba'zi Android'larda (Xiaomi va b.) birinchi urinish "push service error" bilan tushadi:
+  // eski obunani o'chirib, 2 soniyadan keyin bir marta qayta urinamiz.
+  function pushToken() {
+    return pushToken1().then(x => x[0]).catch(e1 => navigator.serviceWorker.getRegistration("./")
+      .then(reg => reg && reg.pushManager.getSubscription().then(s => s && s.unsubscribe()))
+      .catch(() => {})
+      .then(() => fbMsg && fbMsg.deleteToken().catch(() => {}))
+      .then(() => new Promise(ok => setTimeout(ok, 2000)))
+      .then(() => pushToken1().then(x => x[0]))
+      .catch(e2 => { throw e2 || e1; }));
+  }
+  // Chrome bo'lmagan Android brauzerlari (Mi Browser, Yandex, Opera, ...) push'ni ko'pincha ishlata olmaydi
+  const ODD_BR = (UA.match(/MiuiBrowser|XiaoMi|YaBrowser|YaApp|OPR\/|Opera|UCBrowser|HeyTapBrowser|VivoBrowser|HuaweiBrowser|Instagram|FBAN|FBAV|Telegram|; wv\)/) || [""])[0];
+  function pushErr(e) {
+    const m = String((e && (e.message || e.code)) || e || "");
+    let why;
+    if (/permission|denied|blocked/i.test(m)) why = "Bildirishnomaga ruxsat berilmagan. Telefon <b>Sozlamalar → Ilovalar → Chrome → Bildirishnomalar</b>ni yoqing, keyin qayta urinib ko'ring.";
+    else if (ODD_BR) why = "Bu brauzer (" + ODD_BR.replace(/[\/;)]/g, "").trim() + ") telefonga bildirishnoma yubora olmaydi. Kabinetni <b>Google Chrome</b>'da oching va ilovani Chrome'dan o'rnating, keyin shu yerda «Yoqish»ni bosing.";
+    else if (/push service|registration failed|token-subscribe|AbortError|internal error|not available/i.test(m)) why = "Telefonning Google push xizmati javob bermadi (server emas). Odatda yordam beradi: 1) <b>Play Market</b>da <b>Google Chrome</b> va <b>Google Play xizmatlari</b>ni yangilang; 2) VPN / trafik tejash rejimini o'chiring; 3) Xiaomi'da: Sozlamalar → Ilovalar → Chrome → <b>Avtozapusk</b> va <b>Bildirishnomalar</b>ni yoqing, batareya tejashni «Cheklovsiz» qiling; 4) telefonni o'chirib-yoqib, qayta urinib ko'ring.";
+    else if (/fetch|load failed|network/i.test(m)) why = "Internet uzildi. Qayta urinib ko'ring.";
+    else why = "Qayta urinib ko'ring. Bo'lmasa, kabinetni Google Chrome'da oching.";
+    return why + '<br><span class="mt" style="opacity:.6">Xato: ' + safe(m).replace(/[<>]/g, "").slice(0, 160) + "</span>";
   }
   let setOpen = false;
   function pushUI(state, msg) {
@@ -509,7 +532,7 @@
           toast(r.test ? "✅ Yoqildi. Sinov xabari yuborildi." : "✅ Yoqildi. Ustoz serverni sozlagach xabarlar kela boshlaydi.");
         });
       });
-    }).catch(e => { pushUI("off"); toast("⚠️ Yoqib bo'lmadi: " + (e.message || e)); });
+    }).catch(e => { pushUI("off", "⚠️ <b>Yoqib bo'lmadi.</b> " + pushErr(e)); $("pushOn").textContent = "🔁 Qayta urinish"; toast("⚠️ Yoqib bo'lmadi"); });
   };
   $("pushTest").onclick = () => {
     const t = lsG("kab_push"); if (!t) return;
