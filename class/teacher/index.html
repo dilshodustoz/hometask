@@ -1806,8 +1806,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         const st = R[b.dataset.del] || A[b.dataset.del];
         const typed = prompt(`DIQQAT: ${st.name} butunlay o'chiriladi.\nTelegram'dagi topic va undagi BARCHA xabarlar (esse, feedback) qaytarib bo'lmaydigan qilib o'chadi.\nCourse jadvalidagi qatori o'zgarmaydi.\n\nTasdiqlash uchun ism-familiyani to'liq yozing:`);
         if (typed == null) return;
-        if (typed.trim().toLowerCase() !== st.name.toLowerCase()) { $("stMsg").textContent = "Ism mos kelmadi, o'chirilmadi."; return; }
-        stCall({ admin: "st_delete", k: b.dataset.del, confirm: typed.trim() }, "stMsg").then(r => { if (r) $("stMsg").textContent = `🗑 ${st.name} o'chirildi.`; });
+        // iPhone ' ni ’ ga aylantiradi, ortiqcha bo'shliq, katta-kichik harf: bularni hisobga olmaymiz
+        const nrm = x => String(x || "").normalize("NFKC").toLowerCase().replace(/[\s'’‘ʻʼ`´".\-]/g, "");
+        if (!typed.trim() || nrm(typed) !== nrm(st.name)) { $("stMsg").textContent = `Ism mos kelmadi, o'chirilmadi. Yozilgan: "${typed.trim()}", kerak: "${st.name}"`; $("stMsg").scrollIntoView({ block: "center" }); return; }
+        stCall({ admin: "st_delete", k: b.dataset.del, confirm: st.name }, "stMsg").then(r => { if (r) $("stMsg").textContent = `🗑 ${st.name} o'chirildi.`; $("stMsg").scrollIntoView({ block: "center" }); });
       }
     };
     $("grBody").onclick = ev => {
