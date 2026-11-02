@@ -49,6 +49,14 @@
     }
     return { head, sub, rows, tot };
   }
+  // guruhdan o'chirilgan/arxivlangan o'quvchilar (LC Panel roster_removed.json): ism kaliti -> qachon
+  const nKey = s => norm(s).split(" ").filter(Boolean).sort().join(" ");
+  function gone(g) {
+    const chat = String(((data.groups || {})[g] || T().groups[g] || {}).chat || ""), out = {};
+    Object.values(data.removed || {}).forEach(x => { if (x && x.name && x.at && (!chat || String(x.chat) === chat)) out[nKey(x.name)] = new Date(x.at); });
+    return out;
+  }
+  const ddm = d => String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0");
   const months = () => (data.order || Object.keys(data.sheets)).filter(n => n !== "ASSESSMENT" && OY[norm(n)]);
 
   // ---------- YO'QLAMA ----------
@@ -64,15 +72,19 @@
     const lbl = label(), B = lbl && block(data.sheets[month] || [], lbl);
     $("atBody").classList.toggle("hide", !B); $("atMoneyCard").classList.toggle("hide", !B);
     if (!B) { $("atMsg").textContent = lbl ? `${OY[norm(month)]} varag'ida "${lbl}" bloki topilmadi.` : `${gname} guruhining Course jadvalida bloki yo'q.`; return; }
-    $("atMsg").textContent = "";
     const H = B.head, ci = re => H.findIndex(x => re.test(x || ""));
     const dc = H.map((x, i) => dOf(x) ? i : -1).filter(i => i >= 0);
+    // ketganlar: oy boshlanishidan oldin ketgan — umuman ko'rsatilmaydi; shu oyda ketgan — yo'qlamada yo'q, hisob-kitobda o'sha kungacha qoladi
+    const GN = gone(g), m0 = dc.length ? dOf(H[dc[0]]) : null, m1 = dc.length ? new Date(dOf(H[dc[dc.length - 1]]).getTime() + 864e5) : null;
+    const left = r => { const d = GN[nKey(r[1])]; return !d || !m0 ? null : d < m0 ? "before" : d < m1 ? "during" : null; };
+    const rowsAt = B.rows.filter(r => !left(r)), rowsMn = B.rows.filter(r => left(r) !== "before");
+    const leftNow = B.rows.filter(r => left(r) === "during").map(r => `${r[1]} (${ddm(GN[nKey(r[1])])})`);
     const cK = ci(/Keldi/i), cM = ci(/Kelmadi/i), cP = ci(/Davomat/i), cD = ci(/To.lov kun/i), cS = ci(/O.quvchi to.lov/i), cT = ci(/O.qituvchi/i);
     // o'tilgan darslar: kamida bitta belgi qo'yilgan sana
     const held = dc.filter(i => B.rows.some(r => /^[+-]$/.test(String(r[i] || "").trim())));
     const last = held[held.length - 1];
     const pct = r => { const k = +r[cK] || 0, m = +r[cM] || 0; return k + m ? Math.round(100 * k / (k + m)) : null; };
-    const low = B.rows.filter(r => { const p = pct(r); return p != null && p < 70; });
+    const low = rowsAt.filter(r => { const p = pct(r); return p != null && p < 70; });
     const lastIn = last != null ? B.rows.filter(r => String(r[last]).trim() === "+").length : 0, lastAll = last != null ? B.rows.filter(r => /^[+-]$/.test(String(r[last]).trim())).length : 0;
     $("atStats").innerHTML = [
       ["O'rtacha davomat", B.tot && B.tot[cP] || "—", "c-big"],
@@ -80,12 +92,13 @@
       ["Oxirgi dars" + (last != null ? " · " + H[last].slice(0, 5) : ""), last != null ? `${lastIn} / ${lastAll}` : "—", ""],
       ["Davomati 70% dan past", low.length, low.length ? "c-bad" : ""]].map(s => `<div class="stat ${s[2]}"><b>${esc(s[1])}</b>${esc(s[0])}</div>`).join("");
     const wd = i => { const d = dOf(H[i]); return `<th class="c-d${i === last ? " c-last" : ""}"><b>${d.getDate()}</b><span>${esc(String(B.sub[i] || "").slice(0, 4))}</span></th>`; };
+    $("atMsg").textContent = leftNow.length ? `Guruhdan chiqqanlar yo'qlamadan olib tashlandi: ${leftNow.join(", ")}. Hisob-kitobda chiqqan kungacha qoladi, keyingi oyga ko'chirilmaydi.` : "";
     curAt = { sheet: month, B };
     $("atBody").classList.toggle("c-editing", edAt);
     $("atHead").innerHTML = `<tr><th class="c-n">#</th><th class="c-nm">O'quvchi</th>${dc.map(wd).join("")}<th class="c-r">Keldi</th><th class="c-r">Kelmadi</th><th class="c-pc">Davomat</th></tr>`;
     const mark = v => { v = String(v || "").trim(); return v === "+" ? '<i class="m-y">✓</i>' : v === "-" ? '<i class="m-n">✕</i>' : '<i class="m-0"></i>'; };
     const bar = p => p == null ? '<span class="muted">—</span>' : `<div class="c-bar ${p < 70 ? "lo" : p < 85 ? "mid" : "hi"}"><span style="width:${p}%"></span></div><b>${p}%</b>`;
-    $("atTbody").innerHTML = B.rows.map(r => `<tr><td class="c-n">${esc(r[0])}</td><td class="c-nm">${esc(r[1])}</td>${dc.map(i => `<td class="c-d${i === last ? " c-last" : ""}${edAt ? " c-ed" : ""}" data-r="${esc(r[1])}" data-c="${i}">${mark(r[i])}</td>`).join("")}
+    $("atTbody").innerHTML = rowsAt.map(r => `<tr><td class="c-n">${esc(r[0])}</td><td class="c-nm">${esc(r[1])}</td>${dc.map(i => `<td class="c-d${i === last ? " c-last" : ""}${edAt ? " c-ed" : ""}" data-r="${esc(r[1])}" data-c="${i}">${mark(r[i])}</td>`).join("")}
       <td class="c-r">${esc(r[cK])}</td><td class="c-r">${esc(r[cM])}</td><td class="c-pc">${bar(pct(r))}</td></tr>`).join("");
     const perDay = i => { const n = B.rows.filter(r => String(r[i]).trim() === "+").length, a = B.rows.filter(r => /^[+-]$/.test(String(r[i]).trim())).length; return a ? `${n}<span>/${a}</span>` : ""; };
     $("atFoot").innerHTML = `<tr><td class="c-n"></td><td class="c-nm">Guruh bo'yicha jami</td>${dc.map(i => `<td class="c-d c-day${i === last ? " c-last" : ""}">${perDay(i)}</td>`).join("")}
@@ -101,7 +114,7 @@
       grand ? ["Ikkala guruh · o'qituvchiga", grand[cT] || ""] : null].filter(Boolean).map(s => `<div class="stat"><b>${esc(s[1])}</b>${esc(s[0])}</div>`).join("");
     $("mnHead").innerHTML = `<tr><th class="c-n">#</th><th class="c-nm">O'quvchi</th><th class="c-r">Kelgan</th><th class="c-r">To'lov kunlari</th><th class="c-r">O'quvchi to'lovi</th><th class="c-r">O'qituvchiga 60%</th></tr>
       <tr class="c-subh"><th></th><th></th><th></th><th class="c-r">${esc(B.sub[cD] || "")}</th><th class="c-r">${esc(B.sub[cS] || "")}</th><th class="c-r">${esc(B.sub[cT] || "")}</th></tr>`;
-    $("mnBody").innerHTML = B.rows.map(r => `<tr><td class="c-n">${esc(r[0])}</td><td class="c-nm">${esc(r[1])}</td><td class="c-r">${esc(r[cK])}</td><td class="c-r">${esc(r[cD])}</td><td class="c-r c-m">${esc(r[cS])}</td><td class="c-r c-m">${esc(r[cT])}</td></tr>`).join("");
+    $("mnBody").innerHTML = rowsMn.map(r => `<tr${left(r) ? ' class="c-left"' : ""}><td class="c-n">${esc(r[0])}</td><td class="c-nm">${esc(r[1])}${left(r) ? ` <span class="c-lefttag">🗑 ${ddm(GN[nKey(r[1])])} da chiqdi</span>` : ""}</td><td class="c-r">${esc(r[cK])}</td><td class="c-r">${esc(r[cD])}</td><td class="c-r c-m">${esc(r[cS])}</td><td class="c-r c-m">${esc(r[cT])}</td></tr>`).join("");
     $("mnFoot").innerHTML = (B.tot ? `<tr><td></td><td class="c-nm">Guruh bo'yicha jami</td><td class="c-r">${esc(B.tot[cK])}</td><td class="c-r">${esc(B.tot[cD])}</td><td class="c-r c-m">${esc(B.tot[cS])}</td><td class="c-r c-m">${esc(B.tot[cT])}</td></tr>` : "") +
       (grand ? `<tr class="c-grand"><td></td><td class="c-nm">🏆 Umumiy jami (ikkala guruh)</td><td></td><td class="c-r">${esc(grand[cD])}</td><td class="c-r c-m">${esc(grand[cS])}</td><td class="c-r c-m">${esc(grand[cT])}</td></tr>` : "");
   }
