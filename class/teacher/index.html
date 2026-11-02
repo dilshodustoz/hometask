@@ -1503,18 +1503,22 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     box.classList.remove("muted");
     box.innerHTML = `<label style="display:block;margin:4px 0"><input type="checkbox" data-au="remind" ${c.remind ? "checked" : ""}> 🔔 Muddatdan <input class="field" id="auH" value="${c.remind_h}" style="width:56px;min-height:32px;display:inline-block" inputmode="numeric"> soat oldin topshirmaganlarga eslatma (har vazifaga bir marta)</label>
       <label style="display:block;margin:4px 0"><input type="checkbox" data-au="course"> 📥 Reading/Listening uy vazifasi muddati tugagach ballar (va error log %) Course ASSESSMENT'ga o'zi yoziladi</label>
-      <label style="display:block;margin:4px 0"><input type="checkbox" data-au="backup"> 💾 Har kuni Course jadvalining .xlsx nusxasi Drive "Hometask/Course zaxira" papkasiga (oxirgi 30 kun)</label>
+      <label style="display:block;margin:4px 0"><input type="checkbox" data-au="backup"> 💾 Har kuni to'liq zaxira (Course, natijalar jadvali, o'quvchilar, kalitlar, vazifalar, Firebase) bitta arxiv bo'lib Drive "Hometask/Zaxira" papkasiga (oxirgi 30 kun + har oy 1 ta). Haftada bir marta shu arxiv bot orqali sizning Telegram'ingizga ham keladi</label>
       <div style="margin-top:10px;font-size:14px">
-        <div>Oxirgi zaxira: <b>${r.backup ? CLS.esc(r.backup.name) + " · " + ago(r.backup.at) : "hali yo'q"}</b>${r.backup ? ` · <a href="${CLS.esc(r.backup.folder)}" target="_blank" rel="noopener">papkani ochish</a>` : ""}</div>
+        <div>Oxirgi zaxira: <b>${r.backup ? CLS.esc(r.backup.name) + " · " + ago(r.backup.at) : "hali yo'q"}</b>${r.backup && r.backup.files ? ` · ${r.backup.files} fayl, ${r.backup.bad && r.backup.bad.length || r.backup.errs && r.backup.errs.length ? `<span class="badge b-warn">muammo bor</span>` : `<span class="badge b-ok">tekshirildi</span>`}` : ""}${r.backup ? ` · <a href="${CLS.esc(r.backup.folder)}" target="_blank" rel="noopener">papkani ochish</a>` : ""}</div>
+        ${r.backup && r.backup.files ? `<div class="muted">Firebase nusxasi: ${r.backup.fb_at ? ago(r.backup.fb_at) : "hali yo'q"} · Telegram'ga oxirgi nusxa: ${r.backup.tg === true ? ago(r.backup.at) : r.backup.tg_last ? ago(r.backup.tg_last) : r.backup.tg ? "⚠️ " + CLS.esc(r.backup.tg) : "hali yo'q"}</div>` : ""}
         <div>Soatlik trigger: ${trigOk ? `<span class="badge b-ok">ishlayapti</span> <span class="muted">${ago(r.trig.at)}</span>` : `<span class="badge b-warn">ulanmagan</span> <span class="muted">hozircha bu ishlar shu sahifa ochilganda bajariladi. Ulash: Qo'llanma → "Avtomatik ishlarni yoqish".</span>`}</div>
         ${r.tick && r.tick.did && Object.keys(r.tick.did).length ? `<div class="muted">Oxirgi bajarilgan: ${ago(r.tick.at)} · ${CLS.esc(Object.keys(r.tick.did).map(k => k + ": " + r.tick.did[k]).join("; "))}</div>` : ""}
       </div>
-      <div class="row" style="margin-top:10px"><button class="btn btn-secondary" id="auBk">💾 Hozir zaxira olish</button></div>`;
+      <div class="row" style="margin-top:10px"><button class="btn btn-secondary" id="auBk">💾 Hozir zaxira olish</button><button class="btn btn-secondary" id="auBkTg">📨 Zaxirani Telegram'ga yuborish</button></div>`;
     box.querySelectorAll("[data-au]").forEach(i => { i.checked = !!c[i.dataset.au]; i.onchange = auSave; });
     $("auH").onchange = auSave;
-    $("auBk").onclick = () => { $("auBk").disabled = true; $("auBk").textContent = "Olinmoqda…";
-      api({ admin: "backup_now" }).then(b => { if (!b.ok) throw new Error(b.error); auLoad(); $("setupMsg").textContent = "✅ Zaxira olindi: " + b.name; })
-        .catch(e => { $("auBk").disabled = false; $("auBk").textContent = "💾 Hozir zaxira olish"; $("setupMsg").textContent = "⚠️ " + e.message; }); };
+    const bkNow = (btn, tg) => { const b0 = $(btn), t0 = b0.textContent; b0.disabled = true; b0.textContent = "Olinmoqda…";
+      fbBackup(true).catch(() => {}).then(() => api({ admin: "backup_now", tg: tg }))
+        .then(b => { if (!b.ok) throw new Error(b.error); auLoad(); $("setupMsg").textContent = "✅ Zaxira olindi: " + b.name + (tg ? (b.tg === true ? ", Telegram'ga yuborildi" : ", Telegram: " + b.tg) : ""); })
+        .catch(e => { b0.disabled = false; b0.textContent = t0; $("setupMsg").textContent = "⚠️ " + e.message; }); };
+    $("auBk").onclick = () => bkNow("auBk", false);
+    $("auBkTg").onclick = () => bkNow("auBkTg", true);
   }
   function auSave() {
     const b = { admin: "auto_set", remind_h: $("auH").value };
@@ -1524,7 +1528,16 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function auLoad() { if (!admin.verified) return; api({ admin: "auto_get" }).then(r => { if (r.ok) auDraw(r); else $("auBox").textContent = "⚠️ " + r.error; }).catch(e => { $("auBox").textContent = "⚠️ " + e.message; }); }
   $("auReload").onclick = auLoad;
   let ticked = false;
-  function tickOnce() { if (ticked || !admin.verified) return; ticked = true; setTimeout(() => api({ admin: "tick" }).catch(() => {}), 4000); }
+  function tickOnce() { if (ticked || !admin.verified) return; ticked = true; setTimeout(() => api({ admin: "tick" }).catch(() => {}), 4000); setTimeout(() => fbBackup(false).catch(() => {}), 15000); }
+  // Firebase zaxirasi: kuniga bir marta ustoz sahifasi (ustoz bo'lib kirgan) Firebase ma'lumotini LC Panel'ga yuboradi -> Drive -> kunlik arxiv
+  function fbBackup(force) {
+    const day = new Date().toISOString().slice(0, 10);
+    try { if (!force && localStorage.getItem("fb_bk_day") === day) return Promise.resolve(); } catch (e) {}
+    const nodes = ["admin", "roster", "current", "sessions", "live"], data = {};
+    return Promise.all(nodes.map(n => db.ref(n).get().then(s => { data[n] = s.val(); }).catch(() => { data[n] = "o'qib bo'lmadi"; })))
+      .then(() => api({ admin: "fb_backup", data: data }))
+      .then(r => { if (r.ok) { try { localStorage.setItem("fb_bk_day", day); } catch (e) {} } });
+  }
 
   $("btnPing").onclick = () => {
     $("setupMsg").textContent = "Tekshirilmoqda…";
