@@ -48,6 +48,7 @@
   .res s{color:var(--bad)}
   .res .fix{color:var(--ok);font-weight:600}
   .res .corr{background:var(--ok-bg);border-radius:10px;padding:10px 12px;font-style:italic;white-space:pre-wrap}
+  #model .corr{background:#EFF6FF;border-radius:10px;padding:10px 12px;white-space:pre-wrap}
   .res .old{color:var(--muted);font-size:.82rem;margin-top:10px}
   #cover{position:fixed;inset:0;background:rgba(22,24,29,.88);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
   #cover .box{background:#fff;max-width:460px;width:100%;border-radius:16px;padding:24px;text-align:center}
@@ -80,6 +81,7 @@
       </div>
     </div>
     <div class="card res hide" id="res"></div>
+    <div class="card hide" id="model"><div class="tag">📘 Ustozning model javobi</div><div class="corr" id="modelText" style="font-style:normal"></div><div class="hint" style="margin-top:8px">O'z matningiz bilan solishtiring: qaysi asosiy xususiyat va iboralarni ishlatmagansiz?</div></div>
   </section>
 </main>
 <div id="cover"><div class="box" id="box"><h3>Yuklanmoqda…</h3><div>Bir soniya kuting.</div></div></div>
@@ -128,7 +130,11 @@
     $("formula").textContent = st.formula || "";
     $("hint").textContent = st.hint || "";
     ed.value = draft(s);
-    drawTabs(); drawChecks(); drawRes(); drawBtn();
+    drawTabs(); drawChecks(); drawRes(); drawBtn(); drawModel();
+  }
+  function drawModel() {
+    const m = sess && sess.model && cur ? sess.model[cur] : "";
+    $("model").classList.toggle("hide", !m); $("modelText").textContent = m || "";
   }
   function drawChecks() {
     const st = step(), t = ed.value, n = words(t), w = st.w;
@@ -213,7 +219,7 @@
     const os = openSteps();
     if (sess.focus && sess.focus !== focus && os.includes(sess.focus)) { focus = sess.focus; select(sess.focus); }
     else if (!os.includes(cur)) { if (os.length) select(os.includes(sess.focus) ? sess.focus : os[0]); }
-    else { drawTabs(); drawBtn(); }
+    else { drawTabs(); drawBtn(); drawModel(); }
     if (!os.length) cover("⏳ Kuting", "Ustoz yozish qismini hali ochmadi.");
     if (st === "stopped") $("msg").textContent = "Ustoz tekshiruvni yakunladi. Natijalar topic'ingizga keladi.";
   }
