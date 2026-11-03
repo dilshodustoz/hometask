@@ -113,6 +113,20 @@
   tr:hover td{background:#FAFAF9}
   code{background:#F1F1EF;padding:2px 6px;border-radius:6px;user-select:all;word-break:break-all;font-family:'JetBrains Mono',monospace;font-size:.8rem}
   .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px dashed var(--border-strong);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;color:var(--muted)}
+  .pvgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:start}
+  @media (max-width:900px){.pvgrid{grid-template-columns:1fr}}
+  .pvh{font-weight:700;font-size:.9rem;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pvchat{background:#DCE8D3;background-image:radial-gradient(rgba(255,255,255,.35) 1px,transparent 1px);background-size:14px 14px;border-radius:14px;padding:14px;max-width:560px}
+  .pvbub{background:#FFF;border-radius:12px 12px 12px 4px;padding:2px 2px 6px;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+  .pvbub .pvtext{background:transparent;border:0;padding:10px 12px 2px;max-width:none;color:#111}
+  .pvtime{text-align:right;font-size:.7rem;color:#8a9a8a;padding:0 10px}
+  .pvbtn{display:block;margin-top:5px;text-align:center;background:rgba(255,255,255,.75);border-radius:10px;padding:9px 10px;font-weight:600;font-size:.86rem;color:#2a7ab5;text-decoration:none}
+  .pvbtn:hover{background:#FFF}
+  .pvseg button{padding:4px 10px;font-size:.78rem}
+  .pvnote{font-size:.78rem;color:var(--muted);background:#FFF8E6;border:1px solid #F2DFA8;border-radius:9px;padding:7px 10px;margin-bottom:8px}
+  .pvframe{border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;background:#FFF;margin:0 auto;height:720px;max-width:100%;box-shadow:0 6px 24px rgba(0,0,0,.08)}
+  .pvframe iframe{border:0;display:block}
+  .pvframe.wide{border-radius:10px}
   .tgmsg{white-space:pre-wrap;background:#FAFAF9;border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:.86rem;max-width:560px}
   .login{max-width:420px;margin:12vh auto;text-align:center}
   .login img{height:48px;margin-bottom:10px}
@@ -760,7 +774,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <label><span class="field-label" id="hwTestLbl">Test</span><select class="field" id="hwTest"></select></label>
         <label><span class="field-label">Muddat: sana</span><input class="field" id="hwDate" type="date"></label>
         <label><span class="field-label">Soat</span><input class="field" id="hwTime" type="time" value="20:00" style="width:110px"></label>
-        <button class="btn btn-secondary" id="hwPreview" style="min-height:38px">Xabarni ko'rish</button>
+        <button class="btn btn-secondary" id="hwPreview" style="min-height:38px">👁 Ko'rib chiqish</button>
         <button class="btn btn-secondary hide" id="sView" style="min-height:38px">👁 Savollarni ko'rish</button>
       </div>
       <div class="hide" id="sViewBox" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:14px"></div>
@@ -799,8 +813,21 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         </div>
       </div>
       <div class="hide" id="hwPrevBox" style="margin-top:14px">
-        <div class="muted" id="hwPrevInfo" style="margin-bottom:8px"></div>
-        <div class="tgmsg" id="hwPrevText"></div>
+        <div class="muted" id="hwPrevInfo" style="margin-bottom:10px"></div>
+        <div class="pvgrid">
+          <div>
+            <div class="pvh">📱 O'quvchiga boradigan xabar <span class="muted" id="hwPrevWhere"></span></div>
+            <div class="pvchat"><div class="pvbub"><div class="tgmsg pvtext" id="hwPrevText"></div><div class="pvtime">hozir</div></div>
+              <a class="pvbtn" id="hwPrevBtn" href="#" target="_blank" rel="noopener"></a></div>
+          </div>
+          <div>
+            <div class="pvh">🖥 Tugma bosilganda ochiladigan sahifa
+              <span class="seg pvseg" id="hwPvSize"><button data-w="390" class="active" type="button">📱 Telefon</button><button data-w="1100" type="button">💻 Kompyuter</button></span>
+              <a class="btn btn-secondary btn-sm" id="hwPvOpen" href="#" target="_blank" rel="noopener">↗ Yangi oynada</a></div>
+            <div class="pvnote">Namuna o'quvchi sifatida ochildi: sahifa o'quvchiga qanday ko'rinsa shunday. Bu yerda bosib ko'rishingiz mumkin, lekin topshirish hech qayerga yuborilmaydi.</div>
+            <div class="pvframe" id="hwPvWrap"><iframe id="hwPvFrame" title="Vazifa sahifasi" loading="lazy"></iframe></div>
+          </div>
+        </div>
         <div class="row" style="margin-top:12px">
           <button class="btn btn-orange" id="hwSend">Yuborish</button>
           <span class="muted">Har o'quvchining topic'iga shaxsiy tugma bilan boradi (taxminan 3 soniyada bittadan).</span>
@@ -1278,10 +1305,32 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       $("hwPrevInfo").innerHTML = `<b>${CLS.esc(CLS.GROUPS[group].name)}</b> guruhidagi <b>${r.n}</b> ${b.keys ? "ta tanlangan " : ""}o'quvchiga boradi. Namuna (birinchi o'quvchi uchun):` +
         (was ? `<br>⚠️ Bu test shu guruhga ${fmtAt(was.at)} da yuborilgan. Qayta yuborsangiz, muddat yangilanadi va xabar yana boradi.` : "");
       $("hwPrevText").innerHTML = r.sample;
+      $("hwPrevWhere").textContent = r.n_cab != null ? "· " + [r.n_tg ? r.n_tg + " tasi Telegram topic'iga" : "", r.n_cab ? r.n_cab + " tasi kabinetga" : ""].filter(Boolean).join(", ") : "";
+      $("hwPrevBtn").textContent = r.btn || "Boshlash";
+      if (r.pv_url) {
+        $("hwPrevBtn").href = r.pv_url; $("hwPvOpen").href = r.pv_url; $("hwPvOpen").classList.remove("hide");
+        $("hwPvFrame").src = r.pv_url + "&pv=" + Date.now(); $("hwPvWrap").parentNode.classList.remove("hide");
+      } else {   // server hali eski: faqat xabar
+        $("hwPrevBtn").removeAttribute("href"); $("hwPvWrap").parentNode.classList.add("hide");
+      }
       $("hwSend").textContent = `Yuborish (${r.n} o'quvchi)`;
-      $("hwPrevBox").classList.remove("hide");
+      $("hwPrevBox").classList.remove("hide"); hwPvSize();
     }).catch(e => { $("hwMsg").textContent = "⚠️ " + e.message; });
   };
+  // Ko'rib chiqish oynasi: haqiqiy telefon (390px) yoki kompyuter (1100px) kengligida ochib, ustunga sig'adigan qilib kichraytiramiz
+  let hwPvW = 390;
+  function hwPvSize(w) {
+    if (w) hwPvW = w;
+    const wrap = $("hwPvWrap"), f = $("hwPvFrame"), col = wrap.parentNode.clientWidth || 600;
+    const h = hwPvW > 600 ? 640 : 720, sc = Math.min(1, col / hwPvW);
+    wrap.classList.toggle("wide", hwPvW > 600);
+    wrap.style.width = Math.floor(hwPvW * sc) + "px"; wrap.style.height = h + "px";
+    f.style.width = hwPvW + "px"; f.style.height = Math.ceil(h / sc) + "px";
+    f.style.transform = sc < 1 ? "scale(" + sc + ")" : ""; f.style.transformOrigin = "0 0";
+    document.querySelectorAll("#hwPvSize button").forEach(x => x.classList.toggle("active", Number(x.dataset.w) === hwPvW));
+  }
+  document.querySelectorAll("#hwPvSize button").forEach(b => b.onclick = () => hwPvSize(Number(b.dataset.w)));
+  window.addEventListener("resize", () => { if (!$("hwPrevBox").classList.contains("hide")) hwPvSize(); });
   $("hwSend").onclick = () => {
     const b = hwBody(), btn = $("hwSend");
     if (!confirm(b.keys ? `${b.keys.length} ta tanlangan o'quvchiga yuborilsinmi?` : `${CLS.GROUPS[group].name} guruhiga yuborilsinmi?`)) return;
