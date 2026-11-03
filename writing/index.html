@@ -37,6 +37,13 @@
   #cover .card{background:#fff;max-width:460px;width:100%;border-radius:16px;padding:24px;text-align:center}
   #cover h3{margin:0 0 8px;font-size:1.2rem}
   #cover .btn{margin-top:16px}
+  .ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .ptabs button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 11px;font:600 .85rem 'Plus Jakarta Sans',sans-serif;color:var(--muted);cursor:pointer}
+  .ptabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ptabs button .n{font-size:.75rem;margin-left:5px;opacity:.8}
+  .pimg{margin-top:12px;max-width:100%;border-radius:10px;border:1px solid var(--line);display:block;cursor:zoom-in}
+  #zoom{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:70;padding:10px;cursor:zoom-out}
+  #zoom img{max-width:100%;max-height:100%}
   .hide{display:none!important}
   @media (max-width:760px){
     main{grid-template-columns:1fr;grid-auto-rows:auto}
@@ -57,16 +64,20 @@
 <main>
   <section class="prompt">
     <div class="tag" id="task">Writing</div>
+    <div class="tag hide" id="ptitle" style="display:block;color:var(--ink);text-transform:none;font-size:.95rem"></div>
     <div class="q" id="prompt"></div>
+    <img class="pimg hide" id="pimg" alt="Grafik">
     <div class="rule" id="rule"></div>
   </section>
   <section class="editor">
+    <div class="ptabs hide" id="ptabs"></div>
     <textarea id="ed" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Essayingizni shu yerga yozing…" readonly></textarea>
     <div class="foot"><div class="msg" id="msg">Matningiz shu qurilmada saqlanib boradi.</div></div>
   </section>
 </main>
 <div id="cover"><div class="card" id="card"><h3>Yuklanmoqda…</h3><div>Bir soniya kuting.</div></div></div>
 <div class="toast" id="toast"></div>
+<div id="zoom" class="hide"><img id="zoomImg" alt=""></div>
 <script src="config.js"></script>
 <script>
 (function () {
@@ -76,6 +87,24 @@
   const ST = "hww_" + TID + "_" + KEY + "_st", PEND = "hww_" + TID + "_" + KEY + "_pend";
   const ed = $("ed");
   let me = null, left = 0, total = 0, run = false, done = false, pastes = 0, leaves = 0, tick = null;
+  // Bir vazifada bir nechta topshiriq (masalan, darsdagi 3 ta grafik): T.parts = [{title, prompt, img}]
+  let PARTS = null, texts = [], cur = 0;
+  function allText() {
+    if (!PARTS) return ed.value;
+    texts[cur] = ed.value;
+    return PARTS.map((pt, i) => `${i + 1}) ${pt.title}\n${(texts[i] || "").trim() || "(yozilmagan)"}`).join("\n\n");
+  }
+  const totalWords = () => PARTS ? texts.reduce((s, t, i) => s + words(i === cur ? ed.value : t), 0) : words(ed.value);
+  function drawPart() {
+    const pt = PARTS[cur];
+    $("ptitle").textContent = `${cur + 1}/${PARTS.length} · ${pt.title}`;
+    $("prompt").textContent = pt.prompt || "";
+    if (pt.img) { $("pimg").src = pt.img; $("pimg").classList.remove("hide"); } else $("pimg").classList.add("hide");
+    $("ptabs").innerHTML = PARTS.map((x, i) => `<button data-i="${i}" class="${i === cur ? "on" : ""}">${i + 1}. ${esc(x.short || x.title)}<span class="n">${words(i === cur ? ed.value : texts[i])}</span></button>`).join("");
+    $("ptabs").querySelectorAll("button").forEach(b => b.onclick = () => { texts[cur] = ed.value; cur = +b.dataset.i; ed.value = texts[cur] || ""; drawPart(); drawWc(); if (run) ed.focus(); });
+  }
+  $("pimg").onclick = () => { $("zoomImg").src = $("pimg").src; $("zoom").classList.remove("hide"); };
+  $("zoom").onclick = () => $("zoom").classList.add("hide");
 
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
@@ -96,8 +125,9 @@
   function post(b) { return fetch(API, { method: "POST", body: JSON.stringify(b), headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" }).then(r => r.json()); }
 
   function drawWc() {
-    const n = words(ed.value), min = me ? me.min_words : 0;
-    $("wc").textContent = n + (min ? " / " + min : "") + " so'z";
+    const n = totalWords(), min = me ? me.min_words : 0;
+    $("wc").textContent = (PARTS && !done ? words(ed.value) + " · jami " : "") + n + (min ? " / " + min : "") + " so'z";
+    if (PARTS && !done) { const b = $("ptabs").querySelector("button.on .n"); if (b) b.textContent = words(ed.value); }
     $("wc").classList.toggle("low", !!min && n < min);
   }
   function drawClock() {
@@ -105,7 +135,7 @@
     $("clock").classList.toggle("low", run && left <= 300 && left > 0);
     $("clock").classList.toggle("end", left <= 0);
   }
-  function save() { if (me && run && !done) lsSet(ST, { text: ed.value, left: left, pastes: pastes, leaves: leaves }); }
+  function save() { if (me && run && !done) { if (PARTS) texts[cur] = ed.value; lsSet(ST, { text: PARTS ? texts.join("") : ed.value, texts: PARTS ? texts : null, left: left, pastes: pastes, leaves: leaves }); } }
   ed.addEventListener("input", () => { drawWc(); save(); });
   setInterval(save, 3000);
   window.addEventListener("beforeunload", save);
@@ -118,7 +148,7 @@
 
   function start(st) {
     hide();
-    if (st) { ed.value = st.text || ""; left = typeof st.left === "number" ? st.left : total; pastes = st.pastes || 0; leaves = st.leaves || 0; }
+    if (st) { if (PARTS && st.texts) { texts = st.texts; ed.value = texts[cur] || ""; drawPart(); } else ed.value = st.text || ""; left = typeof st.left === "number" ? st.left : total; pastes = st.pastes || 0; leaves = st.leaves || 0; }
     run = true; ed.readOnly = false; ed.focus(); $("btnSubmit").disabled = false;
     drawWc(); drawClock();
     let last = Date.now();
@@ -130,6 +160,7 @@
   }
   function lock(text, info) {
     run = false; done = true; clearInterval(tick);
+    if (PARTS) $("ptabs").classList.add("hide");
     ed.value = text || ""; ed.readOnly = true; $("btnSubmit").disabled = true; $("btnSubmit").textContent = "Topshirildi ✓";
     drawWc(); $("msg").innerHTML = info;
   }
@@ -148,17 +179,18 @@
   }
   function submit(timeUp) {
     if (!run || done) return;
-    const n = words(ed.value);
+    const n = totalWords(), full = allText(), empty = PARTS ? !texts.some(t => (t || "").trim()) : !ed.value.trim();
     const go = () => {
       run = false; clearInterval(tick); ed.readOnly = true; $("btnSubmit").disabled = true; hide();
-      send({ skill: "writing", k: KEY, t: TID, text: ed.value, minutes: Math.ceil((total - Math.max(0, left)) / 60), timeUp: !!timeUp, pastes: pastes, leaves: leaves });
+      send({ skill: "writing", k: KEY, t: TID, text: full, minutes: Math.ceil((total - Math.max(0, left)) / 60), timeUp: !!timeUp, pastes: pastes, leaves: leaves });
     };
     if (timeUp) {
-      if (!ed.value.trim()) { run = false; ed.readOnly = true; $("btnSubmit").disabled = true; show("⏰ Vaqt tugadi", "Hech narsa yozilmagan, shuning uchun hech narsa yuborilmadi."); return; }
+      if (empty) { run = false; ed.readOnly = true; $("btnSubmit").disabled = true; show("⏰ Vaqt tugadi", "Hech narsa yozilmagan, shuning uchun hech narsa yuborilmadi."); return; }
       go(); return;
     }
-    if (!ed.value.trim()) { toast("Avval essay yozing."); return; }
-    show("Topshiramizmi?", `${n} so'z yozdingiz` + (n < me.min_words ? ` (talab: kamida ${me.min_words}).` : ".") + "<br>Topshirgandan keyin o'zgartirib bo'lmaydi.", "Ha, topshiraman", go, "Yozishda davom etaman");
+    if (empty) { toast("Avval essay yozing."); return; }
+    const miss = PARTS ? PARTS.map((x, i) => (texts[i] || "").trim() ? "" : (i + 1) + "-topshiriq").filter(Boolean) : [];
+    show("Topshiramizmi?", (miss.length ? `⚠️ ${miss.join(", ")} yozilmagan.<br>` : "") + `${n} so'z yozdingiz` + (n < me.min_words ? ` (talab: kamida ${me.min_words}).` : ".") + "<br>Topshirgandan keyin o'zgartirib bo'lmaydi.", "Ha, topshiraman", go, "Yozishda davom etaman");
   }
   $("btnSubmit").onclick = () => submit(false);
 
@@ -169,6 +201,11 @@
     $("who").textContent = r.name; $("ttl").textContent = r.title + " · muddat: " + r.deadline;
     $("task").textContent = "Writing " + (r.task || "Task 2") + " · " + r.minutes + " daqiqa";
     $("prompt").textContent = r.prompt;
+    if (Array.isArray(r.parts) && r.parts.length) {
+      PARTS = r.parts; texts = PARTS.map(() => "");
+      $("ptitle").classList.remove("hide"); $("ptabs").classList.remove("hide"); drawPart();
+      ed.placeholder = "Shu topshiriq javobini yozing. Keyingisiga tepadagi tugmalar orqali o'tasiz…";
+    }
     $("rule").textContent = `Kamida ${r.min_words} so'z yozing. Nusxa ko'chirib qo'yish ishlamaydi. Vaqt tugaganda yozganingiz avtomatik topshiriladi.`;
     document.title = r.title + " · Writing";
     drawWc(); drawClock();
@@ -179,6 +216,7 @@
     }
     const pend = lsGet(PEND);
     if (pend) {
+      if (PARTS) $("ptabs").classList.add("hide");
       ed.value = pend.text || ""; drawWc();
       show("Yuborilmay qolgan essay bor", "Oldingi safar essayingiz yuborilmay qolgan. Hozir yuboramiz.", "Yuborish", () => { hide(); send(pend); });
       return;
@@ -186,12 +224,12 @@
     if (r.closed) { show("Muddat tugagan", "Topshirish muddati (" + esc(r.deadline) + ") o'tib ketgan."); return; }
     const st = lsGet(ST);
     if (st && (st.text || "").trim()) {
-      ed.value = st.text; drawWc(); left = typeof st.left === "number" ? st.left : total; drawClock();
+      if (PARTS && st.texts) { texts = st.texts; ed.value = texts[cur] || ""; drawPart(); } else ed.value = st.text; drawWc(); left = typeof st.left === "number" ? st.left : total; drawClock();
       show("Davom ettiramiz", `Matningiz saqlangan (${words(st.text)} so'z). Qolgan vaqt: ${mmss(left)}.`, "▶ Davom ettirish", () => start(st));
       return;
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
-      `${esc(r.title)} · Writing<br><br>⏱ Vaqt: ${r.minutes} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.<br>📝 Kamida ${r.min_words} so'z.<br>Oxirida <b>Topshirish</b> ni bosing: essayingiz topic'ingizga ustozga yuboriladi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
+      `${esc(r.title)} · Writing<br><br>` + (PARTS ? `📚 ${PARTS.length} ta topshiriq: tepadagi tugmalar bilan biridan ikkinchisiga o'tasiz.<br>` : "") + `⏱ Vaqt: ${r.minutes} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.<br>📝 Kamida ${r.min_words} so'z.<br>Oxirida <b>Topshirish</b> ni bosing: essayingiz topic'ingizga ustozga yuboriladi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
       "▶ Boshlash", () => start(null));
   }).catch(() => {
     $("who").textContent = "⚠️ Internet xatosi";
