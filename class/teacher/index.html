@@ -613,6 +613,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   <section data-pane="writing" class="hide">
     <div class="card" id="wOpen">
       <div class="card-header"><h3 class="card-title">Writing darsini ochish <small>o'quvchi qismma-qism yozadi, AI formula bo'yicha tekshiradi</small></h3><span class="badge b-mut state">Dars ochilmagan</span></div>
+      <div class="row" style="margin-bottom:10px">
+        <label style="flex:1;min-width:260px"><span class="field-label">📚 Tayyor topshiriq (dataset: savol + grafik + model javob)</span><select class="field" id="wBank" style="width:100%"><option value="">— Yangi topshiriq (o'zim yozaman) —</option></select></label>
+        <button class="btn btn-secondary btn-sm hide" id="wBankDel" style="align-self:flex-end;min-height:38px" title="Bu topshiriqni bankdan o'chirish">🗑</button>
+      </div>
       <div class="row">
         <label style="flex:1;min-width:260px"><span class="field-label">Dars turi (prezentatsiyalardagi formula)</span><select class="field" id="wTpl" style="width:100%"></select></label>
         <label><span class="field-label">Urinish (har qismga)</span><input class="field" id="wTries" type="number" min="1" max="10" value="3" style="width:90px"></label>
@@ -625,6 +629,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <span class="muted" id="wImgInfo">Task 1 uchun: rasm o'quvchilar telefonida ko'rinadi, AI raqamlarni ham tekshiradi.</span>
       </div>
       <img class="wimg hide" id="wImgPrev" alt="">
+      <label style="display:block;margin-top:12px"><span class="field-label">📘 Model javob (ixtiyoriy) · paragraflar orasida bo'sh qator: 1-paragraf = Introduction, 2- = Overview, 3- = Body 1 ...</span>
+        <textarea class="field" id="wModel" rows="5" style="width:100%;font-family:inherit;line-height:1.5" placeholder="O'quvchiga darhol ko'rinmaydi. AI shu javobga solishtirib tekshiradi (raqamlar, asosiy xususiyatlar). Dars davomida &quot;📘 Model javobni ko'rsatish&quot; tugmasi bilan o'quvchilarga ochasiz.&#10;Model yozilsa, topshiriq keyingi safar uchun bankka ham saqlanadi."></textarea></label>
       <div style="margin-top:14px"><span class="field-label">Qaysi qismlar yoziladi (keyin dars davomida ham ochib-yopasiz)</span><div class="wsteps" id="wStepPick"></div></div>
       <details style="margin-top:12px"><summary class="muted" style="cursor:pointer">Formulalarni ko'rish / o'zgartirish</summary><div id="wFormEdit"></div>
         <button class="btn btn-secondary btn-sm" id="wFormReset" style="margin-top:8px">Asl formulalarga qaytarish</button></details>
@@ -652,7 +658,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
           <div><span class="field-label">Ochiq qismlar · ☆ = hamma shu qismga o'tadi</span><div class="wsteps" id="wlSteps"></div></div>
           <label><span class="field-label">Urinish</span><input class="field" id="wlTries" type="number" min="1" max="10" style="width:80px"></label>
         </div>
-        <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Savol va rasm</summary><div class="wdet" id="wlPrompt"></div><img class="wimg hide" id="wlImg" alt=""></details>
+        <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Savol va rasm</summary><div class="wdet" id="wlPrompt"></div><img class="wimg hide" id="wlImg" alt=""><div class="wdet hide" id="wlModel"></div></details>
+        <div class="row hide" id="wlModelRow" style="margin-top:10px;align-items:center"><button class="btn btn-secondary btn-sm" id="wlModelBtn">📘 Model javobni o'quvchilarga ko'rsatish</button><span class="muted" id="wlModelInfo"></span></div>
       </div>
       <div class="card">
         <div class="card-header"><h3 class="card-title">Jonli natijalar <small>katakni bosing: matn va AI izohi</small></h3></div>
@@ -1050,6 +1057,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     drawMode();
     hwInit();
     wInit();
+    if (admin.verified) wBankLoad();
     stInit();
     document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => showTab(b.dataset.tab));
     try { const t = localStorage.getItem("cls_tab"); if (t) showTab(t); } catch (e) {}
@@ -2222,6 +2230,67 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       $("wImgInfo").textContent = d ? `✅ Rasm tayyor (${Math.round(d.length / 1024)} KB)` : "⚠️ Rasmni o'qib bo'lmadi, boshqasini tanlang.";
     });
   };
+  // ---- Tayyor topshiriqlar banki (Drive writing_bank.json; grafiklar repoda class/writing/bank/) ----
+  let wBank = null, wBankPick = null;
+  function wStepModel(order, model, step) {   // Apps Script wbStepModel_ bilan bir xil
+    if (!model || !model.length) return "";
+    if (step === "full") return model.join("\n\n");
+    if (step === "para") return String(model[0] || "").split(/(?<=\.)\s+/)[0] || "";
+    const o = (order || []).filter(s => s !== "full" && s !== "para"), i = o.indexOf(step);
+    return i >= 0 && model[i] ? model[i] : "";
+  }
+  const wModelArr = () => $("wModel").value.replace(/\r/g, "").split(/\n\s*\n/).map(x => x.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+  function wBankLoad() {
+    return api({ admin: "wb_list" }).then(r => {
+      if (!r.ok) throw new Error(r.error || "bank");
+      wBank = {}; r.items.forEach(it => { wBank[it.id] = it; });
+      const sel = $("wBank"), keep = sel.value;
+      sel.innerHTML = `<option value="">— Yangi topshiriq (o'zim yozaman) —</option>`;
+      const by = {}; r.items.forEach(it => { (by[it.lesson || "Boshqa"] = by[it.lesson || "Boshqa"] || []).push(it); });
+      Object.keys(by).sort((a, b) => (a === "Mening topshiriqlarim") - (b === "Mening topshiriqlarim") || a.localeCompare(b)).forEach(l => {
+        const g = document.createElement("optgroup"); g.label = l;
+        by[l].forEach(it => g.appendChild(new Option(it.title + (it.model && it.model.length ? "" : " (modelsiz)"), it.id)));
+        sel.appendChild(g);
+      });
+      if (keep && wBank[keep]) sel.value = keep;
+      if (sess && sess.skill === "writing") wDraw();
+    }).catch(e => { $("wMsg").textContent = "⚠️ Tayyor topshiriqlar yuklanmadi: " + e.message; });
+  }
+  function wImgFromBlob(b, info) {
+    $("wImgInfo").textContent = "Rasm yuklanmoqda…";
+    shrink(b, d => {
+      wImg = d; $("wImgPrev").src = d; $("wImgPrev").classList.toggle("hide", !d); $("wImgDel").classList.toggle("hide", !d);
+      $("wImgInfo").textContent = d ? `✅ ${info} (${Math.round(d.length / 1024)} KB)` : "⚠️ Rasmni o'qib bo'lmadi.";
+    });
+  }
+  $("wBank").onchange = () => {
+    const it = wBank && wBank[$("wBank").value];
+    wBankPick = it || null; $("wBankDel").classList.toggle("hide", !it);
+    if (!it) { $("wModel").value = ""; return; }
+    if (it.tpl && WT.byId(it.tpl)) { $("wTpl").value = it.tpl; try { localStorage.setItem("cls_wtpl", it.tpl); } catch (e) {} wPick(); }
+    $("wcPrompt").value = it.prompt || "";
+    $("wModel").value = (it.model || []).join("\n\n");
+    wImg = ""; $("wImgPrev").classList.add("hide"); $("wImgDel").classList.add("hide");
+    if (/^bank\//.test(it.img || "")) fetch("../writing/" + it.img).then(r => { if (!r.ok) throw 0; return r.blob(); }).then(b => wImgFromBlob(b, "Grafik tayyor")).catch(() => { $("wImgInfo").textContent = "⚠️ Grafik yuklanmadi, rasmni o'zingiz tanlang."; });
+    else if (it.img === "drive") api({ admin: "wb_img", id: it.id }).then(r => { if (!r.ok) throw 0; return fetch(r.img).then(x => x.blob()); }).then(b => wImgFromBlob(b, "Grafik tayyor")).catch(() => { $("wImgInfo").textContent = "⚠️ Grafik yuklanmadi, rasmni o'zingiz tanlang."; });
+    else $("wImgInfo").textContent = "Bu topshiriqda rasm yo'q.";
+  };
+  $("wBankDel").onclick = () => {
+    const it = wBankPick; if (!it || !confirm(`"${it.title}" bankdan o'chirilsinmi?`)) return;
+    api({ admin: "wb_del", id: it.id }).then(() => { $("wBank").value = ""; wBankPick = null; $("wBankDel").classList.add("hide"); wBankLoad(); });
+  };
+  // Darsni ochishdan oldin: model bo'lsa topshiriqni bankka saqlaydi (o'zgarmagan bo'lsa saqlamaydi) va bank id ni qaytaradi
+  function wBankEnsure(T, prompt) {
+    const model = wModelArr();
+    if (!model.length) return Promise.resolve("");
+    const it = wBankPick;
+    if (it && it.prompt === prompt && JSON.stringify(it.model || []) === JSON.stringify(model) && (it.tpl === T.id || !it.tpl)) return Promise.resolve(it.id);
+    const d = new Date(CLS.now()), id = it ? it.id : "u_" + d.toISOString().slice(0, 10).replace(/-/g, "") + "_" + randKey(4).toLowerCase().replace(/[^a-z0-9]/g, "x");
+    const item = { id: id, title: it ? it.title : prompt.split("\n")[0].replace(/^The (graph|chart|table|diagram|maps?|pie charts?|bar chart|line graph)s? (below )?/i, "").slice(0, 70),
+      lesson: it ? it.lesson : "Mening topshiriqlarim", tpl: T.id, task: T.task, prompt: prompt, model: model };
+    if (it && /^bank\//.test(it.img || "")) item.img = it.img; else if (wImg) item.img = wImg;
+    return api({ admin: "wb_save", item: item }).then(r => { if (!r.ok) throw new Error(r.error || "saqlanmadi"); wBank = wBank || {}; wBank[id] = r.item; wBankLoad(); return id; });
+  }
   $("wImgDel").onclick = () => { wImg = ""; $("wImgPrev").classList.add("hide"); $("wImgDel").classList.add("hide"); $("wImgInfo").textContent = "Rasm olib tashlandi."; };
   $("wOpenBtn").onclick = () => {
     const T = wTplNow(), ed = wEdits(T.id), prompt = $("wcPrompt").value.trim();
@@ -2240,7 +2309,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       prompt: prompt, tpl: tpl, open: open, focus: picked[0], tries: Math.max(1, Math.min(10, parseInt($("wTries").value, 10) || 3)), api: admin.api || DEFAULT_API };
     if (wImg) s.img = wImg;
     $("wMsg").textContent = "Ochilmoqda…";
-    db.ref("sessions/" + id).set(s).then(() => db.ref("current/" + group).set({ sid: id, skill: "writing", test: T.id }))
+    wBankEnsure(T, prompt).catch(e => { $("wMsg").textContent = "⚠️ Model bankka saqlanmadi (" + e.message + "), dars modelsiz ochilmoqda…"; return ""; })
+      .then(bid => { if (bid) s.bank = bid; return db.ref("sessions/" + id).set(s); }).then(() => db.ref("current/" + group).set({ sid: id, skill: "writing", test: T.id }))
       .then(() => { $("wMsg").textContent = ""; attach(id); }).catch(e => { $("wMsg").textContent = "⚠️ " + e.message; });
   };
   function wDraw() {
@@ -2264,8 +2334,20 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     if (document.activeElement !== $("wlTries")) $("wlTries").value = sess.tries || 3;
     $("wlPrompt").textContent = sess.prompt || "";
     $("wlImg").classList.toggle("hide", !sess.img); if (sess.img && $("wlImg").src !== sess.img) $("wlImg").src = sess.img;
+    const bi = sess.bank && wBank && wBank[sess.bank];
+    $("wlModelRow").classList.toggle("hide", !sess.bank);
+    $("wlModel").classList.toggle("hide", !bi); $("wlModel").textContent = bi ? "📘 Model javob:\n" + (bi.model || []).join("\n\n") : "";
+    $("wlModelBtn").textContent = sess.model ? "🙈 Model javobni yashirish" : "📘 Model javobni o'quvchilarga ko'rsatish";
+    $("wlModelInfo").textContent = sess.model ? "O'quvchilar har qism ostida model javobni ko'ryapti." : (bi ? "AI shu model bilan solishtiryapti; o'quvchilarga hali ko'rinmaydi." : sess.bank && !wBank ? "Model yuklanmoqda…" : "");
+    if (sess.bank && !wBank) wBankLoad();
     wTable();
   }
+  $("wlModelBtn").onclick = () => {
+    if (sess.model) { upd({ model: null }); return; }
+    const bi = wBank && wBank[sess.bank]; if (!bi) { wBankLoad(); return; }
+    const m = {}; (sess.tpl.order || []).forEach(s => { const t = wStepModel(sess.tpl.order, bi.model, s); if (t) m[s] = t; });
+    upd({ model: m });
+  };
   $("wlTries").onchange = () => upd({ tries: Math.max(1, Math.min(10, parseInt($("wlTries").value, 10) || 3)) });
   function wCols() { const T = sess.tpl; return T.order.filter(s => (sess.open || {})[s] || Object.values(live).some(v => v && v.w && v.w[s])); }
   function wTable() {
