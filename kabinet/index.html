@@ -278,7 +278,7 @@
         body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Insho</a>${x.fb ? `<button class="btn" data-fb="${esc(x.t)}" data-sk="writing" data-title="${esc(x.title)}">📄 Feedback</button>` : ""}</div>` +
           (x.fb ? "" : `<div class="mt" style="margin-top:6px">Feedback hali tayyor emas.</div>`);
       } else {
-        body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Javoblarim, kalit va error log</a></div>`;
+        body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Javoblarim, kalit va error log</a>${x.fb ? `<button class="btn" data-fb="${esc(x.t)}" data-sk="${esc(x.skill)}" data-title="${esc(x.title)}">📄 Feedback</button>` : ""}</div>`;
       }
       return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0"><div class="tt">${esc(x.title)}</div><div class="mt">${x.klass ? "🏫 Dars: " + dt(x.at) + " · " : x.at ? "📨 " + dt(x.at) + " · " : ""}${nm}</div></div>${scoreHtml(x)}</div>${body}</div>`;
     }).join("") : `<div class="empty">Natijalar topshirganingizdan keyin shu yerda chiqadi.</div>`;
@@ -353,7 +353,7 @@
       try {
         const r = await api(Object.assign({ action: "cab_fb", t: f.dataset.fb, skill: f.dataset.sk || "speaking" }, auth()));
         if (!r.ok) throw new Error(r.error);
-        $("mT").textContent = (f.dataset.sk === "writing" ? "✍️ " : "🎙 ") + f.dataset.title; $("mF").srcdoc = r.html; $("modal").classList.remove("hide");
+        $("mT").textContent = ({ writing: "✍️ ", reading: "📖 ", listening: "🎧 " }[f.dataset.sk] || "🎙 ") + f.dataset.title; $("mF").srcdoc = r.html; $("modal").classList.remove("hide");
       } catch (err) { toast("⚠️ " + err.message); }
       f.disabled = false;
     }
