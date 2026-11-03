@@ -2627,6 +2627,8 @@
     const items = EL.wrong.map(q => Object.assign({ q: q }, EL.items[q] || {})).filter(x => x.type || String(x.why || "").trim());
     const msg = document.getElementById("elMsg"), b = document.getElementById("elSend");
     if (!items.length) { msg.textContent = "⚠️ Hech bo'lmasa bitta savolga yozing."; return; }
+    const noType = items.filter(x => !x.type).map(x => "Q" + x.q);   // sabab yozilgan, lekin xato turi tanlanmagan
+    if (noType.length) { msg.textContent = "⚠️ Xato turini tanlang: " + noType.join(", "); return; }
     const n = elCount();
     if (n < EL.wrong.length && !confirm(`${EL.wrong.length} ta xatodan ${n} tasi to'liq yozilgan. Shunday yuborilsinmi? (keyin to'ldirib qayta yuborsangiz bo'ladi)`)) return;
     b.disabled = true; msg.textContent = "📤 Yuborilmoqda…";
