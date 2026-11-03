@@ -2271,6 +2271,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     wBankPick = it || null; $("wBankDel").classList.toggle("hide", !it);
     if (!it) { $("wModel").value = ""; return; }
     if (it.tpl && WT.byId(it.tpl)) { $("wTpl").value = it.tpl; try { localStorage.setItem("cls_wtpl", it.tpl); } catch (e) {} wPick(); }
+    if (Array.isArray(it.steps) && it.steps.length) $("wStepPick").querySelectorAll("input").forEach(i => { i.checked = it.steps.includes(i.value); });   // slayddagi topshiriq: faqat kerakli qismlar
     $("wcPrompt").value = it.prompt || "";
     $("wModel").value = wModelTxt(it.model);
     wImg = ""; $("wImgPrev").classList.add("hide"); $("wImgDel").classList.add("hide");
@@ -2290,7 +2291,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     if (it && it.prompt === prompt && JSON.stringify(it.model || []) === JSON.stringify(model) && (it.tpl === T.id || !it.tpl)) return Promise.resolve(it.id);
     const d = new Date(CLS.now()), id = it ? it.id : "u_" + d.toISOString().slice(0, 10).replace(/-/g, "") + "_" + randKey(4).toLowerCase().replace(/[^a-z0-9]/g, "x");
     const item = { id: id, title: it ? it.title : prompt.split("\n")[0].replace(/^The (graph|chart|table|diagram|maps?|pie charts?|bar chart|line graph)s? (below )?/i, "").slice(0, 70),
-      lesson: it ? it.lesson : "Mening topshiriqlarim", tpl: T.id, task: T.task, prompt: prompt, model: model };
+      lesson: it ? it.lesson : "Mening topshiriqlarim", tpl: T.id, task: T.task, prompt: prompt, model: model,
+      steps: Array.from($("wStepPick").querySelectorAll("input:checked")).map(i => i.value) };
     if (it && /^bank\//.test(it.img || "")) item.img = it.img; else if (wImg) item.img = wImg;
     return api({ admin: "wb_save", item: item }).then(r => { if (!r.ok) throw new Error(r.error || "saqlanmadi"); wBank = wBank || {}; wBank[id] = r.item; wBankLoad(); return id; });
   }

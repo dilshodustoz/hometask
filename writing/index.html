@@ -88,7 +88,7 @@
   const ed = $("ed");
   let me = null, left = 0, total = 0, run = false, done = false, pastes = 0, leaves = 0, tick = null;
   // Bir vazifada bir nechta topshiriq (masalan, darsdagi 3 ta grafik): T.parts = [{title, prompt, img}]
-  let PARTS = null, texts = [], cur = 0;
+  let PARTS = null, texts = [], cur = 0, softWarned = false;
   function allText() {
     if (!PARTS) return ed.value;
     texts[cur] = ed.value;
@@ -131,7 +131,7 @@
     $("wc").classList.toggle("low", !!min && n < min);
   }
   function drawClock() {
-    $("clock").textContent = mmss(left);
+    $("clock").textContent = left < 0 && me && me.soft ? "+" + mmss(-left) : mmss(left);
     $("clock").classList.toggle("low", run && left <= 300 && left > 0);
     $("clock").classList.toggle("end", left <= 0);
   }
@@ -155,6 +155,7 @@
     tick = setInterval(() => {
       const now = Date.now(); left -= (now - last) / 1000; last = now;
       drawClock();
+      if (left <= 0 && me.soft) { if (!softWarned) { softWarned = true; toast("⏰ Tavsiya etilgan vaqt tugadi. Shoshilmang, yozishda davom etavering."); } return; }
       if (left <= 0) { clearInterval(tick); submit(true); }
     }, 500);
   }
@@ -182,7 +183,7 @@
     const n = totalWords(), full = allText(), empty = PARTS ? !texts.some(t => (t || "").trim()) : !ed.value.trim();
     const go = () => {
       run = false; clearInterval(tick); ed.readOnly = true; $("btnSubmit").disabled = true; hide();
-      send({ skill: "writing", k: KEY, t: TID, text: full, minutes: Math.ceil((total - Math.max(0, left)) / 60), timeUp: !!timeUp, pastes: pastes, leaves: leaves });
+      send({ skill: "writing", k: KEY, t: TID, text: full, minutes: Math.ceil((total - (me.soft ? left : Math.max(0, left))) / 60), timeUp: !!timeUp, pastes: pastes, leaves: leaves });
     };
     if (timeUp) {
       if (empty) { run = false; ed.readOnly = true; $("btnSubmit").disabled = true; show("⏰ Vaqt tugadi", "Hech narsa yozilmagan, shuning uchun hech narsa yuborilmadi."); return; }
@@ -206,7 +207,7 @@
       $("ptitle").classList.remove("hide"); $("ptabs").classList.remove("hide"); drawPart();
       ed.placeholder = "Shu topshiriq javobini yozing. Keyingisiga tepadagi tugmalar orqali o'tasiz…";
     }
-    $("rule").textContent = `Kamida ${r.min_words} so'z yozing. Nusxa ko'chirib qo'yish ishlamaydi. Vaqt tugaganda yozganingiz avtomatik topshiriladi.`;
+    $("rule").textContent = `Kamida ${r.min_words} so'z yozing. Nusxa ko'chirib qo'yish ishlamaydi. ` + (r.soft ? `Vaqt taxminiy (${r.minutes} daqiqa): tugasa ham sahifa yopilmaydi, yozishda davom etasiz.` : "Vaqt tugaganda yozganingiz avtomatik topshiriladi.");
     document.title = r.title + " · Writing";
     drawWc(); drawClock();
     if (r.submitted) {
@@ -229,7 +230,7 @@
       return;
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
-      `${esc(r.title)} · Writing<br><br>` + (PARTS ? `📚 ${PARTS.length} ta topshiriq: tepadagi tugmalar bilan biridan ikkinchisiga o'tasiz.<br>` : "") + `⏱ Vaqt: ${r.minutes} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.<br>📝 Kamida ${r.min_words} so'z.<br>Oxirida <b>Topshirish</b> ni bosing: essayingiz topic'ingizga ustozga yuboriladi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
+      `${esc(r.title)} · Writing<br><br>` + (PARTS ? `📚 ${PARTS.length} ta topshiriq: tepadagi tugmalar bilan biridan ikkinchisiga o'tasiz.<br>` : "") + (r.soft ? `⏱ Taxminiy vaqt: ${r.minutes} daqiqa. Shoshilmang: vaqt tugasa ham sahifa yopilmaydi.` : `⏱ Vaqt: ${r.minutes} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.`) + `<br>📝 Kamida ${r.min_words} so'z.<br>Oxirida <b>Topshirish</b> ni bosing: essayingiz topic'ingizga ustozga yuboriladi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
       "▶ Boshlash", () => start(null));
   }).catch(() => {
     $("who").textContent = "⚠️ Internet xatosi";
