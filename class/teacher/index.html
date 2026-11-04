@@ -852,6 +852,20 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <tbody id="hwStBody"></tbody>
       </table></div>
     </div>
+    <div class="card" id="matCard">
+      <div class="card-header"><h3 class="card-title">📚 Dars materiallari <small class="muted">PDF prezentatsiya va boshqa fayllar → o'quvchi kabinetiga</small></h3><button class="btn btn-secondary btn-sm" id="matReload">Yangilash</button></div>
+      <div class="row" style="flex-wrap:wrap;gap:10px;align-items:flex-end">
+        <label style="flex:1;min-width:220px"><span class="field-label">Sarlavha</span><input class="field" id="matTitle" placeholder="Masalan: Writing Task 1 · Lesson 1 prezentatsiyasi"></label>
+        <label><span class="field-label">Fayl (PDF, 30 MB gacha)</span><input class="field" id="matFile" type="file" accept="application/pdf,.pdf,image/*,.pptx,.docx"></label>
+        <label class="row" style="gap:6px;margin:0 0 8px"><input type="checkbox" id="matAll"> Barcha guruhlarga</label>
+        <button class="btn" id="matSend" style="min-height:38px">📤 Kabinetga yuborish</button>
+      </div>
+      <div class="msg" id="matMsg"></div>
+      <div class="tbl-wrap" style="margin-top:10px"><table>
+        <thead><tr><th>Material</th><th>Guruh</th><th>Qachon</th><th>Hajm</th><th></th></tr></thead>
+        <tbody id="matList"><tr><td colspan="5" class="muted">Yuklanmoqda…</td></tr></tbody>
+      </table></div>
+    </div>
   </section>
   <div id="hwdM" class="hide"><div class="hwd-bg" id="hwdBg"></div><div class="hwd-p"><div class="hwd-h"><b id="hwdT"></b><button class="btn btn-secondary btn-sm" id="hwdX">✕</button></div><div class="hwd-b" id="hwdB"></div></div></div>
 
@@ -1061,7 +1075,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       : `⚠️ <b>Bir martalik sozlash.</b> Apps Script "LC Panel" → Project Settings → Script Properties → Add script property: nomi <code>CLASS_SECRET</code>, qiymati <code>${CLS.esc(admin.secret)}</code>. Keyin "Aloqani tekshirish" ni bosing.`;
     if (!admin.verified) { showTab("setup"); return; }
     tickOnce();
-    if (tab === "hw" && !hwLog) hwLoad();
+    if (tab === "hw" && !hwLog) { hwLoad(); matLoad(); }
     else if (tab === "students" && !stData) stLoad();
     else if (tab === "attend" || tab === "grades") window.dispatchEvent(new CustomEvent("cls-tab", { detail: tab }));
   }
@@ -1110,7 +1124,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
     document.querySelectorAll("[data-pane]").forEach(p => p.classList.toggle("hide", p.dataset.pane !== t));
     layout();
-    if (t === "hw" && !hwLog && admin.verified) hwLoad();
+    if (t === "hw" && !hwLog && admin.verified) { hwLoad(); matLoad(); }
     if (t === "students" && !stData && admin.verified) stLoad();
     if (t === "setup") auLoad();
     window.dispatchEvent(new CustomEvent("cls-tab", { detail: t }));
@@ -1345,6 +1359,54 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     }).catch(e => { btn.disabled = false; $("hwMsg").textContent = "⚠️ " + e.message + "\nYuborish davom etgan bo'lishi mumkin: bir daqiqadan keyin \"Yangilash\" ni bosing."; });
   };
   let hwBusy = false;
+  // ---------- Dars materiallari ----------
+  let matData = null;
+  function matSize(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
+  function matGroupName(c) { const g = Object.values(CLS.GROUPS).find(x => String(x.chat) === String(c)); return g ? g.name : c; }
+  function matDraw() {
+    const L = matData || [];
+    $("matList").innerHTML = L.length ? L.map(m => `<tr><td><a href="${CLS.esc(m.url)}" target="_blank" rel="noopener">📄 ${CLS.esc(m.title)}</a><div class="muted" style="font-size:.8rem">${CLS.esc(m.name)}</div></td>
+      <td>${(m.chats || []).map(c => CLS.esc(matGroupName(c))).join(", ")}</td><td>${CLS.esc(new Date(m.at).toLocaleString("uz-UZ", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }))}</td>
+      <td>${matSize(m.size || 0)}</td><td><button class="btn btn-secondary btn-sm" data-mdel="${CLS.esc(m.id)}" title="O'chirish">🗑</button></td></tr>`).join("")
+      : `<tr><td colspan="5" class="muted">Hali material yuborilmagan.</td></tr>`;
+    $("matList").querySelectorAll("[data-mdel]").forEach(b => b.onclick = () => {
+      const m = L.find(x => x.id === b.dataset.mdel);
+      if (!m || !confirm(`"${m.title}" o'quvchilar kabinetidan olib tashlansinmi?`)) return;
+      b.disabled = true;
+      api({ admin: "mat_del", id: m.id }).then(r => { if (r.ok) { matData = r.list; matDraw(); } else alert(r.error || "Xato"); }).catch(e => alert(e.message));
+    });
+  }
+  function matLoad() {
+    api({ admin: "mat_list" }).then(r => { if (r.ok) { matData = r.list; matDraw(); } else $("matList").innerHTML = `<tr><td colspan="5" class="muted">${CLS.esc(r.error || "Xato")}</td></tr>`; })
+      .catch(e => { $("matList").innerHTML = `<tr><td colspan="5" class="muted">${CLS.esc(e.message)}</td></tr>`; });
+  }
+  $("matReload").onclick = matLoad;
+  $("matSend").onclick = () => {
+    const f = $("matFile").files[0], title = $("matTitle").value.trim();
+    if (!title) { $("matMsg").textContent = "⚠️ Sarlavha yozing."; return; }
+    if (!f) { $("matMsg").textContent = "⚠️ Faylni tanlang."; return; }
+    if (f.size > 30 * 1048576) { $("matMsg").textContent = "⚠️ Fayl 30 MB dan katta. PDF'ni siqib (compress) qayta yuklang."; return; }
+    const chats = $("matAll").checked ? [...new Set(Object.values(CLS.GROUPS).filter(g => g.chat && g.name && !/test|sinov/i.test(g.name)).map(g => String(g.chat)))] : [String(CLS.GROUPS[group].chat)];
+    const who = $("matAll").checked ? "barcha guruhlarga" : `${CLS.GROUPS[group].name} guruhiga`;
+    if (!chats.length || !chats[0] || chats[0] === "undefined") { $("matMsg").textContent = "⚠️ Guruh Telegram/rosterga ulanmagan."; return; }
+    if (!confirm(`"${title}" ${who} yuborilsinmi? O'quvchilarga kabinetda bildirishnoma boradi.`)) return;
+    $("matSend").disabled = true; $("matMsg").textContent = "⏳ Yuklanmoqda… (katta faylda 1 daqiqagacha)";
+    const rd = new FileReader();
+    rd.onload = () => {
+      const b64 = String(rd.result).split(",")[1] || "";
+      api({ admin: "mat_add", title: title, name: f.name, mime: f.type || "application/pdf", b64: b64, chats: chats })
+        .then(r => {
+          if (!r.ok) { $("matMsg").textContent = "❌ " + (r.error || "Xato"); return; }
+          $("matMsg").textContent = `✅ Yuborildi: ${r.n} ta o'quvchi kabinetiga.`; matData = r.list; matDraw();
+          $("matTitle").value = ""; $("matFile").value = "";
+        })
+        .catch(e => { $("matMsg").textContent = "❌ " + e.message; })
+        .finally(() => { $("matSend").disabled = false; });
+    };
+    rd.onerror = () => { $("matSend").disabled = false; $("matMsg").textContent = "❌ Faylni o'qib bo'lmadi"; };
+    rd.readAsDataURL(f);
+  };
+
   function hwLoad() {
     if (hwBusy) return; hwBusy = true;
     return api({ admin: "hw_list" }).finally(() => { hwBusy = false; }).then(r => { if (r.ok) { hwLog = r.log; hwShowList(); spBackfill(); } else $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; })

@@ -154,6 +154,7 @@
   <nav>
     <button data-tab="tasks" class="on">📋 Vazifalar</button>
     <button data-tab="res">📊 Natijalar</button>
+    <button data-tab="mat">📚 Materiallar</button>
   </nav>
 </header>
 <main>
@@ -161,6 +162,7 @@
     <button class="ob" id="onbGo">📲 Ilova sifatida o'rnatish</button><button class="ol" id="onbNo">Allaqachon o'rnatganman</button></div>
   <section id="tasks"></section>
   <section id="res" class="hide"></section>
+  <section id="mat" class="hide"></section>
   <div class="pushc hide" id="push"><div class="pt"><b id="pushH">🔔 Telefonga bildirishnoma</b><span class="mt" id="pushT">Yangi vazifa, dars natijasi, feedback va eslatma kelganda telefoningiz ovoz bilan xabar beradi (kabinet yopiq bo'lsa ham).</span></div>
     <div class="pb"><button class="btn" id="pushOn">🔔 Yoqish</button><button class="btn sec hide" id="pushTest">Sinab ko'rish</button><button class="btn sec hide" id="pushOff">O'chirish</button></div></div>
   <div class="a2hs" id="a2hs"><span id="a2hsT">📱 Kabinetni telefon ekraniga qo'shib qo'ying: Android'da Chrome → ⋮ → <b>Bosh ekranga qo'shish</b> (yoki <b>Ilovani o'rnatish</b>), iPhone'da Safari → <b>Ulashish</b> → <b>Add to Home Screen</b>. Noutbukda manzil satridagi o'rnatish belgisini bosing yoki shunchaki saytni xatcho'pga qo'shing.</span>
@@ -322,11 +324,19 @@
     document.title = (n ? "(" + n + ") " : "") + "Shaxsiy kabinet · Dilshod ustoz";
     try { if (navigator.setAppBadge) (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}); } catch (e) {}   // ekrandagi belgida raqam
   }
-  function render() { renderTasks(); renderNotes(); renderRes(); badge(); }
+  function renderMat() {
+    const M = D.mats || [];
+    const sz = b => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round((b || 0) / 1024)) + " KB";
+    $("mat").innerHTML = M.length ? `<h3>Dars materiallari</h3>` + M.map(m => `<div class="card"><div class="row"><div class="ic">📄</div><div style="flex:1;min-width:0">
+      <div class="tt">${esc(m.title)}</div><div class="mt">📨 ${dt(m.at)} · ${sz(m.size)}</div></div></div>
+      <div class="act"><a class="btn" href="${esc(m.url)}" target="_blank" rel="noopener">📄 Ochish</a></div></div>`).join("")
+      : `<div class="empty">Hozircha material yo'q. Ustoz dars prezentatsiyasini yuborganda shu yerda chiqadi.</div>`;
+  }
+  function render() { renderTasks(); renderNotes(); renderRes(); renderMat(); badge(); }
   function show(t) {
     tab = t;
     document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
-    ["tasks", "res"].forEach(s => $(s).classList.toggle("hide", s !== t));
+    ["tasks", "res", "mat"].forEach(s => $(s).classList.toggle("hide", s !== t));
     try { localStorage.setItem("kab_tab", t); } catch (e) {}
   }
   const isTouch = matchMedia("(pointer: coarse)").matches;
@@ -421,7 +431,7 @@
       $("cover").classList.add("hide"); $("login").classList.add("hide");
     });
   }
-  function tab0() { let t = "tasks"; try { t = localStorage.getItem("kab_tab") || t; } catch (e) {} show(t === "res" ? "res" : "tasks"); }
+  function tab0() { let t = "tasks"; try { t = localStorage.getItem("kab_tab") || t; } catch (e) {} show(["res", "mat"].indexOf(t) >= 0 ? t : "tasks"); }
   function start() {
     if (fromCache()) {   // darhol ko'rsatamiz, keyin yangilaymiz
       tab0();
