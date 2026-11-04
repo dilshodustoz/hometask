@@ -172,7 +172,7 @@
     table.cards td{border:0;padding:0;min-width:0!important}
     table.cards td:nth-child(1){color:var(--faint);width:22px}
     table.cards td:nth-child(2){flex:1 0 auto}
-    table.cards td:nth-child(3),table.cards td:nth-child(4),table.cards td:nth-child(5){font-size:.8rem;color:var(--muted)}
+    table.cards td:nth-child(3),table.cards td:nth-child(4),table.cards td:nth-child(5),table.cards td:nth-child(6){font-size:.8rem;color:var(--muted)}
     table.cards td:last-child{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px}
     table.cards td:last-child:empty{display:none}
     table.cards td:last-child .btn{margin:0}
@@ -926,8 +926,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     <div class="card">
       <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><div class="controls"><button class="btn btn-secondary btn-sm" id="cabInboxB" title="O'quvchilar kabinetdan yozgan xabarlar">📥 Xabarlar <b id="cabInboxN" class="hide" style="background:var(--red,#dc2626);color:#fff;border-radius:9px;padding:0 6px;font-size:.75rem">0</b></button><button class="btn btn-secondary btn-sm" id="cabElonB" title="Butun guruhga e'lon: kabinet + telefon bildirishnomasi">📢 E'lon</button><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button><button class="btn btn-secondary btn-sm" id="stCards" title="Kabinetga kirish kodlari bilan kartochkalarni chop etish">🖨 Kartochkalar</button><button class="btn btn-orange btn-sm" id="stNewOpen">＋ Yangi o'quvchi</button></div></div>
       <div class="tbl-wrap"><table class="cards">
-        <thead><tr><th>#</th><th>O'quvchi</th><th>Telefon</th><th>Qo'shilgan</th><th title="Shaxsiy kabinetga kirish kodi">Kabinet kodi</th><th></th></tr></thead>
-        <tbody id="stBody"><tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr></tbody>
+        <thead><tr><th>#</th><th>O'quvchi</th><th>Telefon</th><th>Qo'shilgan</th><th title="Shaxsiy kabinetga kirish kodi">Kabinet kodi</th><th title="Shaxsiy kabinetga oxirgi marta qachon kirgan">Oxirgi kirish</th><th></th></tr></thead>
+        <tbody id="stBody"><tr><td colspan="7" class="muted">Yuklanmoqda…</td></tr></tbody>
       </table></div>
       <details id="stArchBox" style="margin-top:14px"><summary class="muted" style="cursor:pointer">Arxiv <span id="stArchN"></span></summary>
         <div class="tbl-wrap"><table><tbody id="stArch"></tbody></table></div>
@@ -1657,11 +1657,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     return Promise.all([db.ref("roster").set(out), db.ref("admin/groups").set(r.groups)]).then(() => n);
   }
   function stLoad() {
-    $("stBody").innerHTML = `<tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr>`;
+    $("stBody").innerHTML = `<tr><td colspan="7" class="muted">Yuklanmoqda…</td></tr>`;
     return api({ admin: "st_list" }).then(r => {
-      if (!r.ok) { $("stBody").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; return 0; }
+      if (!r.ok) { $("stBody").innerHTML = `<tr><td colspan="7">⚠️ ${CLS.esc(r.error)}</td></tr>`; return 0; }
       return stApply(r);
-    }).catch(e => { $("stBody").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(e.message)}</td></tr>`; return 0; });
+    }).catch(e => { $("stBody").innerHTML = `<tr><td colspan="7">⚠️ ${CLS.esc(e.message)}</td></tr>`; return 0; });
   }
   function stCall(body, msgEl, busy) {
     $(msgEl).textContent = busy || "Bajarilmoqda…";
@@ -1741,6 +1741,14 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("cabOv").classList.contains("hide")) $("cabOv").classList.add("hide"); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", cabBind); else cabBind();
+  // kabinetga oxirgi kirish: bugun 14:05 / kecha 09:12 / 3 kun oldin / hali kirmagan
+  function seenTxt(iso) {
+    if (!iso) return `<span class="muted" title="Kabinetga hali kirmagan (yoki 4-noyabrdan beri kirmagan)">— kirmagan</span>`;
+    const d = new Date(iso), now = new Date(), hm = d.toTimeString().slice(0, 5), day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+    const dd = Math.round((day(now) - day(d)) / 864e5), full = d.toLocaleString("uz-UZ");
+    const t = dd <= 0 ? (now - d < 36e5 ? Math.max(1, Math.round((now - d) / 6e4)) + " daqiqa oldin" : "bugun " + hm) : dd === 1 ? "kecha " + hm : dd < 7 ? dd + " kun oldin" : fdate(iso);
+    return `<span title="${full}" style="color:${dd <= 1 ? "var(--green,#15803d)" : dd < 7 ? "inherit" : "var(--red,#dc2626)"}">${t}</span>`;
+  }
   function fdate(s) { return s ? new Date(s).toLocaleDateString("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" }) : ""; }
   function stDraw() {
     $("stGroupName").textContent = "· " + CLS.GROUPS[group].name;
@@ -1753,9 +1761,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("stBody").innerHTML = ks.map((k, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(R[k].name)}${R[k].note ? `<div class="muted">${CLS.esc(R[k].note)}</div>` : ""}</td>
         <td>${CLS.esc(R[k].phone || "")}</td><td>${fdate(R[k].added)}</td>
         <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi va eski kartochka QR'i ishlamay qoladi)">🔄</button> <button class="btn btn-secondary btn-sm" data-card="${k}" title="Shu o'quvchining kartochkasi (QR bilan)">🪪</button>` : `<span class="muted">—</span>`}${(stData.push || {})[k] ? ` <span title="Telefon bildirishnomasi yoqilgan (${stData.push[k]} ta qurilma)">🔔</span>` : ""}</td>
-        <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-msg="${k}" title="Kabinetga xabar + telefon bildirishnomasi">✉️ Xabar</button> <button class="btn btn-secondary btn-sm" data-inv="${k}">Taklif havolasi</button>
+        <td style="white-space:nowrap">${seenTxt((stData.seen || {})[k])}</td>
+        <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-msg="${k}" title="Kabinetga xabar + telefon bildirishnomasi">✉️ Xabar</button>
           <button class="btn btn-warning btn-sm" data-ar="${k}">Arxivlash</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("")
-        || `<tr><td colspan="6" class="muted">Bu guruhda hali o'quvchi yo'q.</td></tr>`;
+        || `<tr><td colspan="7" class="muted">Bu guruhda hali o'quvchi yo'q.</td></tr>`;
     const A = stData.archive, as = Object.keys(A).filter(k => String(A[k].chat) === chat).sort((a, b) => A[a].name.localeCompare(A[b].name));
     $("stArchN").textContent = as.length ? `(${as.length})` : "(bo'sh)";
     $("stArch").innerHTML = as.map(k => `<tr><td>${CLS.esc(A[k].name)}</td><td class="muted">arxivga: ${fdate(A[k].archived)}</td>
