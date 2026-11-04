@@ -481,10 +481,16 @@
     try { const r = JSON.parse(localStorage.getItem(cacheKey()) || "null"); if (r && r.ok && r.tasks) { apply(r); return true; } } catch (e) {}
     return false;
   }
-  function load(first) {
+  function load(first, lite) {
     $("sync").classList.add("busy");
-    return api(Object.assign({ action: "cab" }, auth())).finally(() => $("sync").classList.remove("busy")).then(r => {
+    return api(Object.assign({ action: "cab" }, auth(), lite && D ? { lite: 1 } : {})).finally(() => $("sync").classList.remove("busy")).then(r => {
       if (!r.ok) { const e = new Error(r.error || "xato"); e.auth = !!r.auth; e.lock = !!r.lock; throw e; }
+      if (r.lite) {   // yengil yangilash: faqat xabarlar va materiallar; yangi xabar kelsa vazifalarni ham to'liq yangilaymiz
+        if (!D) return load(first);
+        const seen = new Set(D.notes.map(x => x.id)), fresh = r.notes.some(x => !seen.has(x.id));
+        r = Object.assign({}, D, { notes: r.notes, mats: r.mats, now: r.now });
+        if (fresh) return load(false);
+      }
       if (!TV) try { localStorage.setItem(cacheKey(), JSON.stringify(r)); } catch (e) {}
       const before = D ? D.notes.filter(x => !x.read).length : 0;
       D = r;
@@ -779,7 +785,7 @@
   else if (CODE || /^[A-Za-z0-9_-]{6,20}$/.test(KEY)) boot();
   else authLoad().then(c => { if (CODE_RE.test(c)) { CODE = c; boot(); } else showLogin(""); });
   // har 60 soniyada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
-  setInterval(() => { if (!document.hidden && D) load(false).catch(() => {}); }, 60000);
+  setInterval(() => { if (!document.hidden && D) load(false, true).catch(() => {}); }, 60000);   // yengil (faqat xabarlar)
   setInterval(() => { if (!document.hidden && D) renderTasks(); }, 30000);   // qolgan vaqt yozuvlari jonli yangilanadi
   document.addEventListener("visibilitychange", () => { if (!document.hidden && D) load(false).catch(() => {}); });
 })();
