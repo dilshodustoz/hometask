@@ -140,14 +140,48 @@
   @keyframes bob{50%{transform:translate(-50%,-10px)}}
   .a2hs{font-size:.82rem;color:var(--muted);text-align:center;margin-top:24px}
   @media(max-width:420px){.stats{gap:6px}.stat{padding:8px 10px}.stat b{font-size:1.1rem}nav button{font-size:.84rem}}
+  /* ---- telefon: tartibli joylashuv (2026-11-04) ---- */
+  .nm{flex:1;min-width:0}
+  .top>.bell,.top>.cls,.top>.out{flex:none}
+  @media(max-width:430px){
+    .top{gap:8px;padding:10px 14px 4px}
+    .brand{height:26px}
+    .who{font-size:.95rem;-webkit-line-clamp:1;white-space:nowrap;display:block}
+    .bell,.cls{width:38px;height:38px;border-radius:11px}.cls{width:auto;padding:0 10px;font-size:.82rem}
+    .out{width:30px;padding:0;text-align:center}
+    nav{padding:0 8px;gap:0}
+    nav button{font-size:.82rem;padding:9px 2px 10px}
+    main{padding:14px 14px 70px}
+    h3{margin:16px 2px 8px}
+    .stats{gap:8px;margin-bottom:14px}
+    .stat{padding:10px 10px 9px;text-align:center}
+    .stat b{font-size:1.2rem}.stat span{display:block;font-size:.7rem;line-height:1.25}
+    .card{padding:14px;border-radius:14px;margin-bottom:12px}
+    .row{gap:10px}
+    .ic{width:36px;height:36px;font-size:1.05rem;border-radius:10px}
+    .tt{font-size:.95rem}
+    .mt{font-size:.78rem;line-height:1.4}
+    .chip{margin:6px 4px 0 0;line-height:1.35}
+    .tbar{margin-top:12px}
+    .tlab{font-size:.66rem}
+    .act{margin-top:12px}
+    .act .btn{flex:1 1 auto;justify-content:center;padding:11px 14px}
+    .score b{font-size:1.05rem}
+    .onb{padding:14px}
+  }
+  @media(max-width:360px){
+    .brand{display:none}
+    .cls .s{display:none}
+    .tlab span:nth-child(2){display:none}
+    .stat span{font-size:.66rem}
+  }
 </style>
 </head>
 <body>
 <header>
   <div class="top">
     <img class="brand" src="logo.png" alt="Dilshod ustoz">
-    <div><div class="who" id="who">Yuklanmoqda…</div><div class="sub">Shaxsiy kabinet · Dilshod ustoz</div></div>
-    <div class="sp"></div>
+    <div class="nm"><div class="who" id="who">Yuklanmoqda…</div><div class="sub">Shaxsiy kabinet · Dilshod ustoz</div></div>
     <a class="cls hide" id="cls" href="#" title="Onlayn darsdagi testga kirish">🎓 <span class="l">Darsga kirish</span><span class="s">Dars</span></a>
     <button class="bell" id="sync" title="Yangilash">↻</button>
     <button class="bell" id="bell" title="Xabarlar"><svg class="dm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M22 3 9.2 10.8"/><path d="M22 3 15 21l-5.8-10.2L2 7.5 22 3Z"/></svg><b id="bellN" class="hide">0</b></button>

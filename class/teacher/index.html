@@ -553,6 +553,53 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   @media(max-width:600px){#hwdM{padding:0}.hwd-p{border-radius:0;max-height:100vh;height:100%}}
 </style>
 <script>try{if(new URLSearchParams(location.search).get("cab"))localStorage.setItem("cls_tab","students")}catch(e){}</script>
+<style id="mobFix">
+/* ---- Telefon / planshet: tartibli joylashuv (2026-11-04) ---- */
+@media (max-width:760px){
+  /* yuqori qator: guruh tanlash + jurnal bitta qatorda, sarlavhalarni yopib qo'ymaydi */
+  #tbRight{flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:8px!important;padding:8px 12px!important;width:auto!important}
+  #tbRight .seg{flex:1 1 auto;min-width:0;display:flex!important}
+  #tbRight .seg button{flex:1 1 0;min-width:0;padding:9px 4px!important;font-size:.84rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #jrBtn{order:2;flex:none;font-size:0!important;padding:0 10px!important;height:40px;gap:5px!important}
+  #jrBtn::before{content:"🗒";font-size:1.05rem}
+  #jrBtn .jr-n{font-size:.72rem}
+  .container{padding-top:68px!important}
+  /* pastki menyu: 8 bo'lim teng, yozuvlar o'qiladigan */
+  .tab-btn{font-size:.6rem!important;letter-spacing:-.01em;white-space:nowrap}
+  .tab-btn[data-s]{font-size:0!important}
+  .tab-btn[data-s]::after{content:attr(data-s);font-size:.6rem;letter-spacing:-.01em}
+  #hwSkill{flex-wrap:wrap;max-width:100%}#hwSkill button{flex:1 1 40%}
+  label:has(#matAll){flex:1 1 100%!important;margin-top:4px!important}
+  .controls{gap:8px!important}
+  .card-header{flex-wrap:wrap;gap:8px}
+}
+/* O'quvchilar: ixcham kartochka (telefon va iPad) */
+@media (max-width:1100px){
+  table:has(#stBody) thead{display:none}
+  #stBody td{border:0!important;padding:0!important;min-width:0!important}
+  #stBody tr{border-bottom:1px solid #F0F0EE}
+  #stBody tr{display:grid!important;grid-template-columns:22px minmax(0,1fr) auto;gap:4px 8px!important;padding:12px 0!important;align-items:center}
+  #stBody td{display:block}
+  #stBody td:nth-child(1){grid-column:1;grid-row:1}
+  #stBody td:nth-child(2){grid-column:2;grid-row:1;font-size:1rem}
+  #stBody td:nth-child(3){grid-column:2;grid-row:2}
+  #stBody td:nth-child(4){display:none!important}
+  #stBody td:nth-child(6){grid-column:3;grid-row:1/3;text-align:right;align-self:start}
+  #stBody td:nth-child(6)::before{content:"Oxirgi kirish";display:block;font-size:.66rem;color:var(--faint)}
+  #stBody td:nth-child(5){grid-column:1/-1;grid-row:3;display:flex!important;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
+  #stBody td:nth-child(5)::before{content:"Kabinet:";font-size:.78rem;color:var(--muted);margin-right:2px}
+  #stBody td:nth-child(5) .btn{padding:6px 10px}
+  #stBody td:nth-child(7){grid-column:1/-1;grid-row:4;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px!important;margin-top:4px}
+  #stBody td:nth-child(7) .btn{margin:0!important;padding:8px 4px;font-size:.78rem;justify-content:center;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #stBody td[colspan]{grid-column:1/-1!important;grid-row:auto!important}
+  #stBody td[colspan]::before{content:none!important}
+}
+@media (min-width:761px) and (max-width:1100px){#stBody td:nth-child(7){grid-template-columns:repeat(4,max-content)}#stBody td:nth-child(7) .btn{padding:8px 14px}}
+@media (max-width:380px){
+  #tbRight .seg button{font-size:.78rem!important}
+  #stBody td:nth-child(7){grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -562,10 +609,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <button class="tab-btn active" data-tab="reading">Reading</button>
       <button class="tab-btn" data-tab="listening">Listening</button>
       <button class="tab-btn" data-tab="writing">Writing</button>
-      <button class="tab-btn" data-tab="hw">Home task</button>
+      <button class="tab-btn" data-tab="hw" data-s="Vazifa">Home task</button>
       <button class="tab-btn" data-tab="attend">Yo'qlama</button>
       <button class="tab-btn" data-tab="grades">Baholar</button>
-      <button class="tab-btn" data-tab="students">O'quvchilar</button>
+      <button class="tab-btn" data-tab="students" data-s="O'quvchi">O'quvchilar</button>
       <button class="tab-btn" data-tab="setup">Sozlash</button>
     </nav>
   </div>
