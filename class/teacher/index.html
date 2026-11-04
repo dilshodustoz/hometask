@@ -1395,7 +1395,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   $("hwSend").onclick = () => {
     const b = hwBody(), btn = $("hwSend");
     if (!confirm(b.keys ? `${b.keys.length} ta tanlangan o'quvchiga yuborilsinmi?` : `${CLS.GROUPS[group].name} guruhiga yuborilsinmi?`)) return;
-    btn.disabled = true; $("hwMsg").textContent = "Yuborilmoqda… (sahifani yopmang, 1-2 daqiqa)";
+    btn.disabled = true; $("hwMsg").textContent = "Yuborilmoqda… (bir necha soniya)";
     api(Object.assign({ admin: "hw_send" }, b)).then(r => {
       btn.disabled = false;
       if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
