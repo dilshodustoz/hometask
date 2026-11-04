@@ -1456,7 +1456,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 
   function hwLoad() {
     if (hwBusy) return; hwBusy = true;
-    return api({ admin: "hw_list" }).finally(() => { hwBusy = false; }).then(r => { if (r.ok) { hwLog = r.log; hwShowList(); spBackfill(); } else $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; })
+    if (!hwLog) try { const j = localStorage.getItem("hw_log_c"); if (j) { hwLog = JSON.parse(j); hwShowList(); } } catch (e) {}
+    return api({ admin: "hw_list" }).finally(() => { hwBusy = false; }).then(r => { if (r.ok) { hwLog = r.log; try { localStorage.setItem("hw_log_c", JSON.stringify(r.log)); } catch (e) {} hwShowList(); spBackfill(); } else $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; })
       .catch(e => { $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
   }
   function hwShowList() {
@@ -1482,6 +1483,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       }).catch(e => { alert("⚠️ " + e.message); b.disabled = false; b.textContent = "🗑"; });
     });
     if (hwCur && !rows.some(h => h.id === hwCur)) { hwCur = null; $("hwStCard").classList.add("hide"); }
+    hwPrefetch(rows);
     if (hwCur) hwStatus(hwCur);
   }
   $("hwReload").onclick = () => { $("hwList").innerHTML = `<tr><td colspan="6" class="muted">Yuklanmoqda…</td></tr>`; hwLoad(); };
@@ -1592,10 +1594,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("hwStCard").classList.remove("hide");
     $("hwStMsg").textContent = ""; $("hwFbAll").classList.add("hide");
     $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · yuborildi ${fmtAt(info.at)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
-    $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
+    const ck = (h.skill || "reading") + "_" + t, old = hwStC[ck];
+    if (!old) $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
     $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Matnga o'girildi" : "Band"}</th><th>${S ? "Baho (Claude)" : "Daqiqa"}</th>${L ? "<th>Error log</th>" : ""}<th>Qachon</th><th></th></tr>`;
-    api({ admin: "status", skill: h.skill, t: t }).then(r => {
-      if (!r.ok) { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(r.error)}</td></tr>`; return; }
+    const draw = r => {
+      if (hwCur !== id) return;
       const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
       const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
         .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
@@ -1659,7 +1662,39 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div>` + (L ? `<div class="stat"><b>${lgN} / ${n}</b>error log to'liq</div>` : "") + (S ? `<div class="stat"><b>${trN} / ${ansN}</b>matnga o'girildi</div><div class="stat"><b>${gN} / ${n}</b>baholandi · ${sentN} yuborildi</div><div class="stat"><b>${gN ? (gSum / gN).toFixed(1) : "—"}</b>o'rtacha band</div>` : "") + `<div class="stat"><b>${n ? (S ? Math.round(sum / n / 60 * 10) / 10 : W ? Math.round(sum / n) : (sum / n).toFixed(1)) : "—"}</b>${S ? "o'rtacha daqiqa" : W ? "o'rtacha so'z" : "o'rtacha band"}</div>` +
         `<div class="stat"><b>${fmtAt(info.at)}</b>yuborilgan</div><div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
       const c = $("hwc_" + id); if (c) c.textContent = n + " / " + keys.length;
-    }).catch(e => { $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
+    };
+    // Tez ochish: oxirgi ma'lumot darhol chiziladi, yangisi orqada keladi va farq bo'lsagina qayta chiziladi
+    if (old) { draw(old.r); $("hwStMsg").textContent = "↻ yangilanmoqda…"; }
+    hwStFetch(h.skill, t).then(r => {
+      if (hwCur !== id) return;
+      if ($("hwStMsg").textContent === "↻ yangilanmoqda…") $("hwStMsg").textContent = "";
+      if (!r.ok) { if (!old) $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(r.error)}</td></tr>`; return; }
+      if (!old || old.j !== JSON.stringify(r)) draw(r);
+    }).catch(e => { if (hwCur !== id) return; if (old) $("hwStMsg").textContent = ""; else $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
+  }
+  // "Kim topshirdi" keshi: {skill_t: {r, j}}; ro'yxat yuklanganda oxirgi vazifalar oldindan olib qo'yiladi
+  const hwStC = {}, hwStP = {};
+  function hwStFetch(skill, t) {
+    const ck = (skill || "reading") + "_" + t;
+    if (hwStP[ck]) return hwStP[ck];
+    return hwStP[ck] = api({ admin: "status", skill: skill, t: t }).then(r => {
+      if (r.ok) { hwStC[ck] = { r: r, j: JSON.stringify(r), at: Date.now() }; try { localStorage.setItem("hwst_" + ck, hwStC[ck].j); } catch (e) {} }
+      return r;
+    }).finally(() => { delete hwStP[ck]; });
+  }
+  function hwPrefetch(rows) {
+    rows.slice(0, 3).forEach(h => {
+      const ck = h.skill + "_" + h.t;
+      if (!hwStC[ck]) try { const j = localStorage.getItem("hwst_" + ck); if (j) hwStC[ck] = { r: JSON.parse(j), j: j }; } catch (e) {}
+      if (hwStC[ck] && hwStC[ck].at > Date.now() - 60000) return;   // yaqinda olingan
+      hwStFetch(h.skill, h.t).then(r => {   // jadvaldagi "topshirdi" ustuni ham to'ladi
+        if (!r.ok || !hwLog) return;
+        const c = $("hwc_" + h.id), info = (hwLog[h.id] || { chats: {} }).chats[String(CLS.GROUPS[group].chat)];
+        if (!c || !info || h.skill === "speaking") return;
+        const ks = new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group)));
+        c.textContent = r.rows.filter(x => ks.has(x.k)).length + " / " + ks.size;
+      }).catch(() => {});
+    });
   }
 
   // ---------- Avtomatik ishlar (LC Panel "tick"): eslatma, ballarni Course'ga yozish, Course zaxirasi ----------
