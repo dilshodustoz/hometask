@@ -174,7 +174,7 @@
 </main>
 <div id="drawer" class="hide"><div class="dbg" id="dBg"></div><div class="dp"><div class="dh"><b style="display:inline-flex;align-items:center;gap:8px"><svg class="dm" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M22 3 9.2 10.8"/><path d="M22 3 15 21l-5.8-10.2L2 7.5 22 3Z"/></svg> Xabarlar</b><button class="btn sec" id="dX">✕</button></div><div class="db" id="notes"></div>
   <form class="cmp" id="cmp"><textarea id="cmpT" rows="1" maxlength="1000" placeholder="Ustozga yozish…" aria-label="Ustozga xabar"></textarea><button class="btn" id="cmpGo" type="submit">Yuborish</button></form></div></div>
-<div id="modal" class="hide"><div class="bar"><b id="mT" style="flex:1">Feedback</b><button class="btn sec" id="mX">✕ Yopish</button></div><iframe id="mF" sandbox="allow-same-origin allow-popups"></iframe></div>
+<div id="modal" class="hide"><div class="bar"><b id="mT" style="flex:1">Feedback</b><button class="btn sec" id="mX">✕ Yopish</button></div><iframe id="mF" sandbox="allow-same-origin allow-popups"></iframe><iframe id="mP" class="hide" allow="fullscreen" title="Material"></iframe></div>
 <div id="cover"><div class="card"><h3 style="margin:0 0 6px;font-size:1.1rem;color:var(--ink);text-transform:none;letter-spacing:0" id="cT">⏳ Yuklanmoqda…</h3><div class="mt" id="cB">Bir soniya kuting.</div></div></div>
 <div id="login" class="hide"><form class="card" id="lForm" autocomplete="off">
   <img class="logo" src="logo.png" alt="Dilshod ustoz">
@@ -345,7 +345,7 @@
     const sz = b => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round((b || 0) / 1024)) + " KB";
     $("mat").innerHTML = M.length ? `<h3>Dars materiallari</h3>` + M.map(m => `<div class="card"><div class="row"><div class="ic">📄</div><div style="flex:1;min-width:0">
       <div class="tt">${esc(m.title)}</div><div class="mt">📨 ${dt(m.at)} · ${sz(m.size)}</div></div></div>
-      <div class="act"><a class="btn" href="${esc(m.url)}" target="_blank" rel="noopener">📄 Ochish</a></div></div>`).join("")
+      <div class="act"><button class="btn" data-pdf="${esc(m.url)}" data-title="${esc(m.title)}">📄 Ochish</button></div></div>`).join("")
       : `<div class="empty">Hozircha material yo'q. Ustoz dars prezentatsiyasini yuborganda shu yerda chiqadi.</div>`;
   }
   function render() { renderTasks(); renderNotes(); renderRes(); renderMat(); badge(); }
@@ -387,7 +387,18 @@
   const closeNotes = () => { $("drawer").classList.add("hide"); document.body.style.overflow = ""; };
   $("dX").onclick = $("dBg").onclick = () => { if (history.state && history.state.layer) history.back(); else closeNotes(); };
   const back = fn => () => { if (history.state && history.state.layer) history.back(); else fn(); };
-  $("mX").onclick = back(() => { $("modal").classList.add("hide"); $("mF").srcdoc = ""; });
+  // Dars materiali kabinet ichida ochiladi (Drive ko'rish oynasi, yuklab olish o'quvchilar uchun yopiq)
+  const driveId = u => { const m = /drive\.google\.com\/file\/d\/([\w-]{20,})/.exec(String(u || "")); return m ? m[1] : ""; };
+  function pdfOpen(url, title) {
+    const id = driveId(url);
+    if (!id) { window.open(url, "_blank", "noopener"); return; }
+    $("mT").textContent = "📄 " + (title || "Material");
+    $("mF").classList.add("hide"); $("mP").classList.remove("hide");
+    $("mP").src = "https://drive.google.com/file/d/" + id + "/preview";
+    $("modal").classList.remove("hide");
+  }
+  const modalClose = () => { $("modal").classList.add("hide"); $("mF").srcdoc = ""; $("mP").src = "about:blank"; $("mP").classList.add("hide"); $("mF").classList.remove("hide"); };
+  $("mX").onclick = back(modalClose);
   document.addEventListener("click", async e => {
     const p = e.target.closest(".play");
     if (p && !p.disabled) {   // bosilganda yuklanadi va o'rniga oddiy pleer chiqadi (Safari'da avtomatik boshlanmasa, ▶ ni bosing)
@@ -406,6 +417,10 @@
       } catch (err) { p.textContent = "▶"; p.disabled = false; toast("⚠️ " + (err.message || "Ovoz ochilmadi")); }
       return;
     }
+    const pd = e.target.closest("[data-pdf]");
+    if (pd) { pdfOpen(pd.dataset.pdf, pd.dataset.title); return; }
+    const na = e.target.closest("#notes a[href]");   // xabardagi "📄 Ochish" (Drive) ham shu yerda ochiladi
+    if (na && driveId(na.getAttribute("href"))) { e.preventDefault(); pdfOpen(na.getAttribute("href"), (na.closest(".note").querySelector(".tx") || {}).textContent); return; }
     const f = e.target.closest("[data-fb]");
     if (f) {
       f.disabled = true;
@@ -696,7 +711,7 @@
 
   // Android "Orqaga" tugmasi va noutbukda Esc: avval ochiq oynani yopadi, sahifadan chiqib ketmaydi
   const layerOpen = () => !$("modal").classList.contains("hide") || !$("drawer").classList.contains("hide");
-  const closeLayer = () => { if (!$("modal").classList.contains("hide")) { $("modal").classList.add("hide"); $("mF").srcdoc = ""; } else closeNotes(); };
+  const closeLayer = () => { if (!$("modal").classList.contains("hide")) modalClose(); else closeNotes(); };
   new MutationObserver(() => { if (layerOpen() && !(history.state && history.state.layer)) history.pushState({ layer: 1 }, ""); })
     .observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class"] });
   window.addEventListener("popstate", () => { if (layerOpen()) closeLayer(); });
