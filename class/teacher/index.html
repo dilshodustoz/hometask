@@ -1822,7 +1822,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("stCount").textContent = `· ${CLS.GROUPS[group].name} · ${ks.length} ta`;
     $("stBody").innerHTML = ks.map((k, i) => `<tr><td>${i + 1}</td><td>${CLS.esc(R[k].name)}${R[k].note ? `<div class="muted">${CLS.esc(R[k].note)}</div>` : ""}</td>
         <td>${CLS.esc(R[k].phone || "")}</td><td>${fdate(R[k].added)}</td>
-        <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi va eski kartochka QR'i ishlamay qoladi)">🔄</button> <button class="btn btn-secondary btn-sm" data-card="${k}" title="Shu o'quvchining kartochkasi (QR bilan)">🪪</button>` : `<span class="muted">—</span>`}${(stData.push || {})[k] ? ` <span title="Telefon bildirishnomasi yoqilgan (${stData.push[k]} ta qurilma)">🔔</span>` : ""}</td>
+        <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi va eski kartochka QR'i ishlamay qoladi)">🔄</button> <button class="btn btn-secondary btn-sm" data-card="${k}" title="Shu o'quvchining kartochkasi (QR bilan)">🪪</button>` : `<span class="muted">—</span>`} <button class="btn btn-secondary btn-sm" data-view="${k}" title="Kabinetini o'quvchi ko'rganidek ko'rish (faqat ko'rish, «Oxirgi kirish» o'zgarmaydi)">👁</button>${(stData.push || {})[k] ? ` <span title="Telefon bildirishnomasi yoqilgan (${stData.push[k]} ta qurilma)">🔔</span>` : ""}</td>
         <td style="white-space:nowrap">${seenTxt((stData.seen || {})[k])}</td>
         <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-msg="${k}" title="Kabinetga xabar + telefon bildirishnomasi">✉️ Xabar</button>
           <button class="btn btn-warning btn-sm" data-ar="${k}">Arxivlash</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("")
@@ -1947,6 +1947,12 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       const R = stData.roster, A = stData.archive;
       if (b.dataset.msg) { cabOpen("thread", b.dataset.msg); return; }
       if (b.dataset.card) { stCards([b.dataset.card]); return; }
+      if (b.dataset.view) {   // ustoz ko'rinishi: kabinet yangi tabda, kalit manzilning # qismida (serverga ketmaydi, sahifa darhol olib tashlaydi)
+        if (!admin.secret) { alert("Avval Sozlash bo'limida LC Panel aloqasini tekshiring."); return; }
+        const h = new URLSearchParams({ s: admin.secret }); if (admin.api && admin.api !== DEFAULT_API) h.set("api", admin.api);
+        window.open("../../kabinet/?tv=" + encodeURIComponent(b.dataset.view) + "#" + h, "_blank");
+        return;
+      }
       if (b.dataset.regen) {
         const st = R[b.dataset.regen];
         if (!confirm(`${st.name} uchun yangi kabinet kodi yaratilsinmi?\n\nEski kod darhol ishlamay qoladi, o'quvchi yangi kod bilan qayta kiradi.`)) return;

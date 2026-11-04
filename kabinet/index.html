@@ -17,6 +17,8 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
   button{font:inherit}
+  .tvbar{background:#FEF3C7;color:#78350F;border:1px solid #F59E0B;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:.88rem;line-height:1.45}
+  .tv header{box-shadow:inset 0 -3px 0 #F59E0B}
   header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
   .top{display:flex;align-items:center;gap:12px;max-width:760px;margin:0 auto;padding:12px 16px 8px}
   .av{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
@@ -158,6 +160,7 @@
   </nav>
 </header>
 <main>
+  <div class="tvbar hide" id="tvBar">👁 <b>Ustoz ko'rinishi.</b> <span id="tvN"></span> kabinetini o'quvchi ko'rganidek ko'ryapsiz. Faqat ko'rish: xabarlar «o'qildi» bo'lmaydi, «Oxirgi kirish» o'zgarmaydi.</div>
   <div class="onb hide" id="onb"><div class="oh"><img class="oi" src="icon-192.png" alt=""><div><b id="onbH">📲 Kabinetni ilova qilib o'rnating</b><div class="ot" id="onbT">Bitta tugma: kabinet telefoningiz ekraniga ilova bo'lib qo'shiladi va yangi vazifa, natija kelganda bildirishnoma keladi.</div></div></div>
     <button class="ob" id="onbGo">📲 Ilova sifatida o'rnatish</button><button class="ol" id="onbNo">Allaqachon o'rnatganman</button></div>
   <section id="tasks"></section>
@@ -191,14 +194,27 @@
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const API = window.HW_API, P = new URLSearchParams(location.search);
+  let API = window.HW_API; const P = new URLSearchParams(location.search);
   // Kirish: kartochkadagi kod (kab_c) yoki sinov havolasi ?k=. Qurilma raqami (kab_dv) xato urinishlarni sanash uchun.
   // Kartochkadagi QR: kabinet/?q=KOD → kod kiritmasdan kiradi. Qo'lda ochilsa kod so'raladi (yoki shu qurilmada eslab qolingan bo'ladi).
   const STANDALONE = !!(navigator.standalone || matchMedia("(display-mode: standalone)").matches);
   const UA = navigator.userAgent, isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), isAnd = /Android/.test(UA);
   const Q = (P.get("q") || "").toUpperCase().replace(/[^A-Z0-9]/g, ""), CODE_RE = /^[A-Z]{2}\d{5}$/;
   let KEY = P.get("k") || "", CODE = "", DEV = "", VIA_QR = false;
-  try {
+  // Ustoz ko'rinishi: ustoz sahifasi (O'quvchilar → 👁) kabinet/?tv=<kalit>#s=<kalit> bilan ochadi.
+  // Maxfiy kalit faqat shu tabda (sessionStorage) turadi, manzil satridan darhol olib tashlanadi. Hech narsa yozilmaydi.
+  const TVK = P.get("tv") || "";
+  let TV = null;
+  if (TVK) {
+    try {
+      const h = new URLSearchParams(location.hash.slice(1)), s = h.get("s") || "";
+      if (s) sessionStorage.setItem("kab_tv_" + TVK, JSON.stringify({ s: s, api: h.get("api") || "" }));
+      TV = JSON.parse(sessionStorage.getItem("kab_tv_" + TVK) || "null");
+      if (location.hash) history.replaceState(null, "", location.pathname + "?tv=" + encodeURIComponent(TVK));
+    } catch (e) {}
+  }
+  if (TVK) { document.documentElement.classList.add("tv"); KEY = ""; }
+  else try {
     const saved = localStorage.getItem("kab_c") || "";
     // bosh ekrandagi ilova har ochilganda shu havola bilan ochiladi: qurilmada kod saqlangan bo'lsa, o'shani ishlatamiz
     if (CODE_RE.test(Q) && !(STANDALONE && saved)) { CODE = Q; KEY = ""; VIA_QR = true; if (saved && saved !== Q) localStorage.removeItem("kab_d_" + saved); }
@@ -207,7 +223,7 @@
     DEV = localStorage.getItem("kab_dv") || "";
     if (!DEV) { DEV = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("kab_dv", DEV); }
   } catch (e) { DEV = DEV || "x" + Date.now().toString(36); }
-  const auth = () => CODE ? { code: CODE, dv: DEV } : { k: KEY };   // "c" nomi Apps Script'da band, shuning uchun "code"
+  const auth = () => TV ? { tv: TVK, secret: TV.s } : CODE ? { code: CODE, dv: DEV } : { k: KEY };   // "c" nomi Apps Script'da band, shuning uchun "code"
   const SK = { reading: ["📖", "Reading"], listening: ["🎧", "Listening"], speaking: ["🎙", "Speaking"], writing: ["✍️", "Writing"] };
   const OY = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
   let D = null, tab = "tasks", audio = null;
@@ -282,7 +298,7 @@
         <div class="tt">${esc(x.title)}</div><div class="mt">${nm}${x.at ? " · 📨 yuborildi: " + dt(x.at) : ""}</div><div class="mt">⏰ Muddat: ${esc(x.deadline_text || "—")}</div>
         <span class="chip ${cls}">${lab}</span>${x.log != null && x.done ? ` <span class="chip ${x.log >= 100 ? "ok" : "todo"}">✍️ Error log ${x.log}%</span>` : (x.done && (x.skill === "reading" || x.skill === "listening") ? ' <span class="chip todo">✍️ Error log yozilmagan</span>' : "")}
         </div>${scoreHtml(x)}</div>${x.done ? "" : tbar(x.at, x.deadline)}
-        ${can ? `<div class="act"><a class="btn${x.done ? " sec" : ""}" href="${esc(x.url)}">${btn}</a></div>` : ""}</div>`;
+        ${can && !(TV && !x.done) ? `<div class="act"><a class="btn${x.done ? " sec" : ""}" href="${esc(x.url)}">${btn}</a></div>` : ""}</div>`;
     };
     $("tasks").innerHTML =
       `<div class="stats"><div class="stat"><b>${todo.length}</b><span>bajarilishi kerak</span></div><div class="stat"><b>${done.length}</b><span>topshirilgan</span></div><div class="stat"><b>${T.length ? Math.round(100 * done.length / T.length) : 0}%</b><span>bajarilish</span></div></div>` +
@@ -321,8 +337,8 @@
   function badge() {
     const n = D.notes.filter(x => !x.read).length;
     $("bellN").textContent = n; $("bellN").classList.toggle("hide", !n);
-    document.title = (n ? "(" + n + ") " : "") + "Shaxsiy kabinet · Dilshod ustoz";
-    try { if (navigator.setAppBadge) (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}); } catch (e) {}   // ekrandagi belgida raqam
+    document.title = TV ? "👁 " + D.name + " · kabinet (ustoz ko'rinishi)" : (n ? "(" + n + ") " : "") + "Shaxsiy kabinet · Dilshod ustoz";
+    if (!TV) try { if (navigator.setAppBadge) (n ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}); } catch (e) {}   // ekrandagi belgida raqam
   }
   function renderMat() {
     const M = D.mats || [];
@@ -343,7 +359,7 @@
   function openNotes() {
     renderNotes(); $("drawer").classList.remove("hide"); document.body.style.overflow = "hidden";
     $("notes").scrollTop = $("notes").scrollHeight;
-    if (D && D.notes.some(x => !x.read)) {
+    if (D && !TV && D.notes.some(x => !x.read)) {
       setTimeout(() => {   // xabarlarni ko'rgandan keyin o'qilgan qilamiz
         D.notes.forEach(x => x.read = true); badge();
         post(Object.assign({ cab: "read" }, auth())).catch(() => {});
@@ -403,15 +419,16 @@
   });
 
   // Oxirgi ma'lumot qurilmada saqlanadi: kabinet darhol ochiladi, yangisi orqada yuklanadi
-  const cacheKey = () => "kab_d_" + (CODE || KEY);
+  const cacheKey = () => TV ? "kab_tvd_" + TVK : "kab_d_" + (CODE || KEY);
   function apply(r) {
     D = r;
-    if (r.k) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
+    if (r.k && !TV) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
     $("who").textContent = r.name;
     render();
     $("cover").classList.add("hide"); $("login").classList.add("hide");
   }
   function fromCache() {
+    if (TV) return false;
     try { const r = JSON.parse(localStorage.getItem(cacheKey()) || "null"); if (r && r.ok && r.tasks) { apply(r); return true; } } catch (e) {}
     return false;
   }
@@ -419,12 +436,13 @@
     $("sync").classList.add("busy");
     return api(Object.assign({ action: "cab" }, auth())).finally(() => $("sync").classList.remove("busy")).then(r => {
       if (!r.ok) { const e = new Error(r.error || "xato"); e.auth = !!r.auth; e.lock = !!r.lock; throw e; }
-      try { localStorage.setItem(cacheKey(), JSON.stringify(r)); } catch (e) {}
+      if (!TV) try { localStorage.setItem(cacheKey(), JSON.stringify(r)); } catch (e) {}
       const before = D ? D.notes.filter(x => !x.read).length : 0;
       D = r;
-      if (r.k) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
+      if (r.k && !TV) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
       $("who").textContent = r.name;
-      if (!pushInit.done) { pushInit.done = 1; try { pushInit(); } catch (e) {} try { onbInit(); } catch (e) {} }
+      if (TV) $("tvN").textContent = r.name;
+      else if (!pushInit.done) { pushInit.done = 1; try { pushInit(); } catch (e) {} try { onbInit(); } catch (e) {} }
       render();
       const now = D.notes.filter(x => !x.read).length;
       if (!first && now > before) toast("✉️ Yangi xabar keldi");
@@ -483,7 +501,7 @@
   else if (isAnd) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Chrome → <b>⋮</b> → <b>Bosh ekranga qo'shish</b> yoki <b>Ilovani o'rnatish</b>. Shunda kabinet ilova kabi ochiladi.";
   else $("a2hsT").innerHTML = "💻 Noutbukda: manzil satridagi o'rnatish belgisini bosing yoki saytni xatcho'pga qo'shing (Ctrl+D). Telefonda ham shu kod bilan kirasiz.";
   let instEv = null;
-  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instEv = e; lsS("kab_inst", ""); $("inst").classList.remove("hide"); if (D && isAnd) onbInit(); });
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instEv = e; lsS("kab_inst", ""); $("inst").classList.remove("hide"); if (D && isAnd && !TV) onbInit(); });
   $("inst").onclick = () => { if (!instEv) return; instEv.prompt(); instEv.userChoice.finally(() => { instEv = null; $("inst").classList.add("hide"); }); };
   window.addEventListener("appinstalled", () => $("a2hs").classList.add("hide"));
   // ---------- Telefon bildirishnomalari (push) ----------
@@ -700,7 +718,16 @@
       $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message;
     });
   }
-  if (CODE || /^[A-Za-z0-9_-]{6,20}$/.test(KEY)) boot();
+  if (TVK) {   // ustoz ko'rinishi: kirish oynasi, o'rnatish, bildirishnoma yo'q
+    ["a2hs", "push", "setB", "onb", "cmp"].forEach(id => $(id).classList.add("hide"));
+    $("tvBar").classList.remove("hide");
+    $("out").innerHTML = '<span class="l">✕ Yopish</span><span class="s">✕</span>'; $("out").title = "Ustoz ko'rinishini yopish";
+    $("out").onclick = () => { try { sessionStorage.removeItem("kab_tv_" + TVK); } catch (e) {} window.close(); setTimeout(() => location.href = "../class/teacher/", 300); };
+    if (TV && TV.api) API = TV.api;
+    if (!TV || !TV.s) { $("cT").textContent = "🔒 Ko'rish havolasi eskirgan"; $("cB").textContent = "Ustoz sahifasidagi O'quvchilar bo'limidan 👁 tugmasini qayta bosing."; }
+    else start().then(tab0).catch(e => { $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message; });
+  }
+  else if (CODE || /^[A-Za-z0-9_-]{6,20}$/.test(KEY)) boot();
   else authLoad().then(c => { if (CODE_RE.test(c)) { CODE = c; boot(); } else showLogin(""); });
   // har 60 soniyada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
   setInterval(() => { if (!document.hidden && D) load(false).catch(() => {}); }, 60000);
