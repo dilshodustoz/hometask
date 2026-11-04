@@ -65,6 +65,7 @@
   <section class="prompt">
     <div class="tag" id="task">Writing</div>
     <div class="tag hide" id="ptitle" style="display:block;color:var(--ink);text-transform:none;font-size:.95rem"></div>
+    <div class="hide" id="pneed" style="margin:6px 0;padding:8px 10px;border-radius:10px;background:#fff4d6;color:#7a4b00;font-weight:600"></div>
     <div class="q" id="prompt"></div>
     <img class="pimg hide" id="pimg" alt="Grafik">
     <div class="rule" id="rule"></div>
@@ -99,6 +100,8 @@
     const pt = PARTS[cur];
     $("ptitle").textContent = `${cur + 1}/${PARTS.length} · ${pt.title}`;
     $("prompt").textContent = pt.prompt || "";
+    if (pt.need) { $("pneed").textContent = "✍️ " + pt.need; $("pneed").classList.remove("hide"); } else $("pneed").classList.add("hide");
+    ed.placeholder = pt.ph || "Shu topshiriq javobini yozing. Keyingisiga tepadagi tugmalar orqali o'tasiz…";
     if (pt.img) { $("pimg").src = pt.img; $("pimg").classList.remove("hide"); } else $("pimg").classList.add("hide");
     $("ptabs").innerHTML = PARTS.map((x, i) => `<button data-i="${i}" class="${i === cur ? "on" : ""}">${i + 1}. ${esc(x.short || x.title)}<span class="n">${words(i === cur ? ed.value : texts[i])}</span></button>`).join("");
     $("ptabs").querySelectorAll("button").forEach(b => b.onclick = () => { texts[cur] = ed.value; cur = +b.dataset.i; ed.value = texts[cur] || ""; drawPart(); drawWc(); if (run) ed.focus(); });
@@ -205,7 +208,6 @@
     if (Array.isArray(r.parts) && r.parts.length) {
       PARTS = r.parts; texts = PARTS.map(() => "");
       $("ptitle").classList.remove("hide"); $("ptabs").classList.remove("hide"); drawPart();
-      ed.placeholder = "Shu topshiriq javobini yozing. Keyingisiga tepadagi tugmalar orqali o'tasiz…";
     }
     $("rule").textContent = `Kamida ${r.min_words} so'z yozing. Nusxa ko'chirib qo'yish ishlamaydi. ` + (r.soft ? `Vaqt taxminiy (${r.minutes} daqiqa): tugasa ham sahifa yopilmaydi, yozishda davom etasiz.` : "Vaqt tugaganda yozganingiz avtomatik topshiriladi.");
     document.title = r.title + " · Writing";
@@ -230,7 +232,7 @@
       return;
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
-      `${esc(r.title)} · Writing<br><br>` + (PARTS ? `📚 ${PARTS.length} ta topshiriq: tepadagi tugmalar bilan biridan ikkinchisiga o'tasiz.<br>` : "") + (r.soft ? `⏱ Taxminiy vaqt: ${r.minutes} daqiqa. Shoshilmang: vaqt tugasa ham sahifa yopilmaydi.` : `⏱ Vaqt: ${r.minutes} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.`) + `<br>📝 Kamida ${r.min_words} so'z.<br>Oxirida <b>Topshirish</b> ni bosing: essayingiz topic'ingizga ustozga yuboriladi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
+      `${esc(r.title)} · Writing<br><br>` + (PARTS ? `📚 ${PARTS.length} ta topshiriq: tepadagi tugmalar bilan biridan ikkinchisiga o'tasiz.<br>` + (PARTS[0].need ? `✍️ <b>${esc(PARTS[0].need)}</b><br>` : "") : "") + (r.soft ? `⏱ Taxminiy vaqt: ${r.minutes} daqiqa. Shoshilmang: vaqt tugasa ham sahifa yopilmaydi.` : `⏱ Vaqt: ${r.minutes} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.`) + `<br>📝 Kamida ${r.min_words} so'z.<br>Oxirida <b>Topshirish</b> ni bosing: essayingiz topic'ingizga ustozga yuboriladi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
       "▶ Boshlash", () => start(null));
   }).catch(() => {
     $("who").textContent = "⚠️ Internet xatosi";
