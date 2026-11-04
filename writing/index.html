@@ -22,6 +22,7 @@
   .btn:disabled{opacity:.5;cursor:default}
   .btn.sec{background:#ECECE8;color:var(--ink)}
   main{flex:1;display:grid;grid-template-columns:minmax(260px,40%) 1fr;gap:0;min-height:0}
+  .blur{filter:blur(7px);user-select:none;pointer-events:none}
   .prompt{padding:22px 24px;overflow:auto;border-right:1px solid var(--line);background:var(--card)}
   .prompt .tag{display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--primary);margin-bottom:8px}
   .prompt .q{white-space:pre-wrap;font-size:1rem}
@@ -89,7 +90,8 @@
   const ed = $("ed");
   let me = null, left = 0, total = 0, run = false, done = false, pastes = 0, leaves = 0, tick = null;
   // Bir vazifada bir nechta topshiriq (masalan, darsdagi 3 ta grafik): T.parts = [{title, prompt, img}]
-  let PARTS = null, texts = [], cur = 0, softWarned = false;
+  let PARTS = null, texts = [], cur = 0, softWarned = false, endAt = 0, warned5 = false, warned1 = false;
+  const strict = () => !!(me && !me.soft);
   function allText() {
     if (!PARTS) return ed.value;
     texts[cur] = ed.value;
@@ -138,26 +140,42 @@
     $("clock").classList.toggle("low", run && left <= 300 && left > 0);
     $("clock").classList.toggle("end", left <= 0);
   }
-  function save() { if (me && run && !done) { if (PARTS) texts[cur] = ed.value; lsSet(ST, { text: PARTS ? texts.join("") : ed.value, texts: PARTS ? texts : null, left: left, pastes: pastes, leaves: leaves }); } }
+  function save() { if (me && run && !done) { if (PARTS) texts[cur] = ed.value; lsSet(ST, { text: PARTS ? texts.join("") : ed.value, texts: PARTS ? texts : null, left: left, endAt: endAt, pastes: pastes, leaves: leaves }); } }
   ed.addEventListener("input", () => { drawWc(); save(); });
   setInterval(save, 3000);
   window.addEventListener("beforeunload", save);
 
   // nusxa qo'yish va sudrab tashlash yopiq
   ["paste", "drop"].forEach(ev => ed.addEventListener(ev, e => { e.preventDefault(); if (run) { pastes++; save(); toast("📋 Nusxa ko'chirib qo'yish mumkin emas. O'zingiz yozing."); } }));
-  ed.addEventListener("beforeinput", e => { if (e.inputType === "insertFromPaste" || e.inputType === "insertFromDrop") e.preventDefault(); });
+  ed.addEventListener("beforeinput", e => {
+    if (e.inputType === "insertFromPaste" || e.inputType === "insertFromDrop") { e.preventDefault(); return; }
+    // telefon klaviaturasidagi "bufer" tavsiyalari paste hodisasisiz katta matn qo'yadi: bir urinishda 40+ belgi = nusxa
+    if (run && (e.inputType === "insertText" || e.inputType === "insertReplacementText") && (e.data || "").length > 40) {
+      e.preventDefault(); pastes++; save(); toast("📋 Nusxa ko'chirib qo'yish mumkin emas. O'zingiz yozing.");
+    }
+  });
+  ["copy", "cut"].forEach(ev => document.addEventListener(ev, e => { if (strict() && !done) { e.preventDefault(); toast("📋 Bu vazifada nusxa ko'chirish yopiq."); } }));
   ed.addEventListener("contextmenu", e => e.preventDefault());
   document.addEventListener("visibilitychange", () => { if (document.hidden && run && !done) { leaves++; save(); } });
 
   function start(st) {
     hide();
     if (st) { if (PARTS && st.texts) { texts = st.texts; ed.value = texts[cur] || ""; drawPart(); } else ed.value = st.text || ""; left = typeof st.left === "number" ? st.left : total; pastes = st.pastes || 0; leaves = st.leaves || 0; }
+    if (strict()) {
+      // qat'iy rejim: vaqt real soat bo'yicha yuradi, sahifa yopilsa ham to'xtamaydi
+      endAt = (st && st.endAt) ? st.endAt : Date.now() + left * 1000;
+      left = (endAt - Date.now()) / 1000;
+      $("prompt").classList.remove("blur"); if ($("pimg").dataset.src) { $("pimg").src = $("pimg").dataset.src; }
+    }
     run = true; ed.readOnly = false; ed.focus(); $("btnSubmit").disabled = false;
-    drawWc(); drawClock();
+    drawWc(); drawClock(); save();
+    if (strict() && left <= 0) { submit(true); return; }
     let last = Date.now();
     tick = setInterval(() => {
-      const now = Date.now(); left -= (now - last) / 1000; last = now;
+      const now = Date.now(); if (strict()) left = (endAt - now) / 1000; else left -= (now - last) / 1000; last = now;
       drawClock();
+      if (strict() && !warned5 && left <= 300 && left > 60) { warned5 = true; toast("⏰ 5 daqiqa qoldi. Vaqt tugaganda essay avtomatik topshiriladi."); }
+      if (strict() && !warned1 && left <= 60 && left > 0) { warned1 = true; toast("⏰ 1 daqiqa qoldi!"); }
       if (left <= 0 && me.soft) { if (!softWarned) { softWarned = true; toast("⏰ Tavsiya etilgan vaqt tugadi. Shoshilmang, yozishda davom etavering."); } return; }
       if (left <= 0) { clearInterval(tick); submit(true); }
     }, 500);
@@ -209,7 +227,7 @@
       PARTS = r.parts; texts = PARTS.map(() => "");
       $("ptitle").classList.remove("hide"); $("ptabs").classList.remove("hide"); drawPart();
     }
-    $("rule").textContent = `Kamida ${r.min_words} so'z yozing. Nusxa ko'chirib qo'yish ishlamaydi. ` + (r.soft ? `Vaqt taxminiy (${r.minutes} daqiqa): tugasa ham sahifa yopilmaydi, yozishda davom etasiz.` : "Vaqt tugaganda yozganingiz avtomatik topshiriladi.");
+    $("rule").textContent = `Kamida ${r.min_words} so'z yozing. Nusxa ko'chirib qo'yish ishlamaydi. ` + (r.soft ? `Vaqt taxminiy (${r.minutes} daqiqa): tugasa ham sahifa yopilmaydi, yozishda davom etasiz.` : "Vaqt to'xtamaydi (sahifa yopilsa ham). Vaqt tugaganda yozganingiz avtomatik topshiriladi.");
     document.title = r.title + " · Writing";
     drawWc(); drawClock();
     if (r.submitted) {
@@ -227,8 +245,30 @@
     if (r.closed) { show("Muddat tugagan", "Topshirish muddati (" + esc(r.deadline) + ") o'tib ketgan."); return; }
     const st = lsGet(ST);
     if (st && (st.text || "").trim()) {
-      if (PARTS && st.texts) { texts = st.texts; ed.value = texts[cur] || ""; drawPart(); } else ed.value = st.text; drawWc(); left = typeof st.left === "number" ? st.left : total; drawClock();
-      show("Davom ettiramiz", `Matningiz saqlangan (${words(st.text)} so'z). Qolgan vaqt: ${mmss(left)}.`, "▶ Davom ettirish", () => start(st));
+      if (PARTS && st.texts) { texts = st.texts; ed.value = texts[cur] || ""; drawPart(); } else ed.value = st.text; drawWc(); left = typeof st.left === "number" ? st.left : total;
+      if (strict() && st.endAt) left = (st.endAt - Date.now()) / 1000;
+      drawClock();
+      if (strict() && left <= 0) { show("⏰ Vaqt tugagan", `Sahifa yopiq turganda ham vaqt yurdi va tugadi. Saqlangan matningiz (${words(st.text)} so'z) hozir topshiriladi.`, "Topshirish", () => start(st)); return; }
+      show("Davom ettiramiz", `Matningiz saqlangan (${words(st.text)} so'z). Qolgan vaqt: ${mmss(left)}.` + (strict() ? "<br>⏱ Vaqt sahifa yopiq turganda ham yurgan." : ""), "▶ Davom ettirish", () => start(st));
+      return;
+    }
+    if (strict()) {
+      $("prompt").classList.add("blur");
+      if (!$("pimg").classList.contains("hide")) { $("pimg").dataset.src = $("pimg").src; $("pimg").removeAttribute("src"); }
+      const confirmStart = () => show("Boshlaymizmi?",
+        `⏱ <b>${r.minutes} daqiqa</b> hozir boshlanadi va to'xtatib bo'lmaydi.<br>Savol <b>Boshlash</b> bosilgandan keyin ochiladi.<br><br>Tayyormisiz?`,
+        "▶ Ha, boshlayman", () => start(null), "Keyinroq", () => showRules());
+      const showRules = () => show(`Assalomu alaykum, ${esc(r.name)}!`,
+        `${esc(r.title)} · Writing<br><br><b>⚠️ Boshlashdan oldin diqqat bilan o'qing:</b><br>` +
+        `⏱ Vaqt: <b>${r.minutes} daqiqa</b>. <b>Boshlash</b> bosilgan zahoti yuradi va <b>to'xtamaydi</b>: sahifani yopsangiz ham vaqt ketaveradi.<br>` +
+        `🔒 Vaqt tugaganda yozganingiz <b>avtomatik topshiriladi</b> va sahifa yopiladi.<br>` +
+        `👁 Savol faqat <b>Boshlash</b> bosilgandan keyin ko'rinadi.<br>` +
+        `📋 Nusxa ko'chirish va qo'yish (copy-paste) <b>ishlamaydi</b>: essayni o'zingiz yozasiz. Urinishlar ustozga ko'rinadi.<br>` +
+        `📵 Boshqa ilova yoki sahifaga chiqishlar ham sanaladi.<br>` +
+        `📝 Kamida ${r.min_words} so'z.<br>⚠️ Faqat bir marta topshirish mumkin.<br><br>` +
+        `Vaqtingiz bo'lmasa, hozir boshlamang: tayyor bo'lganingizda shu tugma orqali qayta kirasiz.`,
+        "Tushundim, boshlash", confirmStart);
+      showRules();
       return;
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
