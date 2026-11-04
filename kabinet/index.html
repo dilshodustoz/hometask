@@ -114,6 +114,28 @@
   .pushc .mt{font-size:.82rem}
   .setb{display:block;margin:28px auto 0;background:none;border:0;color:var(--muted);font-size:.85rem;cursor:pointer;padding:8px 12px;border-radius:10px;font-family:inherit}
   .setb:hover{background:rgba(0,0,0,.05)}
+  .onb{border-radius:18px;padding:16px 16px 14px;margin:0 0 16px;background:linear-gradient(135deg,#FFF4EC,#FFE6D5);border:1px solid #F8C9A8;color:var(--ink)}
+  .onb .oh{display:flex;gap:12px;align-items:center}
+  .onb .oi{width:52px;height:52px;border-radius:14px;flex:none;box-shadow:0 2px 8px rgba(232,89,12,.25)}
+  #onbH{display:block;font-size:1.02rem;line-height:1.3}
+  .onb .ot{font-size:.86rem;color:#5b4636;line-height:1.4;margin-top:2px}
+  .onb .ob{display:flex;width:100%;justify-content:center;align-items:center;gap:8px;margin-top:12px;border:0;border-radius:14px;padding:14px;font-weight:800;font-size:1.02rem;background:var(--primary);color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(232,89,12,.35)}
+  .onb .ob:disabled{opacity:.7}
+  .onb .ol{display:block;margin:10px auto 0;background:none;border:0;color:#8a6a55;font-size:.8rem;text-decoration:underline;cursor:pointer;font-family:inherit}
+  #sheet{position:fixed;inset:0;z-index:66;display:flex;align-items:flex-end;justify-content:center}
+  #sheet .sbg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+  #sheet .sp2{position:relative;background:var(--card);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+  #sheet h3{margin:0 0 4px;font-size:1.12rem;text-transform:none;letter-spacing:0;color:var(--ink)}
+  #sheet.wa .sp2{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+  #sheet ol{list-style:none;padding:0;margin:14px 0 6px;counter-reset:s}
+  #sheet li{counter-increment:s;display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);font-size:.95rem;line-height:1.4}
+  #sheet li:first-child{border-top:0}
+  #sheet li:before{content:counter(s);flex:none;width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+  #sheet .ui{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:1px 7px;font-weight:700;white-space:nowrap}
+  #sheet .ui svg{width:15px;height:15px}
+  #sheet .btn{width:100%;justify-content:center;padding:13px;margin-top:8px}
+  .arr{position:fixed;left:50%;bottom:calc(6px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:67;font-size:2.2rem;animation:bob 1s ease-in-out infinite;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+  @keyframes bob{50%{transform:translate(-50%,-10px)}}
   .a2hs{font-size:.82rem;color:var(--muted);text-align:center;margin-top:24px}
   @media(max-width:420px){.stats{gap:6px}.stat{padding:8px 10px}.stat b{font-size:1.1rem}nav button{font-size:.84rem}}
 </style>
@@ -135,6 +157,8 @@
   </nav>
 </header>
 <main>
+  <div class="onb hide" id="onb"><div class="oh"><img class="oi" src="icon-192.png" alt=""><div><b id="onbH">📲 Kabinetni ilova qilib o'rnating</b><div class="ot" id="onbT">Bitta tugma: kabinet telefoningiz ekraniga ilova bo'lib qo'shiladi va yangi vazifa, natija kelganda bildirishnoma keladi.</div></div></div>
+    <button class="ob" id="onbGo">📲 Ilova sifatida o'rnatish</button><button class="ol" id="onbNo">Allaqachon o'rnatganman</button></div>
   <section id="tasks"></section>
   <section id="res" class="hide"></section>
   <div class="pushc hide" id="push"><div class="pt"><b id="pushH">🔔 Telefonga bildirishnoma</b><span class="mt" id="pushT">Yangi vazifa, dars natijasi, feedback va eslatma kelganda telefoningiz ovoz bilan xabar beradi (kabinet yopiq bo'lsa ham).</span></div>
@@ -158,6 +182,8 @@
   <button class="btn" id="lGo" type="submit">Kirish</button>
   <div class="mt" style="margin-top:14px">Kodni hech kimga bermang. Yo'qotsangiz, ustozdan yangisini so'rang.</div>
 </form></div>
+<div id="sheet" class="hide"><div class="sbg" id="shBg"></div><div class="sp2"><h3 id="shH">📲 Ilova qilib o'rnatish</h3><div class="mt" id="shS"></div><ol id="shL"></ol><div id="shX2"></div><button class="btn" id="shOk">Tushunarli</button></div></div>
+<div class="arr hide" id="arr">⬇️</div>
 <div class="toast" id="toast"></div>
 <script src="../speaking/config.js"></script>
 <script>
@@ -165,10 +191,17 @@
   const $ = id => document.getElementById(id);
   const API = window.HW_API, P = new URLSearchParams(location.search);
   // Kirish: kartochkadagi kod (kab_c) yoki sinov havolasi ?k=. Qurilma raqami (kab_dv) xato urinishlarni sanash uchun.
-  let KEY = P.get("k") || "", CODE = "", DEV = "";
+  // Kartochkadagi QR: kabinet/?q=KOD → kod kiritmasdan kiradi. Qo'lda ochilsa kod so'raladi (yoki shu qurilmada eslab qolingan bo'ladi).
+  const STANDALONE = !!(navigator.standalone || matchMedia("(display-mode: standalone)").matches);
+  const UA = navigator.userAgent, isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), isAnd = /Android/.test(UA);
+  const Q = (P.get("q") || "").toUpperCase().replace(/[^A-Z0-9]/g, ""), CODE_RE = /^[A-Z]{2}\d{5}$/;
+  let KEY = P.get("k") || "", CODE = "", DEV = "", VIA_QR = false;
   try {
-    if (KEY) { localStorage.setItem("kab_k", KEY); localStorage.removeItem("kab_c"); }
-    else { CODE = localStorage.getItem("kab_c") || ""; if (!CODE) KEY = localStorage.getItem("kab_k") || ""; }
+    const saved = localStorage.getItem("kab_c") || "";
+    // bosh ekrandagi ilova har ochilganda shu havola bilan ochiladi: qurilmada kod saqlangan bo'lsa, o'shani ishlatamiz
+    if (CODE_RE.test(Q) && !(STANDALONE && saved)) { CODE = Q; KEY = ""; VIA_QR = true; if (saved && saved !== Q) localStorage.removeItem("kab_d_" + saved); }
+    else if (KEY) { localStorage.setItem("kab_k", KEY); localStorage.removeItem("kab_c"); }
+    else { CODE = saved; if (!CODE) KEY = localStorage.getItem("kab_k") || ""; }
     DEV = localStorage.getItem("kab_dv") || "";
     if (!DEV) { DEV = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("kab_dv", DEV); }
   } catch (e) { DEV = DEV || "x" + Date.now().toString(36); }
@@ -381,7 +414,7 @@
       D = r;
       if (r.k) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
       $("who").textContent = r.name;
-      if (!pushInit.done) { pushInit.done = 1; try { pushInit(); } catch (e) {} }
+      if (!pushInit.done) { pushInit.done = 1; try { pushInit(); } catch (e) {} try { onbInit(); } catch (e) {} }
       render();
       const now = D.notes.filter(x => !x.read).length;
       if (!first && now > before) toast("✉️ Yangi xabar keldi");
@@ -398,7 +431,25 @@
   }
   function forget() {
     try { localStorage.removeItem(cacheKey()); localStorage.removeItem("kab_c"); localStorage.removeItem("kab_k"); } catch (e) {}
-    CODE = ""; KEY = ""; D = null;
+    CODE = ""; KEY = ""; D = null; authSave("");
+  }
+  // iPhone: Safari va bosh ekrandagi ilova localStorage'ni bo'lishmaydi; Cache Storage'da ham saqlab qo'yamiz (iOS 14+ ko'pincha umumiy)
+  function authSave(c) {
+    try { if (window.caches) caches.open("kab-auth").then(x => c ? x.put("kab_code", new Response(c)) : x.delete("kab_code")).catch(() => {}); } catch (e) {}
+  }
+  function authLoad() {
+    try { if (window.caches) return caches.open("kab-auth").then(x => x.match("kab_code")).then(r => r ? r.text() : "").catch(() => ""); } catch (e) {}
+    return Promise.resolve("");
+  }
+  // muvaffaqiyatli kirgandan keyin: kodni eslab qolamiz; manzil satridan kodni olib tashlaymiz.
+  // iPhone Safari'da esa ?q= qoldiriladi: "Add to Home Screen" shu manzilni saqlaydi va ilova ham o'zi kiradi.
+  function remember(c) {
+    try { localStorage.setItem("kab_c", c); localStorage.removeItem("kab_k"); } catch (e) {}
+    authSave(c);
+    try {
+      const want = isIOS && !STANDALONE ? location.pathname + "?q=" + c : location.pathname;
+      if (location.pathname + location.search !== want) history.replaceState(history.state, "", want);
+    } catch (e) {}
   }
   function showLogin(msg) {
     $("cover").classList.add("hide"); $("login").classList.remove("hide");
@@ -412,24 +463,22 @@
     if (!/^[A-Z]{2}\d{5}$/.test(c)) { $("lErr").textContent = "Kod 2 ta harf va 5 ta raqamdan iborat, masalan AB12345."; return; }
     $("lGo").disabled = true; $("lGo").textContent = "Tekshirilmoqda…"; $("lErr").textContent = "";
     CODE = c; KEY = "";
-    start().then(() => { try { localStorage.setItem("kab_c", c); localStorage.removeItem("kab_k"); } catch (e) {} })
+    start().then(() => remember(c))
       .catch(e => { CODE = ""; $("lErr").textContent = e.message; $("lCode").select(); })
       .finally(() => { $("lGo").disabled = false; $("lGo").textContent = "Kirish"; });
   };
   $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; pushOff(true); forget(); pushInit.done = 0; $("push").classList.add("hide"); $("setB").classList.add("hide"); closeNotes(); showLogin(""); };
   // Ilova qilib o'rnatish: Android Chrome va noutbukdagi Chrome/Edge o'zi taklif qiladi; iPhone'da faqat qo'lda
-  const UA = navigator.userAgent, isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), isAnd = /Android/.test(UA);
   if (isIOS) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Safari → <b>Ulashish</b> (⬆︎) → <b>Add to Home Screen</b>. Shunda kabinet ilova kabi ochiladi.";
   else if (isAnd) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Chrome → <b>⋮</b> → <b>Bosh ekranga qo'shish</b> yoki <b>Ilovani o'rnatish</b>. Shunda kabinet ilova kabi ochiladi.";
   else $("a2hsT").innerHTML = "💻 Noutbukda: manzil satridagi o'rnatish belgisini bosing yoki saytni xatcho'pga qo'shing (Ctrl+D). Telefonda ham shu kod bilan kirasiz.";
   let instEv = null;
-  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instEv = e; $("inst").classList.remove("hide"); });
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instEv = e; lsS("kab_inst", ""); $("inst").classList.remove("hide"); if (D && isAnd) onbInit(); });
   $("inst").onclick = () => { if (!instEv) return; instEv.prompt(); instEv.userChoice.finally(() => { instEv = null; $("inst").classList.add("hide"); }); };
   window.addEventListener("appinstalled", () => $("a2hs").classList.add("hide"));
   // ---------- Telefon bildirishnomalari (push) ----------
   // Android/noutbuk: Chrome, Edge, Firefox. iPhone/iPad: faqat bosh ekranga qo'shilgan ilovada (iOS 16.4+).
   const PUSH_OK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-  const STANDALONE = navigator.standalone || matchMedia("(display-mode: standalone)").matches;
   const lsG = k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
   const lsS = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
   let fbMsg = null;
@@ -516,13 +565,16 @@
       return;
     }
     pushUI("off");
+    if (STANDALONE) { $("tasks").before($("push")); $("push").style.marginTop = "0"; $("push").style.marginBottom = "16px"; $("pushH").textContent = "🔔 Oxirgi qadam: bildirishnomani yoqing"; }
   }
-  $("pushOn").onclick = () => {
+  $("pushOn").onclick = () => pushEnable();
+  function pushEnable() {
     const b = $("pushOn");
+    if (!PUSH_OK) return Promise.resolve(false);
     b.disabled = true; b.textContent = "⏳ Yoqilmoqda…";
     // ruxsat so'rovi tugma bosilgan zahoti bo'lishi kerak (iPhone talabi)
-    Promise.resolve(Notification.requestPermission()).then(p => {
-      if (p !== "granted") { pushUI(p === "denied" ? "denied" : "off"); return; }
+    return Promise.resolve(Notification.requestPermission()).then(p => {
+      if (p !== "granted") { pushUI(p === "denied" ? "denied" : "off"); return false; }
       return pushToken().then(t => {
         if (!t) throw new Error("Qurilma tokeni olinmadi");
         return post(Object.assign({ cab: "push", token: t, on: true, test: true, ua: navigator.userAgent.slice(0, 120) }, auth())).then(r => {
@@ -530,10 +582,11 @@
           lsS("kab_push", t); lsS("kab_push_who", D && D.k || ""); lsS("kab_push_at", String(Date.now()));
           setOpen = false; pushUI("on");
           toast(r.test ? "✅ Yoqildi. Sinov xabari yuborildi." : "✅ Yoqildi. Ustoz serverni sozlagach xabarlar kela boshlaydi.");
+          return true;
         });
       });
-    }).catch(e => { pushUI("off", "⚠️ <b>Yoqib bo'lmadi.</b> " + pushErr(e)); $("pushOn").textContent = "🔁 Qayta urinish"; toast("⚠️ Yoqib bo'lmadi"); });
-  };
+    }).catch(e => { pushUI("off", "⚠️ <b>Yoqib bo'lmadi.</b> " + pushErr(e)); $("pushOn").textContent = "🔁 Qayta urinish"; toast("⚠️ Yoqib bo'lmadi"); $("push").classList.remove("hide"); return false; });
+  }
   $("pushTest").onclick = () => {
     const t = lsG("kab_push"); if (!t) return;
     $("pushTest").disabled = true;
@@ -553,6 +606,66 @@
   $("pushOff").onclick = () => { setOpen = false; pushOff(false); };
   $("setB").onclick = () => { setOpen = !setOpen; pushUI(pushUI.st || "on"); if (setOpen) $("push").scrollIntoView({ behavior: "smooth", block: "center" }); };
 
+  // ---------- Birinchi kirish: "📲 Ilova sifatida o'rnatish" (o'rnatilgunicha ko'rinadi) ----------
+  // Android Chrome: bitta bosish → o'rnatish oynasi, keyin bildirishnoma ruxsati.
+  // iPhone: Apple tugma bilan o'rnatishga ruxsat bermaydi → qisqa 3 qadamli ko'rsatma; ilova ochilganda «🔔 Yoqish» yuqorida chiqadi.
+  const IOS_SAFARI = isIOS && !/CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|GSA\//.test(UA);
+  const SHARE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
+  const ADD_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
+  const installed = () => STANDALONE || !!lsG("kab_inst");
+  function onbHide() { if ($("onb").classList.contains("hide")) return; $("onb").classList.add("hide"); if (pushUI.st) pushUI(pushUI.st); }
+  function onbInit() {
+    if (installed() || !(isIOS || isAnd)) return onbHide();
+    $("onb").classList.remove("hide"); $("a2hs").classList.add("hide"); $("push").classList.add("hide");   // bildirishnoma o'rnatish tugmasi bilan birga yoqiladi
+    // Android Chrome: ilova allaqachon o'rnatilganini bilish (manifest related_applications)
+    if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(a => { if (a && a.length) { lsS("kab_inst", "1"); onbHide(); } }).catch(() => {});
+  }
+  function sheet(h, sub, steps, extra) {
+    $("shH").textContent = h; $("shS").innerHTML = sub || ""; $("shL").innerHTML = steps.map(x => "<li><div>" + x + "</div></li>").join(""); $("shX2").innerHTML = extra || "";
+    $("sheet").classList.remove("hide");
+    const arrow = IOS_SAFARI && !/iPad/.test(UA) && navigator.maxTouchPoints > 0 && innerWidth < 600;
+    $("arr").classList.toggle("hide", !arrow); $("sheet").classList.toggle("wa", arrow);
+  }
+  function sheetClose() { $("sheet").classList.add("hide"); $("arr").classList.add("hide"); }
+  $("shOk").onclick = $("shBg").onclick = sheetClose;
+  function onbDone(msg) {
+    lsS("kab_inst", "1");
+    $("onbH").textContent = "✅ Ilova o'rnatildi";
+    $("onbT").innerHTML = msg || "Endi telefon ekraningizdagi <b>«Kabinet»</b> belgisidan oching. Kod qayta so'ralmaydi.";
+    $("onbGo").classList.add("hide"); $("onbNo").classList.add("hide");
+    setTimeout(onbHide, 15000);
+  }
+  $("onbNo").onclick = () => { lsS("kab_inst", "1"); onbHide(); toast("Yaxshi. Ekrandagi «Kabinet» belgisidan foydalaning."); };
+  $("onbGo").onclick = () => {
+    if (instEv) {   // Android Chrome / Samsung: tizimning o'rnatish oynasi
+      const ev = instEv; instEv = null;
+      ev.prompt();
+      ev.userChoice.then(c => {
+        if (c && c.outcome === "accepted") { onbDone(); pushEnable(); }
+        else toast("Keyinroq ham shu tugmani bosib o'rnatishingiz mumkin.");
+      }).catch(() => {});
+      return;
+    }
+    if (isIOS) {
+      const share = '<span class="ui">' + SHARE_SVG + ' Ulashish</span>';
+      sheet("📲 iPhone'ga ilova qilib o'rnatish", IOS_SAFARI ? "Uch qadam, 10 soniya:" : "Avval shu sahifani <b>Safari</b>'da oching (iPhone'da ilova faqat Safari'dan yaxshi o'rnatiladi), keyin:",
+        [IOS_SAFARI ? "Pastdagi " + share + " tugmasini bosing (ko'rinmasa: pastdagi <span class=\"ui\">•••</span> → " + share + ")." : "Manzil satridagi " + share + " tugmasini bosing.",
+         "Ro'yxatni pastga suring va <span class=\"ui\">" + ADD_SVG + " Ekranga qo'shish</span> ni bosing <span class=\"mt\">(Add to Home Screen / На экран «Домой»)</span>.",
+         "O'ng yuqoridagi <span class=\"ui\">Qo'shish</span> (Add) ni bosing. So'ng ekrandagi <b>«Kabinet»</b> belgisidan oching va <b>🔔 Yoqish</b>ni bosing: bildirishnomalar yoqiladi."]);
+      return;
+    }
+    // Android, lekin brauzer o'rnatish oynasini bermadi: bildirishnomani shu yerning o'zida yoqamiz + qo'lda o'rnatish ko'rsatmasi
+    if (!ODD_BR) pushEnable();
+    const chromeUrl = "intent://" + location.host + location.pathname + (CODE ? "?q=" + CODE : "") + "#Intent;scheme=https;package=com.android.chrome;end";
+    if (ODD_BR) sheet("📲 Chrome'da oching", "Bu brauzer (" + esc(ODD_BR.replace(/[\/;)]/g, "").trim()) + ") ilova o'rnatish va bildirishnomani qo'llamaydi.",
+      ["Pastdagi tugma bilan kabinetni <b>Google Chrome</b>'da oching (kod qayta so'ralmaydi).", "Chrome'da yana <b>📲 Ilova sifatida o'rnatish</b> tugmasini bosing."],
+      '<a class="btn" style="text-decoration:none" href="' + esc(chromeUrl) + '">🌐 Chrome\'da ochish</a>');
+    else sheet("📲 Ilova qilib o'rnatish", "Brauzer o'rnatish oynasini o'zi chiqarmadi. Qo'lda 2 qadam:",
+      ["Yuqori o'ng burchakdagi <span class=\"ui\">⋮</span> menyuni oching <span class=\"mt\">(Samsung brauzerida pastdagi <span class=\"ui\">☰</span>)</span>.",
+       "<span class=\"ui\">Ilovani o'rnatish</span> yoki <span class=\"ui\">Bosh ekranga qo'shish</span> ni bosing → <b>O'rnatish</b>. So'ng ekrandagi <b>«Kabinet»</b> belgisidan oching."]);
+  };
+  window.addEventListener("appinstalled", () => onbDone());
+
   // Android "Orqaga" tugmasi va noutbukda Esc: avval ochiq oynani yopadi, sahifadan chiqib ketmaydi
   const layerOpen = () => !$("modal").classList.contains("hide") || !$("drawer").classList.contains("hide");
   const closeLayer = () => { if (!$("modal").classList.contains("hide")) { $("modal").classList.add("hide"); $("mF").srcdoc = ""; } else closeNotes(); };
@@ -570,12 +683,15 @@
     }
   });
   if (!API) { $("cT").textContent = "⛔ Sozlama topilmadi"; $("cB").textContent = "Sahifani keyinroq yangilang."; return; }
-  if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) $("a2hs").classList.add("hide");
-  if (!CODE && !/^[A-Za-z0-9_-]{6,20}$/.test(KEY)) showLogin("");
-  else start().catch(e => {
-    if (e.auth) { forget(); showLogin(e.message); return; }
-    $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message;
-  });
+  if (STANDALONE) $("a2hs").classList.add("hide");
+  function boot() {
+    start().then(() => { if (CODE) remember(CODE); }).catch(e => {
+      if (e.auth) { forget(); showLogin(VIA_QR ? e.message + " Kartochkadagi QR eskirgan bo'lishi mumkin: ustozdan yangi kartochka so'rang yoki kodni kiriting." : e.message); return; }
+      $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message;
+    });
+  }
+  if (CODE || /^[A-Za-z0-9_-]{6,20}$/.test(KEY)) boot();
+  else authLoad().then(c => { if (CODE_RE.test(c)) { CODE = c; boot(); } else showLogin(""); });
   // har 60 soniyada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
   setInterval(() => { if (!document.hidden && D) load(false).catch(() => {}); }, 60000);
   setInterval(() => { if (!document.hidden && D) renderTasks(); }, 30000);   // qolgan vaqt yozuvlari jonli yangilanadi
