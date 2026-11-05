@@ -103,7 +103,7 @@
     $("ptitle").textContent = `${cur + 1}/${PARTS.length} · ${pt.title}`;
     $("prompt").textContent = pt.prompt || "";
     if (pt.need) { $("pneed").textContent = "✍️ " + pt.need; $("pneed").classList.remove("hide"); } else $("pneed").classList.add("hide");
-    ed.placeholder = pt.ph || "Shu topshiriq javobini yozing. Keyingisiga tepadagi tugmalar orqali o'tasiz…";
+    ed.placeholder = done ? "(Bu qism yozilmagan)" : pt.ph || "Shu topshiriq javobini yozing. Keyingisiga tepadagi tugmalar orqali o'tasiz…";
     if (pt.img) { $("pimg").src = pt.img; $("pimg").classList.remove("hide"); } else $("pimg").classList.add("hide");
     $("ptabs").innerHTML = PARTS.map((x, i) => `<button data-i="${i}" class="${i === cur ? "on" : ""}">${i + 1}. ${esc(x.short || x.title)}<span class="n">${words(i === cur ? ed.value : texts[i])}</span></button>`).join("");
     $("ptabs").querySelectorAll("button").forEach(b => b.onclick = () => { texts[cur] = ed.value; cur = +b.dataset.i; ed.value = texts[cur] || ""; drawPart(); drawWc(); if (run) ed.focus(); });
@@ -180,11 +180,24 @@
       if (left <= 0) { clearInterval(tick); submit(true); }
     }, 500);
   }
+  // Topshirilgan umumiy matnni ("1) sarlavha\nmatn\n\n2) ...") qismlarga ajratadi: har bir matn o'z grafigi bilan ko'rinadi
+  function splitParts(text) {
+    text = String(text || ""); const pos = [];
+    for (let i = 0, from = 0; i < PARTS.length; i++) {
+      const h = `${i + 1}) ${PARTS[i].title}\n`, at = text.indexOf(h, from);
+      if (at < 0 || (i > 0 && text.slice(at - 2, at) !== "\n\n")) return null;
+      pos.push([at, at + h.length]); from = at + h.length;
+    }
+    if (pos[0][0] !== 0) return null;
+    return pos.map((p, i) => { const t = text.slice(p[1], i + 1 < pos.length ? pos[i + 1][0] - 2 : text.length).trim(); return t === "(yozilmagan)" ? "" : t; });
+  }
   function lock(text, info) {
     run = false; done = true; clearInterval(tick);
-    if (PARTS) $("ptabs").classList.add("hide");
-    ed.value = text || ""; ed.readOnly = true; $("btnSubmit").disabled = true; $("btnSubmit").textContent = "Topshirildi ✓";
-    drawWc(); $("msg").innerHTML = info;
+    const sp = PARTS ? splitParts(text) : null;
+    if (sp) { texts = sp; cur = 0; ed.value = texts[0]; ed.placeholder = "(Bu qism yozilmagan)"; $("ptabs").classList.remove("hide"); drawPart(); }
+    else { if (PARTS) { $("ptabs").classList.add("hide"); $("ptitle").classList.add("hide"); $("pneed").classList.add("hide"); $("pimg").classList.add("hide"); $("prompt").textContent = me.prompt || ""; } ed.value = text || ""; }
+    ed.readOnly = true; $("btnSubmit").disabled = true; $("btnSubmit").textContent = "Topshirildi ✓";
+    drawWc(); $("msg").innerHTML = info + (sp ? " <br>📚 Tepadagi tugmalar bilan har bir grafik va unga yozgan matningizni ko'rasiz." : "");
   }
   function send(payload) {
     $("msg").textContent = "⏳ Yuborilmoqda…";
