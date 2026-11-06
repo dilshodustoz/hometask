@@ -341,7 +341,7 @@
     const cl = K.red ? `<div class="mt" style="margin-top:8px">Kartochkani o'chirish: bu hafta toza o'tsa, 1 ta qizil o'chadi</div>` : K.run ? `<div class="mt" style="margin-top:8px">Toza haftalar ketma-ket: <b>${K.run}</b> 🔥</div>` : "";
     return `<div class="kk ${K.level === "final" || K.level === "out" ? "final" : ""}"><div class="kh"><b>🟥 Qizil kartochkalar</b><span class="kc ${K.level}">${K.red} / ${L}</span></div>
       <div class="sl">${sl.join("")}</div>${K.yel ? `<div class="mt" style="margin-bottom:8px">🟨 ${K.yel} ta sariq bor. Yana bitta sariq = 1 qizil.</div>` : ""}<div class="kb ${K.level}">${msg}</div>
-      ${it ? `<ul>${it}</ul>` : ""}${cl}${K.demo ? '<div class="mt" style="margin-top:6px">🧪 Test kaliti: bu namuna.</div>' : ""}${rules}</div>`;
+      ${it ? `<ul>${it}</ul>` : ""}${cl}${K.demo ? '<div class="mt" style="margin-top:6px">🧪 Test kaliti: bu namuna.</div>' : ""}${K.at && !K.demo ? `<div class="mt" style="margin-top:6px">🔄 Oxirgi hisob: ${dt(K.at)}</div>` : ""}${rules}</div>`;
   }
   function renderTasks() {
     // darsdagi test (🏫): natija bor, vazifa = error log (muddat ustoz belgilagan)
