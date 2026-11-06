@@ -119,7 +119,7 @@
     $("who").textContent = R.name; $("ttl").textContent = R.title + (R.deadline ? " · muddat: " + R.deadline : "");
     if (ph === "new") {
       out.push(`<div class="intro"><b>${esc(R.name)}, bu mashq sizning o'z xatolaringizdan tuzilgan.</b> Oxirgi essaylaringizda eng ko'p takrorlangan xatolar: <b>${esc(M.focus.join(", ") || "grammatika")}</b>.<ol>
-        <li><b>A.</b> O'z gaplaringiz: xato qismi qizil chiziq bilan belgilangan. To'g'ri variantini o'zingiz topib, gapni qayta yozing.</li>
+        <li><b>A.</b> Xatoni to'g'rilang: xato qismi qizil chiziq bilan belgilangan. To'g'ri variantini o'zingiz topib, gapni qayta yozing.</li>
         <li><b>B.</b> Qoidani o'qing va to'g'ri variantni tanlang.</li><li><b>C.</b> O'zingiz adashgan so'zlar.</li><li><b>D.</b> Reading: sinonimni toping.</li></ol>
         <div style="margin-top:6px">B, C, D darhol tekshiriladi. A bo'limni ustoz tekshiradi, keyin noto'g'ri gaplarni ikkinchi marta to'g'rilaysiz. Javoblaringiz shu qurilmada saqlanib boradi.</div></div>`);
     } else if (ph === "wait1" || ph === "wait2") {
@@ -132,7 +132,7 @@
     // A
     if (M.A.length) {
       const f1 = R.f1 || [], f2 = R.f2 || [];
-      out.push(`<div class="sec"><h2>✍️ A. O'z gaplaringiz<span class="cnt" id="cA">${M.A.length} ta</span></h2><p class="hint">Gap sizning essayingizdan olingan. <b>Qizil chiziq bilan belgilangan so'zlarda xato bor</b>, <b style="color:var(--bad)">‸</b> belgisi esa so'z tushib qolgan joyni ko'rsatadi. To'g'ri variantini o'zingiz topib, butun gapni qayta yozing.</p>`);
+      out.push(`<div class="sec"><h2>✍️ A. Xatoni to'g'rilang<span class="cnt" id="cA">${M.A.length} ta</span></h2><p class="hint">Har bir gapda siz essaylaringizda qilgan xato bor. <b>Qizil chiziq bilan belgilangan so'zlarda xato bor</b>, <b style="color:var(--bad)">‸</b> belgisi esa so'z tushib qolgan joyni ko'rsatadi. To'g'ri variantini o'zingiz topib, butun gapni qayta yozing.</p>`);
       M.A.forEach((x, i) => {
         const v1 = R.a1 ? (R.a1.A || [])[i] || "" : null, v2 = R.a2 ? (R.a2.A || [])[i] || "" : null;
         let hl = "", pos = 0;
