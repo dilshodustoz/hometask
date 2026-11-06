@@ -295,8 +295,10 @@
   }
   const urgent = iso => { const ms = new Date(iso) - new Date(); return ms > 0 && ms < 24 * 3600000; };   // 24 soatdan kam: qizil
   const dt = iso => { if (!iso) return ""; const d = new Date(iso); return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5); };
-  const skOf = x => x.skill === "speaking" ? (x.prep ? ["📝", "Speaking preparation"] : ["🎙", "Speaking mock"]) : SK[x.skill] || ["📄", x.skill];
+  const skOf = x => x.mq ? ["🧩", "Mening mashqim"] : x.skill === "speaking" ? (x.prep ? ["📝", "Speaking preparation"] : ["🎙", "Speaking mock"]) : SK[x.skill] || ["📄", x.skill];
   function state(x) {
+    if (x.mq && x.phase === "retry") return ["urg", "🔁 2-urinish ochiq"];
+    if (x.mq && (x.phase === "wait1" || x.phase === "wait2")) return ["part", "⏳ Ustoz tekshirmoqda"];
     if (x.done) return ["ok", "✅ Topshirilgan"];
     if (x.prep && x.draft != null && left(x.deadline)) return ["part", "📝 Yozilmoqda · " + x.draft + "%"];
     if (x.skill === "speaking" && x.n) return ["part", "🎙 " + x.n + " / " + x.total + " javob"];
@@ -307,6 +309,7 @@
     if (!x.done) return "";
     if (x.skill === "reading" || x.skill === "listening") return `<div class="score"><b>${esc(x.raw)}/40</b><span>Band ${esc(x.band)}</span></div>`;
     if (x.prep) return `<div class="score"><b>${esc(x.pct)}%</b><span>to'liqlik</span></div>`;
+    if (x.mq) return x.phase === "done" ? `<div class="score"><b>${esc(x.pct)}%</b><span>natija</span></div>` : "";
     if (x.skill === "speaking" && x.baho) return `<div class="score"><b>${esc(x.baho.band)}</b><span>Band</span></div>`;
     if (x.skill === "writing") return `<div class="score"><b>${esc(x.words)}</b><span>so'z</span></div>`;
     return "";
@@ -329,7 +332,7 @@
           <div class="act"><a class="btn${ok ? " sec" : ""}" href="${esc(x.url)}">${ok ? "👁 Natija va kalit" : "✍️ Error log yozish"}</a></div></div>`;
       }
       const [ic, nm] = skOf(x), [cls, lab] = state(x);
-      const btn = x.prep ? (x.done ? "👁 Workbook" : x.draft != null ? "▶ Davom ettirish" : "▶ Boshlash") : x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : x.skill === "writing" ? "👁 Insho" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
+      const btn = x.mq ? (x.phase === "retry" ? "🔁 2-urinish" : x.done ? "👁 Natija" : "▶ Boshlash") : x.prep ? (x.done ? "👁 Workbook" : x.draft != null ? "▶ Davom ettirish" : "▶ Boshlash") : x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : x.skill === "writing" ? "👁 Insho" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
       const can = x.done || left(x.deadline) || D.test;
       return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0">
         <div class="tt">${esc(x.title)}</div><div class="mt">${nm}${x.at ? " · 📨 yuborildi: " + dt(x.at) : ""}</div><div class="mt">⏰ Muddat: ${esc(x.deadline_text || "—")}</div>
