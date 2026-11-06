@@ -838,7 +838,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <div class="row" style="margin-top:10px"><button class="btn btn-orange" id="wSave">Saqlash</button><span class="muted">Saqlangach, ro'yxatdan tanlab yuborasiz. Vazifa ustozning yopiq Drive papkasida saqlanadi.</span></div>
       </div>
       <div class="hide" id="sNew" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:14px">
-        <div style="font-weight:700;margin-bottom:10px" id="sNewH">Yangi Speaking vazifasi</div>
+        <div style="font-weight:700;margin-bottom:10px" id="sNewH">Yangi Speaking mock vazifasi (ovozli)</div>
         <div class="row">
           <label style="flex:1;min-width:220px"><span class="field-label">Nomi (o'quvchiga ko'rinadi)</span><input class="field" id="sTitle" style="width:100%" placeholder="Lesson 7: Shopping and money"></label>
           <label><span class="field-label">Part 1 (soniya)</span><input class="field" id="sP1" type="number" min="10" max="180" value="30" style="width:90px"></label>
@@ -1207,9 +1207,12 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     const sel = $("hwTest"); sel.innerHTML = "";
     $("hwTestLbl").textContent = hwSk === "writing" || hwSk === "speaking" ? "Vazifa" : "Test";
     if (hwSk === "speaking") {
-      (sTasks || []).forEach(t => sel.add(new Option(t.title + " · " + t.n + " savol", t.t)));
+      const gP = document.createElement("optgroup"), gM = document.createElement("optgroup");
+      gP.label = "📝 Speaking preparation (yozma workbook)"; gM.label = "🎙 Speaking mock (ovozli)";
+      (sTasks || []).forEach(t => (t.type === "prep" ? gP : gM).appendChild(new Option(t.type === "prep" ? "📝 " + t.title + " · preparation" : "🎙 " + t.title + " · mock · " + t.n + " savol", t.t)));
+      if (gP.children.length) sel.appendChild(gP); if (gM.children.length) sel.appendChild(gM);
       if (!sTasks) sel.add(new Option("Yuklanmoqda…", ""));
-      sel.add(new Option("➕ Yangi vazifa…", "__new"));
+      sel.add(new Option("➕ Yangi Speaking mock vazifasi…", "__new"));
       try { const v = localStorage.getItem(HW_LK.speaking); if (v && sTasks && sTasks.some(t => t.t === v)) sel.value = v; } catch (e) {}
       if (sTasks && !sTasks.length) sel.value = "__new";
     } else if (hwSk !== "writing") {
@@ -1229,7 +1232,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   }
   // ---------- Speaking: tanlangan vazifaning savollarini ko'rish va tahrirlash ----------
   var sEdit = null;   // var: hwFill uni e'londan oldin ham chaqirishi mumkin
-  function sEditReset() { sEdit = null; $("sNewH").textContent = "Yangi Speaking vazifasi"; $("sSave").textContent = "Saqlash"; $("sViewBox").classList.add("hide"); }
+  function sEditReset() { sEdit = null; $("sNewH").textContent = "Yangi Speaking mock vazifasi (ovozli)"; $("sSave").textContent = "Saqlash"; $("sViewBox").classList.add("hide"); }
   function sBtn() { const v = $("hwTest").value; $("sView").classList.toggle("hide", !(hwSk === "speaking" && v && v !== "__new")); }
   const fmtSec = s => s >= 60 ? (s % 60 ? Math.floor(s / 60) + " daq " + s % 60 + " s" : s / 60 + " daq") : s + " s";
   $("sView").onclick = () => {
@@ -1238,6 +1241,19 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     box.dataset.t = t; box.classList.remove("hide"); box.innerHTML = `<span class="muted">Yuklanmoqda…</span>`; $("sNew").classList.add("hide");
     api({ admin: "s_get", t: t }).then(r => {
       if (!r.ok) { box.innerHTML = "⚠️ " + CLS.esc(r.error); return; }
+      if (r.prep) {   // Speaking preparation: workbook tarkibi (o'zgartirish Claude orqali)
+        const W = r.task, E = CLS.esc, grp = (a, f) => { let tp = null, h = ""; a.forEach((q, i) => { if (q.topic !== tp) { h += `<div class="muted" style="margin-top:10px;font-size:13px;font-weight:700">${E(q.topic).toUpperCase()}</div>`; tp = q.topic; } h += f(q, i); }); return h; };
+        box.innerHTML = `<div style="font-weight:700;font-size:17px;margin-bottom:4px">📝 ${E(W.title)} <span class="muted" style="font-weight:400;font-size:14px">· Speaking preparation (yozma)</span></div>` +
+          (r.answered ? `<div class="msg" style="margin:6px 0">${r.answered} o'quvchi boshlagan yoki topshirgan.</div>` : "") +
+          `<div class="muted">Persona: ${W.persona.length} qator · Part 1: ${W.p1.length} savol · Part 2: ${W.p2.length} karta · Part 3: ${W.p3.length} savol · O'zing top: ${W.own || 5} ibora · O'z-o'zini baholash: ${W.self.length}</div>
+          <details style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">Savollarni ochish</summary>
+          <div style="margin-top:6px;font-weight:700">Part 1</div>${grp(W.p1, (q, i) => `<div style="padding:2px 0">${i + 1}. ${E(q.q)}</div>`)}
+          <div style="margin-top:10px;font-weight:700">Part 2</div>${W.p2.map(c => `<div style="padding:3px 0"><b>${E(c.id)}.</b> ${E(c.q)} <span class="muted">(${c.cue.map(E).join(" · ")})</span></div>`).join("")}
+          <div style="margin-top:10px;font-weight:700">Part 3</div>${grp(W.p3, (q, i) => `<div style="padding:2px 0">${i + 1}. ${E(q.q)}</div>`)}</details>
+          <div class="row" style="margin-top:12px"><button class="btn btn-secondary" id="sViewClose">Yopish</button><span class="muted">O'quvchi har savolga kalit so'z yozadi, ⏱ bilan gapirish vaqtini o'lchaydi; to'liqlik % avtomatik.</span></div>`;
+        $("sViewClose").onclick = () => box.classList.add("hide");
+        return;
+      }
       const T = r.task, it = T.items || [], E = CLS.esc;
       let html = `<div style="font-weight:700;font-size:17px;margin-bottom:6px">${E(T.title)} <span class="muted" style="font-weight:400;font-size:14px">· ${it.length} savol</span></div>`;
       if (r.answered) html += `<div class="msg" style="margin:6px 0">⚠️ ${r.answered} o'quvchi allaqachon javob bergan. Savollarni o'chirsangiz yoki tartibini o'zgartirsangiz, ularning javoblari boshqa savolga to'g'ri kelib qoladi: faqat imloni tuzatgan ma'qul.</div>`;
@@ -1466,7 +1482,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     const chat = String(CLS.GROUPS[group].chat);
     const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat] && (hwLog[id].skill || "reading") === hwSk).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title }, hwLog[id].chats[chat]))
       .sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${HW_IC[h.skill] || "📖"} ${CLS.esc(h.title)}</td><td>${CLS.esc(h.deadline_text)}</td>
+    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${h.skill === "speaking" ? (/^prep/.test(h.t) ? "📝" : "🎙") : HW_IC[h.skill] || "📖"} ${CLS.esc(h.title)}${h.skill === "speaking" ? ` <span class="muted">· ${/^prep/.test(h.t) ? "preparation" : "mock"}</span>` : ""}</td><td>${CLS.esc(h.deadline_text)}</td>
       <td>${fmtAt(h.at)} · ${h.sent.length} ta${h.fail && h.fail.length ? ` <span class="badge b-bad">${h.fail.length} bormadi</span>` : ""}</td>
       <td id="hwc_${h.id}">—</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button> <button class="btn btn-secondary btn-sm" data-del="${h.id}" title="Vazifani ro'yxatdan (va o'quvchi kabinetidan) o'chirish">🗑</button></td></tr>`).join("")
       : `<tr><td colspan="6" class="muted">Bu guruhga hali ${HW_IC[hwSk] || ""} ${hwSk[0].toUpperCase() + hwSk.slice(1)} uy vazifasi yuborilmagan.</td></tr>`;
@@ -1518,7 +1534,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function spBackfill() {
     Object.keys(hwLog || {}).forEach(id => {
       const h = hwLog[id];
-      if (h.skill !== "speaking" || spTrDone[h.t]) return;
+      if (h.skill !== "speaking" || /^prep/.test(h.t) || spTrDone[h.t]) return;
       spTrDone[h.t] = 1;
       api({ admin: "s_transcribe", t: h.t }).then(r => { if (r.ok && r.left) delete spTrDone[h.t]; }).catch(() => { delete spTrDone[h.t]; });
     });
@@ -1544,6 +1560,9 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
             (!x.ok && logBy[x.n] ? `<tr class="bad lg"><td></td><td colspan="3">✍️ ${E(logBy[x.n].type || "")}${logBy[x.n].why ? " — " + E(logBy[x.n].why) : ""}</td></tr>` : "")).join("")}</tbody></table>`;
         const only = () => $("hwdB").querySelectorAll("tr.ok").forEach(tr => tr.classList.toggle("hide", $("hwdOnly").checked));
         $("hwdOnly").onchange = only; only();
+      } else if (r.prep) {   // Speaking preparation: o'quvchi sahifasi faqat ko'rish rejimida
+        $("hwdB").innerHTML = `<div class="hwd-sum">📝 To'liqlik <b>${r.pct}%</b> (${r.ok_n}/${r.tot}) · to'liq gap: ${r.long || 0} · paste: ${r.pastes || 0} · ${E(r.minutes)} daqiqa · ${fmtAt(r.at)} &nbsp; <a class="btn btn-secondary btn-sm" href="${E(r.url)}" target="_blank" rel="noopener">↗ Alohida oynada</a></div>
+          <iframe class="hwd-if" src="${E(r.url)}" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:10px"></iframe>`;
       } else if (SK === "writing") {
         $("hwdB").innerHTML = `<div class="hwd-sum">${E(r.task)} · <b>${r.words}</b> so'z · ${r.minutes} daqiqa · ${fmtAt(r.at)} &nbsp; ${fbBtn}</div>
           ${r.prompt ? `<div class="hwd-q">${E(r.prompt)}</div>` : ""}<div class="hwd-txt">${E(r.text)}</div>`;
@@ -1599,6 +1618,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Matnga o'girildi" : "Band"}</th><th>${S ? "Baho (Claude)" : "Daqiqa"}</th>${L ? "<th>Error log</th>" : ""}<th>Qachon</th><th></th></tr>`;
     const draw = r => {
       if (hwCur !== id) return;
+      if (S && r.prep) return drawPrep(r);   // Speaking preparation (yozma)
       const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
       const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
         .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
@@ -1663,6 +1683,35 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         `<div class="stat"><b>${fmtAt(info.at)}</b>yuborilgan</div><div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
       const c = $("hwc_" + id); if (c) c.textContent = n + " / " + keys.length;
     };
+    function drawPrep(r) {
+      $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>To'liqlik</th><th>To'liq gap · paste</th><th>Daqiqa</th><th>Qachon</th><th></th></tr>`;
+      const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
+      const dr = r.drafts || {};
+      const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
+        .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
+      const late = CLS.now() > new Date(info.deadline).getTime();
+      let n = 0, sum = 0, full = 0;
+      $("hwStBody").innerHTML = keys.map((k, i) => {
+        const x = sub[k], d = dr[k], nm = (roster[k] || {}).name || (x && x.name) || k;
+        if (x) { n++; sum += x.pct; if (x.pct >= 100) full++; }
+        const st = x ? `<span class="badge b-ok">Topshirdi</span>` : d ? `<span class="badge ${late ? "b-bad" : "b-warn"}">${late ? "Topshirmadi" : "Yozmoqda"} · ${d.pct}%</span>`
+          : late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`;
+        const pc = x ? `<span class="badge ${x.pct >= 100 ? "b-ok" : x.pct >= 70 ? "b-warn" : "b-bad"}">${x.pct}%</span> <span class="muted">${x.filled}/${x.tot}</span>` : "—";
+        const wr = x ? `${x.long ? `<span class="badge b-warn" title="Kalit so'z o'rniga to'liq gap">${x.long} gap</span>` : "0"} · ${x.pastes ? `<span class="badge b-warn">${x.pastes} paste</span>` : "0"}` : "—";
+        return `<tr${x ? ` data-det="${CLS.esc(k)}" class="hwd-row"` : ""}><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${pc}</td><td>${wr}</td><td>${x ? CLS.esc(x.minutes) : "—"}</td><td>${x ? fmtAt(x.at) : d ? `<span class="muted">${fmtAt(d.at)}</span>` : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Topshirig'i ro'yxatdan olinadi (zaxira qoladi), o'quvchi qoralamasidan davom etib qayta topshiradi">↺ Qayta ochish</button>` : ""}</td></tr>`;
+      }).join("");
+      $("hwStBody").querySelectorAll("tr[data-det]").forEach(tr => tr.onclick = e => { if (e.target.closest("button")) return; hwDetail(h, tr.dataset.det); });
+      $("hwStBody").querySelectorAll("[data-reopen]").forEach(b => b.onclick = () => {
+        const k = b.dataset.reopen, nm = (roster[k] || {}).name || k;
+        if (!confirm(`${nm} uchun workbookni qayta ochamizmi?\n\nTopshirgani ro'yxatdan olinadi ("qayta_ochilgan" varag'ida saqlanadi), o'quvchi qoralamasidan davom etib qayta topshiradi.`)) return;
+        b.disabled = true; b.textContent = "…";
+        api({ admin: "hw_reopen", skill: h.skill, t: t, k: k }).then(x => { if (!x.ok) { alert("⚠️ " + x.error); b.disabled = false; b.textContent = "↺ Qayta ochish"; return; } hwStatus(id); })
+          .catch(e => { alert("⚠️ " + e.message); b.disabled = false; b.textContent = "↺ Qayta ochish"; });
+      });
+      $("hwStats").innerHTML = `<div class="stat"><b>${n} / ${keys.length}</b>topshirdi</div><div class="stat"><b>${n ? Math.round(sum / n) + "%" : "—"}</b>o'rtacha to'liqlik</div><div class="stat"><b>${full} / ${n}</b>100% to'liq</div><div class="stat"><b>${Object.keys(dr).filter(k => !sub[k]).length}</b>yozmoqda (topshirmagan)</div>` +
+        `<div class="stat"><b>${fmtAt(info.at)}</b>yuborilgan</div><div class="stat"><b>${late ? "tugagan" : CLS.esc(info.deadline_text)}</b>muddat</div>`;
+      const c = $("hwc_" + id); if (c) c.textContent = n + " / " + keys.length;
+    }
     // Tez ochish: oxirgi ma'lumot darhol chiziladi, yangisi orqada keladi va farq bo'lsagina qayta chiziladi
     if (old) { draw(old.r); $("hwStMsg").textContent = "↻ yangilanmoqda…"; }
     hwStFetch(h.skill, t).then(r => {

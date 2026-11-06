@@ -274,9 +274,10 @@
   if (!KEY || !TID || !API) { $("who").textContent = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
   api({ action: "hello", skill: "speaking", t: TID, k: KEY }).then(r => {
     if (!r.ok) { $("who").textContent = "⛔"; show("Kirib bo'lmadi", esc(r.error)); return; }
+    if (r.type === "prep") { location.replace("prep.html" + location.search); return; }   // Speaking preparation (yozma workbook)
     me = r; items = r.items || []; done = r.done || {};
     $("who").textContent = r.name;
-    $("ttl").textContent = "Speaking Home task · " + r.title + (r.deadline ? " · " + r.deadline + " gacha" : "");
+    $("ttl").textContent = "Speaking mock · " + r.title + (r.deadline ? " · " + r.deadline + " gacha" : "");
     document.title = r.title + " · Speaking";
     draw();
     if (r.closed && Object.keys(done).length < items.length) show("Muddat tugagan", "Bu vazifaning muddati tugagan (" + esc(r.deadline) + "). Yuborilmagan javoblarni endi yuborib bo'lmaydi.", "Yopish");
