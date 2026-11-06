@@ -14,6 +14,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#F6F6F4;--card:#FFF;--ink:#16181D;--muted:#6B6F76;--line:#E4E4E0;--soft:#F1F1EE;--primary:#E8590C;--ok:#15803D;--okbg:#F0FDF4;--bad:#DC2626;--badbg:#FEF2F2;--warn:#B45309;--warnbg:#FFFBEB}
+  .kk{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}
+  .kk.final{border:2px solid var(--bad)}
+  .kk .kh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.kk .kh b{font-size:.98rem}
+  .kk .kc{font:600 .86rem 'JetBrains Mono',monospace;padding:3px 9px;border-radius:8px;background:var(--okbg);color:var(--ok)}
+  .kk .kc.warn{background:var(--warnbg);color:var(--warn)}.kk .kc.final,.kk .kc.out{background:var(--badbg);color:var(--bad)}
+  .kk .sl{display:flex;gap:8px;margin-bottom:10px}.kk .s{width:40px;height:56px;border-radius:7px;border:2px dashed #d6d4ce;display:flex;align-items:center;justify-content:center;font-size:.72rem;color:#bbb}
+  .kk .s.r{background:linear-gradient(160deg,#e5484d,#b4232a);border:0;box-shadow:0 2px 5px rgba(180,35,42,.3)}.kk .s.y{background:linear-gradient(160deg,#f7c948,#e0a800);border:0}
+  .kk .s.l{border-color:var(--bad);color:var(--bad);font-weight:700}
+  .kk .kb{border-radius:10px;padding:9px 11px;font-size:.86rem;line-height:1.45;margin-bottom:8px}
+  .kk .kb.ok{background:var(--okbg);color:var(--ok)}.kk .kb.warn{background:var(--warnbg);color:var(--warn)}.kk .kb.final,.kk .kb.out{background:var(--badbg);color:var(--bad)}
+  .kk ul{list-style:none;margin:0;padding:0;font-size:.84rem}.kk li{padding:6px 0;border-top:1px solid var(--line);display:flex;gap:8px}.kk li i{font-style:normal;color:var(--muted);min-width:40px}
+  .kk .kp{height:6px;background:var(--soft);border-radius:4px;margin-top:4px}.kk .kp div{height:6px;border-radius:4px;background:#3fa45f}
+  .kk details{margin-top:8px;font-size:.82rem;color:var(--muted)}.kk summary{cursor:pointer;font-weight:600}.kk details p{margin:6px 0}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
   button{font:inherit}
@@ -316,6 +329,20 @@
   }
   function open(url) { location.href = url; }
 
+  function kkHtml(K) {
+    if (!K) return "";
+    const rules = `<details><summary>📋 Qoidalar</summary><p>🟥 <b>Qizil:</b> vazifa topshirilmasa yoki darsga sababsiz kelinmasa.</p><p>🟨 <b>Sariq:</b> vazifa kechikib yoki chala topshirilsa (error log to'liq bo'lmasa ham). 2 ta sariq = 1 ta qizil.</p><p>⚠️ 2 ta qizil: ogohlantirish. ⛔ 3 ta qizil: oxirgi ogohlantirish. 4 ta qizil: kursda qolish masalasi ustoz bilan ko'riladi.</p><p>✅ Ketma-ket 2 hafta bitta ham kartochkasiz ishlasangiz, 1 ta qizil kartochka o'chadi.</p><p>Hisob ${esc(K.from)}dan boshlanadi. Sababli kelmagan bo'lsangiz, ustozga ayting: kartochka bekor qilinadi.</p></details>`;
+    if (!K.started) return `<div class="kk"><div class="kh"><b>🟥 Intizom kartochkalari</b><span class="kc">0 / ${K.limit}</span></div><div class="kb ok">📅 Kartochkalar hisobi <b>${esc(K.from)}</b>dan boshlanadi. Hamma vazifani o'z vaqtida va to'liq topshiring.</div>${rules}</div>`;
+    const L = K.limit, sl = [];
+    for (let i = 0; i < L; i++) sl.push(i < K.red ? '<div class="s r"></div>' : i === K.red && K.yel ? '<div class="s y"></div>' : `<div class="s${i === L - 1 ? " l" : ""}">${i === L - 1 ? L : ""}</div>`);
+    const msg = { ok: K.red ? "Hozircha yaxshi. Kartochkalar sonini oshirmang." : "✅ Kartochka yo'q. Shunday davom eting!", warn: "⚠️ Ehtiyot bo'ling: yana 1 ta qizilda oxirgi ogohlantirish.",
+      final: "⛔ <b>Oxirgi ogohlantirish.</b> Keyingi qizil kartochkada kursda qolishingiz masalasi ustoz bilan ko'riladi.", out: "⛔ <b>Kartochkalar chegaraga yetdi.</b> Kursda qolishingiz masalasi ustoz bilan ko'riladi." }[K.level];
+    const it = K.items.slice().reverse().map(x => `<li><i>${esc(x.d)}</i>${x.c === "r" ? "🟥" : "🟨"} ${esc(x.why)}</li>`).join("");
+    const cl = K.red ? `<div class="mt" style="margin-top:8px">Kartochkani o'chirish: toza hafta <b>${K.clean} / 2</b><div class="kp"><div style="width:${K.clean * 50}%"></div></div></div>` : K.run ? `<div class="mt" style="margin-top:8px">Toza haftalar ketma-ket: <b>${K.run}</b> 🔥</div>` : "";
+    return `<div class="kk ${K.level === "final" || K.level === "out" ? "final" : ""}"><div class="kh"><b>🟥 Qizil kartochkalar</b><span class="kc ${K.level}">${K.red} / ${L}</span></div>
+      <div class="sl">${sl.join("")}</div>${K.yel ? `<div class="mt" style="margin-bottom:8px">🟨 ${K.yel} ta sariq bor. Yana bitta sariq = 1 qizil.</div>` : ""}<div class="kb ${K.level}">${msg}</div>
+      ${it ? `<ul>${it}</ul>` : ""}${cl}${K.demo ? '<div class="mt" style="margin-top:6px">🧪 Test kaliti: bu namuna.</div>' : ""}${rules}</div>`;
+  }
   function renderTasks() {
     // darsdagi test (🏫): natija bor, vazifa = error log (muddat ustoz belgilagan)
     const elOpen = x => x.klass && !(x.log >= 100) && left(x.deadline);
@@ -341,7 +368,7 @@
         ${can && !(TV && !x.done) ? `<div class="act"><a class="btn${x.done ? " sec" : ""}" href="${esc(x.url)}">${btn}</a></div>` : ""}</div>`;
     };
     $("tasks").innerHTML =
-      `<div class="stats"><div class="stat"><b>${todo.length}</b><span>bajarilishi kerak</span></div><div class="stat"><b>${done.length}</b><span>topshirilgan</span></div><div class="stat"><b>${T.length ? Math.round(100 * done.length / T.length) : 0}%</b><span>bajarilish</span></div></div>` +
+      `<div class="stats"><div class="stat"><b>${todo.length}</b><span>bajarilishi kerak</span></div><div class="stat"><b>${done.length}</b><span>topshirilgan</span></div><div class="stat"><b>${T.length ? Math.round(100 * done.length / T.length) : 0}%</b><span>bajarilish</span></div></div>` + kkHtml(D.kk) +
       (T.length ? `<h3>Hamma vazifalar</h3>` + T.map(card).join("") : `<div class="empty">Hozircha vazifa yo'q. Ustoz yuborganda shu yerda chiqadi.</div>`);
   }
   function renderNotes() {
