@@ -37,6 +37,8 @@
   .q{font-weight:600;margin-bottom:7px}
   .q .n{color:var(--muted);font-weight:700;margin-right:5px}
   .tag{display:inline-block;font-size:.74rem;font-weight:700;background:#FEF3C7;color:#92400E;border-radius:7px;padding:1px 8px;margin-left:6px;vertical-align:1px}
+  .orig u{text-decoration:underline wavy var(--bad) 2px;text-underline-offset:4px;background:#FEF2F2;border-radius:4px;padding:0 2px}
+  .orig .ins{color:var(--bad);font-size:1.25em;line-height:0;margin:0 1px}
   .orig{font-size:.9rem;color:#3F4349;background:#FAFAF8;border:1px dashed var(--line);border-radius:10px;padding:8px 11px;margin-bottom:7px}
   textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:15px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--ink);background:#fff;outline:none;resize:vertical;min-height:64px}
   textarea:focus{border-color:#BDBDB6}
@@ -117,7 +119,7 @@
     $("who").textContent = R.name; $("ttl").textContent = R.title + (R.deadline ? " · muddat: " + R.deadline : "");
     if (ph === "new") {
       out.push(`<div class="intro"><b>${esc(R.name)}, bu mashq sizning o'z xatolaringizdan tuzilgan.</b> Oxirgi essaylaringizda eng ko'p takrorlangan xatolar: <b>${esc(M.focus.join(", ") || "grammatika")}</b>.<ol>
-        <li><b>A.</b> O'z gaplaringiz: har birida belgilangan turdagi xato bor. Gapni to'g'ri qilib qayta yozing.</li>
+        <li><b>A.</b> O'z gaplaringiz: xato qismi qizil chiziq bilan belgilangan. To'g'ri variantini o'zingiz topib, gapni qayta yozing.</li>
         <li><b>B.</b> Qoidani o'qing va to'g'ri variantni tanlang.</li><li><b>C.</b> O'zingiz adashgan so'zlar.</li><li><b>D.</b> Reading: sinonimni toping.</li></ol>
         <div style="margin-top:6px">B, C, D darhol tekshiriladi. A bo'limni ustoz tekshiradi, keyin noto'g'ri gaplarni ikkinchi marta to'g'rilaysiz. Javoblaringiz shu qurilmada saqlanib boradi.</div></div>`);
     } else if (ph === "wait1" || ph === "wait2") {
@@ -130,10 +132,16 @@
     // A
     if (M.A.length) {
       const f1 = R.f1 || [], f2 = R.f2 || [];
-      out.push(`<div class="sec"><h2>✍️ A. O'z gaplaringiz<span class="cnt" id="cA">${M.A.length} ta</span></h2><p class="hint">Gap sizning essayingizdan olingan. Unda <b>ko'rsatilgan turdagi xato</b> bor: shuni toping va butun gapni to'g'ri qilib yozing.</p>`);
+      out.push(`<div class="sec"><h2>✍️ A. O'z gaplaringiz<span class="cnt" id="cA">${M.A.length} ta</span></h2><p class="hint">Gap sizning essayingizdan olingan. <b>Qizil chiziq bilan belgilangan so'zlarda xato bor</b>, <b style="color:var(--bad)">‸</b> belgisi esa so'z tushib qolgan joyni ko'rsatadi. To'g'ri variantini o'zingiz topib, butun gapni qayta yozing.</p>`);
       M.A.forEach((x, i) => {
         const v1 = R.a1 ? (R.a1.A || [])[i] || "" : null, v2 = R.a2 ? (R.a2.A || [])[i] || "" : null;
-        let body = `<div class="orig">${esc(x.s)}</div>`;
+        let hl = "", pos = 0;
+        (x.hl || []).slice().sort((p, q) => p[0] - q[0]).forEach(([st, ln, t]) => {
+          if (st < pos) return;
+          hl += esc(x.s.slice(pos, st)) + (t === "ins" ? '<b class="ins" title="Bu yerda so\'z tushib qolgan">‸</b>' : "<u>" + esc(x.s.slice(st, st + ln)) + "</u>"); pos = st + ln;
+        });
+        hl += esc(x.s.slice(pos));
+        let body = `<div class="orig">${hl}</div>`;
         if (ph === "new") body += `<textarea data-a="${i}" placeholder="To'g'ri gapni yozing…">${esc(ans.A[i] != null ? ans.A[i] : x.s)}</textarea>`;
         else {
           body += `<div class="lbl" style="font-size:.78rem;font-weight:700;color:var(--muted)">1-urinish</div><textarea readonly>${esc(v1)}</textarea>`;
