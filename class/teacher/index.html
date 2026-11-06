@@ -1027,6 +1027,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       </div>
       <div class="msg" id="grMsg"></div>
     </div>
+    <div class="card" id="kkCard">
+      <div class="card-header"><h3 class="card-title">🟥 Qizil kartochkalar <small id="kkAt"></small></h3><button class="btn btn-secondary btn-sm" id="kkRun">↻ Qayta hisoblash</button></div>
+      <p class="muted" style="margin:0 0 8px">9-noyabrdan. Qizil: topshirmadi / darsga kelmadi. Sariq: kechikdi / chala (2 sariq = 1 qizil). 3 = oxirgi ogohlantirish, 4 = kursda qolish masalasi (qarorni siz qilasiz). 2 toza hafta = 1 qizil o'chadi. Sababli bo'lsa, kartochkani ✕ bilan bekor qiling.</p>
+      <div id="kkBox" class="muted">Yuklanmoqda…</div>
+    </div>
   </section>
 
   <!-- Sozlash -->
@@ -1075,6 +1080,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 <script src="tests.js"></script>
 <script src="../writing/templates.js"></script>
 <script src="course.js"></script>
+<script src="kartochka.js"></script>
 <script src="journal.js"></script>
 <script src="history.js"></script>
 <script>
@@ -1752,6 +1758,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     const trigOk = r.trig && Date.now() - new Date(r.trig.at).getTime() < 3 * 3600e3;
     box.classList.remove("muted");
     box.innerHTML = `<label style="display:block;margin:4px 0"><input type="checkbox" data-au="remind" ${c.remind ? "checked" : ""}> 🔔 Muddatdan <input class="field" id="auH" value="${c.remind_h}" style="width:56px;min-height:32px;display:inline-block" inputmode="numeric"> soat oldin topshirmaganlarga eslatma (har vazifaga bir marta)</label>
+      <label style="display:block;margin:4px 0 4px 24px"><input type="checkbox" data-au="remind24"> 📅 Bundan tashqari muddatdan 24 soat oldin ham birinchi eslatma (kabinet + telefon)</label>
       <label style="display:block;margin:4px 0"><input type="checkbox" data-au="course"> 📥 Reading/Listening uy vazifasi muddati tugagach ballar (va error log %) Course ASSESSMENT'ga o'zi yoziladi</label>
       <label style="display:block;margin:4px 0"><input type="checkbox" data-au="backup"> 💾 Har kuni to'liq zaxira (Course, natijalar jadvali, o'quvchilar, kalitlar, vazifalar, Firebase) bitta arxiv bo'lib Drive "Hometask/Zaxira" papkasiga (oxirgi 30 kun + har oy 1 ta). Haftada bir marta shu arxiv bot orqali sizning Telegram'ingizga ham keladi</label>
       <div style="margin-top:10px;font-size:14px">
