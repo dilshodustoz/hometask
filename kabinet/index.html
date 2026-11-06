@@ -295,8 +295,10 @@
   }
   const urgent = iso => { const ms = new Date(iso) - new Date(); return ms > 0 && ms < 24 * 3600000; };   // 24 soatdan kam: qizil
   const dt = iso => { if (!iso) return ""; const d = new Date(iso); return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5); };
+  const skOf = x => x.skill === "speaking" ? (x.prep ? ["📝", "Speaking preparation"] : ["🎙", "Speaking mock"]) : SK[x.skill] || ["📄", x.skill];
   function state(x) {
     if (x.done) return ["ok", "✅ Topshirilgan"];
+    if (x.prep && x.draft != null && left(x.deadline)) return ["part", "📝 Yozilmoqda · " + x.draft + "%"];
     if (x.skill === "speaking" && x.n) return ["part", "🎙 " + x.n + " / " + x.total + " javob"];
     const l = left(x.deadline);
     return l ? [urgent(x.deadline) ? "urg" : "todo", "⏳ " + l] : ["late", "⛔ Muddat o'tgan"];
@@ -304,6 +306,7 @@
   function scoreHtml(x) {
     if (!x.done) return "";
     if (x.skill === "reading" || x.skill === "listening") return `<div class="score"><b>${esc(x.raw)}/40</b><span>Band ${esc(x.band)}</span></div>`;
+    if (x.prep) return `<div class="score"><b>${esc(x.pct)}%</b><span>to'liqlik</span></div>`;
     if (x.skill === "speaking" && x.baho) return `<div class="score"><b>${esc(x.baho.band)}</b><span>Band</span></div>`;
     if (x.skill === "writing") return `<div class="score"><b>${esc(x.words)}</b><span>so'z</span></div>`;
     return "";
@@ -325,8 +328,8 @@
           </div>${scoreHtml(x)}</div>${ok ? "" : tbar(x.at, x.deadline)}
           <div class="act"><a class="btn${ok ? " sec" : ""}" href="${esc(x.url)}">${ok ? "👁 Natija va kalit" : "✍️ Error log yozish"}</a></div></div>`;
       }
-      const [ic, nm] = SK[x.skill] || ["📄", x.skill], [cls, lab] = state(x);
-      const btn = x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : x.skill === "writing" ? "👁 Insho" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
+      const [ic, nm] = skOf(x), [cls, lab] = state(x);
+      const btn = x.prep ? (x.done ? "👁 Workbook" : x.draft != null ? "▶ Davom ettirish" : "▶ Boshlash") : x.done ? (x.skill === "speaking" ? "👁 Ko'rish" : x.skill === "writing" ? "👁 Insho" : "👁 Natija va kalit") : (x.skill === "speaking" && x.n ? "▶ Davom ettirish" : "▶ Boshlash");
       const can = x.done || left(x.deadline) || D.test;
       return `<div class="card"><div class="row"><div class="ic ${x.skill}">${ic}</div><div style="flex:1;min-width:0">
         <div class="tt">${esc(x.title)}</div><div class="mt">${nm}${x.at ? " · 📨 yuborildi: " + dt(x.at) : ""}</div><div class="mt">⏰ Muddat: ${esc(x.deadline_text || "—")}</div>
@@ -351,9 +354,11 @@
   function renderRes() {
     const R = D.tasks.filter(x => x.done || (x.skill === "speaking" && x.n));
     $("res").innerHTML = R.length ? R.map(x => {
-      const [ic, nm] = SK[x.skill] || ["📄", x.skill];
+      const [ic, nm] = skOf(x);
       let body = "";
-      if (x.skill === "speaking") {
+      if (x.prep) {
+        body = `<div class="act"><a class="btn sec" href="${esc(x.url)}">👁 Workbookni ko'rish</a></div>` + (x.long ? `<div class="mt" style="margin-top:6px">⚠️ ${esc(x.long)} ta joyda to'liq gap yozilgan (kalit so'z o'rniga).</div>` : "");
+      } else if (x.skill === "speaking") {
         const b = x.baho;
         body = (b ? `<div class="bands"><span>FC ${esc(b.fc)}</span><span>LR ${esc(b.lr)}</span><span>GRA ${esc(b.gra)}</span><span>P ${esc(b.p)}</span></div>` : `<div class="mt" style="margin-top:6px">Ustoz hali baholamagan.</div>`) +
           `<div style="margin-top:10px">` + (x.answers || []).map(a => `<div class="ans"><button class="play" data-t="${esc(x.t)}" data-i="${a.i}" ${a.audio ? "" : "disabled title='Ovoz topilmadi'"}>▶</button>
