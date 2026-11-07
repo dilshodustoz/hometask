@@ -819,8 +819,8 @@
   }
   else if (CODE || /^[A-Za-z0-9_-]{6,20}$/.test(KEY)) boot();
   else authLoad().then(c => { if (CODE_RE.test(c)) { CODE = c; boot(); } else showLogin(""); });
-  // har 60 soniyada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
-  setInterval(() => { if (!document.hidden && D) load(false, true).catch(() => {}); }, 60000);   // yengil (faqat xabarlar)
+  // har 3 daqiqada yangilab turamiz (sahifa ochiq bo'lsa); qaytib kelganda ham
+  setInterval(() => { if (!document.hidden && D) load(false, true).catch(() => {}); }, 180000);   // yengil (faqat xabarlar), har 3 daqiqada
   setInterval(() => { if (!document.hidden && D) renderTasks(); }, 30000);   // qolgan vaqt yozuvlari jonli yangilanadi
   document.addEventListener("visibilitychange", () => { if (!document.hidden && D) load(false).catch(() => {}); });
 })();
