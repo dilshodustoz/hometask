@@ -332,7 +332,7 @@
   function kkHtml(K) {
     if (!K) return "";
     const rules = `<details><summary>📋 Qoidalar</summary><p>🟥 <b>Qizil:</b> vazifa umuman topshirilmasa.</p><p>🟨 <b>Sariq:</b> darsga sababsiz kelinmasa, vazifa kechikib yoki chala topshirilsa (error log yarmidan kam bo'lsa). 2 ta sariq = 1 ta qizil.</p><p>⚠️ 2 ta qizil: ogohlantirish. ⛔ 3 ta qizil: oxirgi ogohlantirish. 4 ta qizil: kursda qolish masalasi ustoz bilan ko'riladi.</p><p>✅ Bir hafta bitta ham kartochkasiz ishlasangiz, 1 ta qizil kartochka o'chadi.</p><p>Hisob ${esc(K.from)}dan boshlanadi. Sababli kelmagan bo'lsangiz, ustozga ayting: kartochka bekor qilinadi.</p></details>`;
-    if (!K.started) return `<div class="kk"><div class="kh"><b>🟥 Intizom kartochkalari</b><span class="kc">0 / ${K.limit}</span></div><div class="kb ok">📅 Kartochkalar hisobi <b>${esc(K.from)}</b>dan boshlanadi. Hamma vazifani o'z vaqtida va to'liq topshiring.</div>${rules}</div>`;
+    if (!K.started) return `<div class="kk"><div class="kh"><b>🟥 Qizil kartochkalar</b><span class="kc">0 / ${K.limit}</span></div><div class="kb ok">📅 Kartochkalar hisobi <b>${esc(K.from)}</b>dan boshlanadi. Hamma vazifani o'z vaqtida va to'liq topshiring.</div>${rules}</div>`;
     const L = K.limit, sl = [];
     for (let i = 0; i < L; i++) sl.push(i < K.red ? '<div class="s r"></div>' : i === K.red && K.yel ? '<div class="s y"></div>' : `<div class="s${i === L - 1 ? " l" : ""}">${i === L - 1 ? L : ""}</div>`);
     const msg = { ok: K.red ? "Hozircha yaxshi. Kartochkalar sonini oshirmang." : "✅ Kartochka yo'q. Shunday davom eting!", warn: "⚠️ Ehtiyot bo'ling: yana 1 ta qizilda oxirgi ogohlantirish.",
