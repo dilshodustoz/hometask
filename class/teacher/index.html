@@ -606,8 +606,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   <div class="tb-left">
     <div class="brand"><img src="logo.png" alt=""><div><h1>IELTS Practice</h1><p>Dilshod ustoz</p></div></div>
     <nav class="nav-tabs hide" id="tabs">
-      <button class="tab-btn active" data-tab="reading">Reading</button>
-      <button class="tab-btn" data-tab="listening">Listening</button>
+      <button class="tab-btn active" data-tab="listening">Listening</button>
+      <button class="tab-btn" data-tab="reading">Reading</button>
       <button class="tab-btn" data-tab="writing">Writing</button>
       <button class="tab-btn" data-tab="hw" data-s="Vazifa">Home task</button>
       <button class="tab-btn" data-tab="attend">Yo'qlama</button>
@@ -635,7 +635,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   <div class="notice hide" id="otherNotice"><span id="otherText"></span><button class="btn btn-secondary btn-sm" id="otherGo">O'tish</button></div>
 
   <!-- Reading: darsni ochish -->
-  <section data-pane="reading">
+  <section data-pane="reading" class="hide">
     <div class="card" id="rdOpen">
       <div class="card-header"><h3 class="card-title">Reading darsini ochish</h3><span class="badge b-mut state">Dars ochilmagan</span></div>
       <div class="row">
@@ -649,7 +649,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   </section>
 
   <!-- Listening: darsni ochish -->
-  <section data-pane="listening" class="hide">
+  <section data-pane="listening">
     <div class="card" id="lsOpen">
       <div class="card-header"><h3 class="card-title">Listening darsini ochish</h3><span class="badge b-mut state">Dars ochilmagan</span></div>
       <div class="row">
@@ -816,7 +816,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   <section data-pane="hw" class="hide">
     <div class="card">
       <div class="card-header"><h3 class="card-title">Home task yuborish <small id="hwGroupName"></small></h3>
-        <div class="seg" id="hwSkill"><button data-s="reading" class="active">📖 Reading</button><button data-s="listening">🎧 Listening</button><button data-s="writing">✍️ Writing</button><button data-s="speaking">🎙 Speaking</button></div></div>
+        <div class="seg" id="hwSkill"><button data-s="listening" class="active">🎧 Listening</button><button data-s="reading">📖 Reading</button><button data-s="writing">✍️ Writing</button><button data-s="speaking">🎙 Speaking</button></div></div>
       <div class="row">
         <label><span class="field-label" id="hwTestLbl">Test</span><select class="field" id="hwTest"></select></label>
         <label><span class="field-label">Muddat: sana</span><input class="field" id="hwDate" type="date"></label>
@@ -1091,7 +1091,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
   const DEFAULT_API = "https://script.google.com/macros/s/AKfycbyG1ztRvvg2zdwdel1FhDjUytbhkZ0BGjITPkUAo_DNSddF23lbtlVMvbvex6CsG1ZGDw/exec";
   const STUDENT_URL = "https://dilshodustoz.github.io/hometask/class/";
-  let admin = {}, roster = {}, group = null, sid = null, sess = null, live = {}, offS = null, offL = null, tab = "reading", mode = "phone";
+  let admin = {}, roster = {}, group = null, sid = null, sess = null, live = {}, offS = null, offL = null, tab = "listening", mode = "phone";
 
   // ---------- kirish ----------
   $("btnLogin").onclick = () => {
@@ -1204,7 +1204,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   $("otherGo").onclick = () => showTab(sess.skill);
 
   // ---------- Home task (uy vazifasi: Reading / Listening / Writing / Speaking) ----------
-  let hwLog = null, hwCur = null, hwSk = "reading", wTasks = null, sTasks = null;
+  let hwLog = null, hwCur = null, hwSk = "listening", wTasks = null, sTasks = null;
   const HW_LK = { reading: "cls_hw_test", listening: "cls_hw_ltest", writing: "cls_hw_wtask", speaking: "cls_hw_stask" };
   const HW_IC = { reading: "📖", listening: "🎧", writing: "✍️", speaking: "🎙" };
   const OY = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"];
