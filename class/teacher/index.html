@@ -1962,7 +1962,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <td>${CLS.esc(R[k].phone || "")}</td><td>${fdate(R[k].added)}</td>
         <td style="white-space:nowrap">${stData.codes[k] ? `<code class="st-code" data-code="${k}" title="Ko'rsatish uchun bosing">•••••••</code> <button class="btn btn-secondary btn-sm" data-regen="${k}" title="Yangi kod (eskisi va eski kartochka QR'i ishlamay qoladi)">🔄</button> <button class="btn btn-secondary btn-sm" data-card="${k}" title="Shu o'quvchining kartochkasi (QR bilan)">🪪</button>` : `<span class="muted">—</span>`} <button class="btn btn-secondary btn-sm" data-view="${k}" title="Kabinetini o'quvchi ko'rganidek ko'rish (faqat ko'rish, «Oxirgi kirish» o'zgarmaydi)">👁</button>${(stData.push || {})[k] ? ` <span title="Telefon bildirishnomasi yoqilgan (${stData.push[k]} ta qurilma)">🔔</span>` : ""}</td>
         <td style="white-space:nowrap">${seenTxt((stData.seen || {})[k])}</td>
-        <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-msg="${k}" title="Kabinetga xabar + telefon bildirishnomasi">✉️ Xabar</button>
+        <td><button class="btn btn-secondary btn-sm" data-ed="${k}">Tahrirlash</button> <button class="btn btn-secondary btn-sm" data-mv="${k}" title="Boshqa guruhga ko'chirish (masalan Morning → Afternoon)">↔ Guruh</button> <button class="btn btn-secondary btn-sm" data-msg="${k}" title="Kabinetga xabar + telefon bildirishnomasi">✉️ Xabar</button>
           <button class="btn btn-warning btn-sm" data-ar="${k}">Arxivlash</button> <button class="btn btn-danger btn-sm" data-del="${k}">O'chirish</button></td></tr>`).join("")
         || `<tr><td colspan="7" class="muted">Bu guruhda hali o'quvchi yo'q.</td></tr>`;
     const A = stData.archive, as = Object.keys(A).filter(k => String(A[k].chat) === chat).sort((a, b) => A[a].name.localeCompare(A[b].name));
@@ -2103,6 +2103,16 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         const ph = prompt("Telefon:", st.phone || "");
         stCall({ admin: "st_rename", k: b.dataset.ed, first: nm.trim(), last: "", phone: ph == null ? st.phone || "" : ph.trim(), course: true }, "stMsg")
           .then(r => { if (r) $("stMsg").textContent = "✅ Yangilandi." + (r.notes || []).map(x => "\n" + x).join(""); });
+      } else if (b.dataset.mv) {
+        const st = R[b.dataset.mv], gs = stData.groups;
+        const opts = Object.keys(gs).filter(g => !gs[g].test && gs[g].chat && String(gs[g].chat) !== String(st.chat));
+        if (!opts.length) { $("stMsg").textContent = "⚠️ Ko'chirish uchun boshqa guruh yo'q."; return; }
+        const ans = prompt(`${st.name} qaysi guruhga ko'chirilsin? Raqamini yozing:\n\n` + opts.map((g, i) => `${i + 1}. ${gs[g].name}`).join("\n") +
+          `\n\nVazifalar, muddatlar va kartochkalar endi o'sha guruh bo'yicha boradi. Course jadvalidagi qatori o'zgarmaydi.`, opts.length === 1 ? "1" : "");
+        if (ans == null) return;
+        const to = opts[Number(ans) - 1];
+        if (!to) { $("stMsg").textContent = "⚠️ Raqam noto'g'ri, ko'chirilmadi."; return; }
+        stCall({ admin: "st_move", k: b.dataset.mv, group: to }, "stMsg").then(r => { if (r) $("stMsg").textContent = `✅ ${st.name} ${gs[to].name} guruhiga ko'chirildi.`; });
       } else if (b.dataset.inv) {
         $("stMsg").textContent = "Havola yaratilmoqda…";
         api({ admin: "st_invite", k: b.dataset.inv }).then(r => {
