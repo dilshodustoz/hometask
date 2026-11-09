@@ -14,6 +14,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
 <style>
   /* Mac'dagi panel dizayni (MINIMAL DIZAYN 2026-10-27) asosida */
+  .lim-row{margin:12px 0 0;font-size:15px;color:var(--text)}
+  .lim-sub{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+  .lim-bar{height:8px;border-radius:99px;background:#EEEEF1;overflow:hidden;margin-top:6px}
+  .lim-bar>i{display:block;height:100%;min-width:4px;border-radius:99px;background:#16A34A}
+  .lim-bar>i.w{background:#F59E0B}.lim-bar>i.d{background:#DC2626}
+  .lim-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 4px #DCFCE7;margin-right:8px;vertical-align:-1px}
+  .lim-dot.off{background:#F59E0B;box-shadow:0 0 0 4px #FEF3C7}
+  .lim-link{display:block;color:var(--primary);font-weight:700;font-size:17px;word-break:break-all;margin-top:6px;text-decoration:none}
   :root{--primary:#E8590C;--ink:#18181B;--bg:#F6F6F4;--card:#FFFFFF;--border:#E7E7E4;--border-strong:#D6D6D1;--text:#27272A;--muted:#71717A;--faint:#A1A1AA;
     --green:#15803D;--green-bg:#F0FDF4;--red:#DC2626;--red-bg:#FEF2F2;--amber:#B45309;--amber-bg:#FFFBEB;--blue:#2563EB;--blue-bg:#EFF6FF;--radius:14px}
   *{box-sizing:border-box}
@@ -1036,6 +1044,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 
   <!-- Sozlash -->
   <section data-pane="setup" class="hide">
+    <div class="card" id="limCard">
+      <div class="card-header"><h3 class="card-title">Sayt limitlari <small>bepul tariflar, bugun (Toshkent vaqti)</small></h3><button class="btn btn-secondary btn-sm" id="limReload">↻</button></div>
+      <div id="limBox" class="muted">Yuklanmoqda…</div>
+    </div>
     <div class="card">
       <div class="card-header"><h3 class="card-title">Apps Script bilan aloqa</h3></div>
       <div id="secretBox"></div>
@@ -1752,6 +1764,53 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     });
   }
 
+  // ---------- Sayt limitlari (Full Mock platformasidagi kartaga o'xshash): Apps Script, Drive, GitHub Pages, Firebase, zaxira ----------
+  const LIM_PAGES = "https://api.github.com/repos/dilshodustoz/hometask/git/trees/claude%2Fproject-thread-m5spia?recursive=1";
+  let limPagesMb = null;
+  function limPages() {   // sayt hajmi: GitHub'dagi fayllar yig'indisi (brauzerdan, 12 soatda bir marta)
+    try { const c = JSON.parse(localStorage.getItem("lim_pages") || "null"); if (c && Date.now() - c.at < 12 * 3600e3) return Promise.resolve(limPagesMb = c.mb); } catch (e) {}
+    return fetch(LIM_PAGES).then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))).then(t => {
+      limPagesMb = (t.tree || []).reduce((a, x) => a + (x.type === "blob" ? x.size || 0 : 0), 0) / 1048576;
+      try { localStorage.setItem("lim_pages", JSON.stringify({ at: Date.now(), mb: limPagesMb })); } catch (e) {}
+      return limPagesMb;
+    }).catch(() => limPagesMb);
+  }
+  function limAgo(iso) {
+    if (!iso) return "hali yo'q";
+    const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    return m < 1 ? "hozirgina" : m < 60 ? m + " daqiqa oldin" : m < 48 * 60 ? Math.round(m / 60) + " soat oldin" : Math.round(m / 1440) + " kun oldin";
+  }
+  function limNum(n, d) { return (n == null || isNaN(n)) ? "—" : Number(n).toLocaleString("ru-RU", { maximumFractionDigits: d || 0 }).replace(/,/g, ","); }
+  function limRow(label, used, max, unit, sub, dec) {
+    const has = used != null && !isNaN(used), pct = has && max ? Math.min(100, used / max * 100) : 0;
+    const cls = pct >= 85 ? "d" : pct >= 60 ? "w" : "";
+    return `<div class="lim-row">${label}: ${has ? "~" + limNum(used, dec) : "—"}${max ? " / " + limNum(max) : ""}${unit ? " " + unit : ""}${max && has ? ` <span class="muted" style="font-size:13px">(${pct < 1 && used > 0 ? "<1" : Math.round(pct)}%)</span>` : ""}
+      ${max ? `<div class="lim-bar"><i class="${cls}" style="width:${pct}%"></i></div>` : ""}${sub ? `<div class="lim-sub">${sub}</div>` : ""}</div>`;
+  }
+  function limDraw(r) {
+    const L = r.lim || {}, M = L.lim || { trig_min: 90, uf: 20000, fb_mb: 1000, pages_mb: 1000 }, box = $("limBox");
+    if (!box) return;
+    if (L.error) { box.textContent = "⚠️ " + L.error; return; }
+    const trigOk = r.trig && Date.now() - new Date(r.trig.at).getTime() < 3 * 3600e3;
+    const y = (L.hist || [])[0];
+    const GB = 1073741824;
+    box.classList.remove("muted");
+    box.innerHTML = `<div><span class="lim-dot${trigOk ? "" : " off"}"></span><b>Doimiy havola</b> <span class="muted" style="font-size:13px">o'quvchilar kabineti</span>
+        <a class="lim-link" href="${KAB_URL}" target="_blank" rel="noopener">${KAB_URL.replace(/^https:\/\//, "").replace(/\/$/, "")}</a></div>
+      ${limRow("Avtomatik ishlar vaqti", L.trig_ms != null ? L.trig_ms / 60000 : null, M.trig_min, "daqiqa", `Apps Script triggeri: kuniga 90 daqiqa. Bugun ${limNum(L.trig_n)} marta ishladi.`, 1)}
+      ${limRow("Tashqi so'rovlar", L.uf, M.uf, "", "Telegram, telefon push, Gemini AI, GitHub zaxirasi: kuniga 20 000.")}
+      ${limRow("Sahifa so'rovlari", L.req, 0, "", "O'quvchilar va siz sahifalarni ochganda. Kunlik cheklov yo'q (bir vaqtda 30 tagacha).")}
+      ${limRow("Google Drive joyi", L.drive_used != null ? L.drive_used / GB : null, L.drive_limit ? Math.round(L.drive_limit / GB) : 15, "GB", "Gmail va Google Foto bilan umumiy joy.", 1)}
+      ${limRow("Sayt hajmi (GitHub Pages)", limPagesMb, M.pages_mb, "MB", "Sahifalar va Listening audiolari. 800 MB dan oshsa, audioni ko'chirish kerak bo'ladi.")}
+      ${limRow("Firebase bazasi", L.fb_bytes != null ? L.fb_bytes / 1048576 : null, M.fb_mb, "MB", "Darsdagi testlar. Kunlik nusxa hajmi bo'yicha" + (L.fb_at ? ", " + limAgo(L.fb_at) : "") + ".", 2)}
+      <div class="lim-row">🛟 Zaxira: ${r.backup ? limAgo(r.backup.at) : "hali yo'q"}${r.backup && r.backup.folder ? ` · <a href="${CLS.esc(r.backup.folder)}" target="_blank" rel="noopener">ochish</a>` : ""}</div>
+      ${y ? `<div class="lim-sub" style="margin-top:10px">Kecha (${CLS.esc(String(y.d).slice(8, 10) + "." + String(y.d).slice(5, 7))}): avtomatik ishlar ~${limNum((y.tms || 0) / 60000, 1)} daqiqa, tashqi so'rovlar ~${limNum(y.uf)}, sahifa so'rovlari ~${limNum(y.req)}</div>` : ""}
+      ${trigOk ? "" : `<div class="lim-sub" style="margin-top:10px;color:var(--amber)">⚠️ Trigger 3 soatdan beri ishlamagan: avtomatik ishlar to'xtagan bo'lishi mumkin.</div>`}
+      <div class="lim-sub" style="margin-top:8px">Sanash 9-noyabrdan boshlandi. Yashil = xavfsiz, sariq = 60% dan oshdi, qizil = 85% dan oshdi.</div>`;
+  }
+  function limLoad(r) { limDraw(r); limPages().then(() => limDraw(r)); }
+  $("limReload").onclick = () => { try { localStorage.removeItem("lim_pages"); } catch (e) {} limPagesMb = null; auLoad(); };
+
   // ---------- Avtomatik ishlar (LC Panel "tick"): eslatma, ballarni Course'ga yozish, Course zaxirasi ----------
   function auDraw(r) {
     const c = r.cfg, box = $("auBox"), ago = iso => iso ? fmtAt(iso) : "—";
@@ -1783,7 +1842,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("auBox").querySelectorAll("[data-au]").forEach(i => { b[i.dataset.au] = i.checked; });
     api(b).then(r => { if (r.ok) auDraw(r); else $("setupMsg").textContent = "⚠️ " + r.error; }).catch(e => { $("setupMsg").textContent = "⚠️ " + e.message; });
   }
-  function auLoad() { if (!admin.verified) return; api({ admin: "auto_get" }).then(r => { if (r.ok) auDraw(r); else $("auBox").textContent = "⚠️ " + r.error; }).catch(e => { $("auBox").textContent = "⚠️ " + e.message; }); }
+  function auLoad() { if (!admin.verified) return; api({ admin: "auto_get" }).then(r => { if (r.ok) { auDraw(r); limLoad(r); } else $("auBox").textContent = $("limBox").textContent = "⚠️ " + r.error; }).catch(e => { $("auBox").textContent = $("limBox").textContent = "⚠️ " + e.message; }); }
   $("auReload").onclick = auLoad;
   let ticked = false;
   function tickOnce() { if (ticked || !admin.verified) return; ticked = true; setTimeout(() => api({ admin: "tick" }).catch(() => {}), 4000); setTimeout(() => fbBackup(false).catch(() => {}), 15000); }
