@@ -14,6 +14,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
 <style>
   /* Mac'dagi panel dizayni (MINIMAL DIZAYN 2026-10-27) asosida */
+  .lim-pill{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;font:inherit;font-size:.78rem;padding:6px 12px;border-radius:14px;border:1px solid var(--border,#E7E7E4);background:#fff;color:var(--text);cursor:pointer;text-align:left}
+  .lim-pill.hide{display:none}
+  .lim-pill b{font-weight:700;white-space:nowrap}
+  .lim-pill .lim-dot{width:9px;height:9px;margin-right:0;box-shadow:0 0 0 3px #DCFCE7}
+  .lim-pill .lim-dot.off{box-shadow:0 0 0 3px #FEF3C7}.lim-pill .lim-dot.bad{background:#DC2626;box-shadow:0 0 0 3px #FEE2E2}
+  .lp-ms{display:inline-flex;gap:10px;flex-wrap:wrap}
+  .lp-m{display:inline-flex;flex-direction:column;min-width:86px;color:var(--muted);font-size:.7rem;line-height:1.25;white-space:nowrap}
+  .lp-m .lim-bar{height:5px;margin-top:3px}
+  @media (max-width:760px){#tbRight .lim-pill{flex:0 0 auto;gap:6px;padding:5px 8px;border-radius:12px}#lpSt,.lp-l{display:none}.lp-ms{gap:6px}.lp-m{min-width:50px;font-size:.62rem}}
+  header.topbar:has(#limPill:not(.hide))::after{display:none!important}
   .lim-row{margin:12px 0 0;font-size:15px;color:var(--text)}
   .lim-sub{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
   .lim-bar{height:8px;border-radius:99px;background:#EEEEF1;overflow:hidden;margin-top:6px}
@@ -626,6 +636,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   </div>
   <div class="tb-right hide" id="tbRight">
     <div class="seg" id="grpSeg" title="Barcha bo'limlar shu guruh bilan ishlaydi"></div>
+    <button class="lim-pill hide" id="limPill" title="Sayt limitlari: batafsil Sozlash bo'limida"><span class="lim-dot" id="lpDot"></span><b id="lpSt">Sayt ishlayapti</b><span class="lp-ms" id="lpMs"></span></button>
     <span class="who" id="who"></span>
   </div>
 </header>
@@ -1808,7 +1819,23 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       ${trigOk ? "" : `<div class="lim-sub" style="margin-top:10px;color:var(--amber)">⚠️ Trigger 3 soatdan beri ishlamagan: avtomatik ishlar to'xtagan bo'lishi mumkin.</div>`}
       <div class="lim-sub" style="margin-top:8px">Sanash 9-noyabrdan boshlandi. Yashil = xavfsiz, sariq = 60% dan oshdi, qizil = 85% dan oshdi.</div>`;
   }
-  function limLoad(r) { limDraw(r); limPages().then(() => limDraw(r)); }
+  function limTop(r, err) {   // tepadagi doim ko'rinadigan holat: sayt ishlayaptimi + kun davomida to'lib boradigan 2 ta limit
+    const pill = $("limPill"); if (!pill) return;
+    pill.classList.remove("hide");
+    if (err) { $("lpDot").className = "lim-dot bad"; $("lpSt").textContent = "Aloqa yo'q"; $("lpMs").innerHTML = ""; pill.title = "LC Panel javob bermadi: " + err; return; }
+    const L = r.lim || {}, M = L.lim || { trig_min: 90, uf: 20000 };
+    const trigOk = r.trig && Date.now() - new Date(r.trig.at).getTime() < 3 * 3600e3;
+    $("lpDot").className = "lim-dot" + (trigOk ? "" : " off");
+    $("lpSt").textContent = trigOk ? "Sayt ishlayapti" : "Avtomatik ishlar to'xtagan";
+    const m = (lab, used, max, txt) => { const pct = used != null ? Math.min(100, used / max * 100) : 0, c = pct >= 85 ? "d" : pct >= 60 ? "w" : "";
+      return `<span class="lp-m"><span class="lp-l">${lab} </span>${used != null ? txt : "—"}<span class="lim-bar"><i class="${c}" style="width:${pct}%"></i></span></span>`; };
+    const tm = L.trig_ms != null ? L.trig_ms / 60000 : null;
+    $("lpMs").innerHTML = m("Avto ishlar", tm, M.trig_min, limNum(tm) + "/" + M.trig_min + " daq") + m("So'rovlar", L.uf, M.uf, limNum(L.uf) + "/" + limNum(M.uf / 1000) + "k");
+    pill.title = "Bugun (Toshkent): avtomatik ishlar ~" + limNum(tm, 1) + " / " + M.trig_min + " daqiqa, tashqi so'rovlar ~" + limNum(L.uf) + " / " + limNum(M.uf) + ". Batafsil: Sozlash.";
+  }
+  function limTopLoad() { if (!admin.verified) return; api({ admin: "auto_get" }).then(r => { if (r.ok) limTop(r); else limTop(null, r.error); }).catch(e => limTop(null, e.message)); }
+  $("limPill").onclick = () => showTab("setup");
+  function limLoad(r) { limTop(r); limDraw(r); limPages().then(() => limDraw(r)); }
   $("limReload").onclick = () => { try { localStorage.removeItem("lim_pages"); } catch (e) {} limPagesMb = null; auLoad(); };
 
   // ---------- Avtomatik ishlar (LC Panel "tick"): eslatma, ballarni Course'ga yozish, Course zaxirasi ----------
@@ -1845,7 +1872,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function auLoad() { if (!admin.verified) return; api({ admin: "auto_get" }).then(r => { if (r.ok) { auDraw(r); limLoad(r); } else $("auBox").textContent = $("limBox").textContent = "⚠️ " + r.error; }).catch(e => { $("auBox").textContent = $("limBox").textContent = "⚠️ " + e.message; }); }
   $("auReload").onclick = auLoad;
   let ticked = false;
-  function tickOnce() { if (ticked || !admin.verified) return; ticked = true; setTimeout(() => api({ admin: "tick" }).catch(() => {}), 4000); setTimeout(() => fbBackup(false).catch(() => {}), 15000); }
+  function tickOnce() { if (ticked || !admin.verified) return; ticked = true; setTimeout(limTopLoad, 2500); setInterval(() => { if (!document.hidden) limTopLoad(); }, 10 * 60000); setTimeout(() => api({ admin: "tick" }).catch(() => {}), 4000); setTimeout(() => fbBackup(false).catch(() => {}), 15000); }
   // Firebase zaxirasi: kuniga bir marta ustoz sahifasi (ustoz bo'lib kirgan) Firebase ma'lumotini LC Panel'ga yuboradi -> Drive -> kunlik arxiv
   function fbBackup(force) {
     const day = new Date().toISOString().slice(0, 10);
