@@ -23,7 +23,19 @@
   .lp-m{display:inline-flex;flex-direction:column;min-width:86px;color:var(--muted);font-size:.7rem;line-height:1.25;white-space:nowrap}
   .lp-m .lim-bar{height:5px;margin-top:3px}
   @media (max-width:760px){#tbRight .lim-pill{flex:0 0 auto;gap:6px;padding:5px 8px;border-radius:12px}#lpSt,.lp-l{display:none}.lp-ms{gap:6px}.lp-m{min-width:50px;font-size:.62rem}}
-  header.topbar:has(#limPill:not(.hide))::after{display:none!important}
+  .lim-side{display:none}
+  @media (min-width:1280px){
+    html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) .lim-side:not(.hide){display:block;margin-top:auto;width:100%;font:inherit;text-align:left;background:#F7F7F8;border:0;border-radius:10px;padding:10px 12px 8px;cursor:pointer;color:var(--text)}
+    html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) header.topbar:has(.lim-side:not(.hide))::after{margin-top:8px}
+    html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) #tbRight .lim-pill{display:none}
+    .lim-side .lp-m{display:block;min-width:0;font-size:.74rem;margin-bottom:9px;white-space:normal}
+    .lim-side .lp-m:last-child{margin-bottom:0}
+    .lim-side .lim-bar{display:block;height:6px;margin-top:4px}
+    .lim-side .lp-l{color:var(--text);font-weight:600}
+  }
+  html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) header.topbar[data-st]::after{content:attr(data-st)}
+  html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) header.topbar[data-c=off]::after{background-image:radial-gradient(circle at 14px 50%,#F59E0B 4px,transparent 4.5px)}
+  html:is([data-th=classic],[data-th=tiles],[data-th=notion],[data-th=glass]) header.topbar[data-c=bad]::after{background-image:radial-gradient(circle at 14px 50%,#DC2626 4px,transparent 4.5px)}
   .lim-row{margin:12px 0 0;font-size:15px;color:var(--text)}
   .lim-sub{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
   .lim-bar{height:8px;border-radius:99px;background:#EEEEF1;overflow:hidden;margin-top:6px}
@@ -639,6 +651,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     <button class="lim-pill hide" id="limPill" title="Sayt limitlari: batafsil Sozlash bo'limida"><span class="lim-dot" id="lpDot"></span><b id="lpSt">Sayt ishlayapti</b><span class="lp-ms" id="lpMs"></span></button>
     <span class="who" id="who"></span>
   </div>
+  <button class="lim-side hide" id="limSide" title="Sayt limitlari: batafsil Sozlash bo'limida"></button>
 </header>
 
 <div class="card login" id="login">
@@ -1822,7 +1835,9 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function limTop(r, err) {   // tepadagi doim ko'rinadigan holat: sayt ishlayaptimi + kun davomida to'lib boradigan 2 ta limit
     const pill = $("limPill"); if (!pill) return;
     pill.classList.remove("hide");
-    if (err) { $("lpDot").className = "lim-dot bad"; $("lpSt").textContent = "Aloqa yo'q"; $("lpMs").innerHTML = ""; pill.title = "LC Panel javob bermadi: " + err; return; }
+    const hdr = document.querySelector("header.topbar"), side = $("limSide");
+    if (err) { $("lpDot").className = "lim-dot bad"; $("lpSt").textContent = "Aloqa yo'q"; $("lpMs").innerHTML = ""; pill.title = "LC Panel javob bermadi: " + err;
+      hdr.dataset.st = "Aloqa yo'q"; hdr.dataset.c = "bad"; side.classList.add("hide"); return; }
     const L = r.lim || {}, M = L.lim || { trig_min: 90, uf: 20000 };
     const trigOk = r.trig && Date.now() - new Date(r.trig.at).getTime() < 3 * 3600e3;
     $("lpDot").className = "lim-dot" + (trigOk ? "" : " off");
@@ -1831,10 +1846,13 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       return `<span class="lp-m"><span class="lp-l">${lab} </span>${used != null ? txt : "—"}<span class="lim-bar"><i class="${c}" style="width:${pct}%"></i></span></span>`; };
     const tm = L.trig_ms != null ? L.trig_ms / 60000 : null;
     $("lpMs").innerHTML = m("Avto ishlar", tm, M.trig_min, limNum(tm) + "/" + M.trig_min + " daq") + m("So'rovlar", L.uf, M.uf, limNum(L.uf) + "/" + limNum(M.uf / 1000) + "k");
+    hdr.dataset.st = $("lpSt").textContent; hdr.dataset.c = trigOk ? "ok" : "off";
+    side.innerHTML = m("Avtomatik ishlar", tm, M.trig_min, limNum(tm) + " / " + M.trig_min + " daq") + m("Tashqi so'rovlar", L.uf, M.uf, limNum(L.uf) + " / " + limNum(M.uf));
+    side.classList.remove("hide"); side.title = pill.title;
     pill.title = "Bugun (Toshkent): avtomatik ishlar ~" + limNum(tm, 1) + " / " + M.trig_min + " daqiqa, tashqi so'rovlar ~" + limNum(L.uf) + " / " + limNum(M.uf) + ". Batafsil: Sozlash.";
   }
   function limTopLoad() { if (!admin.verified) return; api({ admin: "auto_get" }).then(r => { if (r.ok) limTop(r); else limTop(null, r.error); }).catch(e => limTop(null, e.message)); }
-  $("limPill").onclick = () => showTab("setup");
+  $("limPill").onclick = () => showTab("setup"); $("limSide").onclick = () => showTab("setup");
   function limLoad(r) { limTop(r); limDraw(r); limPages().then(() => limDraw(r)); }
   $("limReload").onclick = () => { try { localStorage.removeItem("lim_pages"); } catch (e) {} limPagesMb = null; auLoad(); };
 
