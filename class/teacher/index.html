@@ -1515,18 +1515,33 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function hwLoad() {
     if (hwBusy) return; hwBusy = true;
     if (!hwLog) try { const j = localStorage.getItem("hw_log_c"); if (j) { hwLog = JSON.parse(j); hwShowList(); } } catch (e) {}
-    return api({ admin: "hw_list" }).finally(() => { hwBusy = false; }).then(r => { if (r.ok) { hwLog = r.log; try { localStorage.setItem("hw_log_c", JSON.stringify(r.log)); } catch (e) {} hwShowList(); spBackfill(); } else $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; })
+    return api({ admin: "hw_list" }).finally(() => { hwBusy = false; }).then(r => { if (r.ok) { hwLog = Object.assign({}, r.log, hwClsMap(r.cls)); try { localStorage.setItem("hw_log_c", JSON.stringify(hwLog)); } catch (e) {} hwShowList(); spBackfill(); } else $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(r.error)}</td></tr>`; })
       .catch(e => { $("hwList").innerHTML = `<tr><td colspan="6">⚠️ ${CLS.esc(e.message)}</td></tr>`; });
+  }
+  // Darsdagi testlar (class_log.json): Home task ro'yxatida "🏫 Darsda" bo'lib turadi — natija + error log
+  function hwClsMap(L) {
+    const out = {};
+    Object.keys(L || {}).forEach(sid => {
+      const e = L[sid]; if (!e || !/^(reading|listening)$/.test(e.skill)) return;
+      const chats = {}, due = e.due || {};
+      Object.keys(e.st || {}).forEach(k => {
+        const c = String((e.st[k] || {}).chat || ""); if (!c) return;
+        const x = chats[c] = chats[c] || { at: e.at, deadline: due.at || e.at, deadline_text: "error log: " + (due.text || "—"), sent: [] };
+        x.sent.push(k);
+      });
+      out["cls_" + sid] = { skill: e.skill, t: e.t, title: e.title, cls: sid, chats: chats };
+    });
+    return out;
   }
   function hwShowList() {
     try { hwWhoTxt(); if (!$("hwWhoBox").classList.contains("hide")) hwWhoDraw(); } catch (e) {}
     if (!hwLog) return;
     const chat = String(CLS.GROUPS[group].chat);
-    const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat] && (hwLog[id].skill || "reading") === hwSk).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title }, hwLog[id].chats[chat]))
+    const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat] && (hwLog[id].skill || "reading") === hwSk).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title, cls: hwLog[id].cls || "" }, hwLog[id].chats[chat]))
       .sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${h.skill === "speaking" ? (/^prep/.test(h.t) ? "📝" : "🎙") : HW_IC[h.skill] || "📖"} ${CLS.esc(h.title)}${h.skill === "speaking" ? ` <span class="muted">· ${/^prep/.test(h.t) ? "preparation" : "mock"}</span>` : ""}</td><td>${CLS.esc(h.deadline_text)}</td>
+    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${h.skill === "speaking" ? (/^prep/.test(h.t) ? "📝" : "🎙") : HW_IC[h.skill] || "📖"} ${h.cls ? `<span class="badge b-warn" title="Darsda ishlangan test: natija va error log">🏫 Darsda</span> ` : ""}${CLS.esc(h.title)}${h.skill === "speaking" ? ` <span class="muted">· ${/^prep/.test(h.t) ? "preparation" : "mock"}</span>` : ""}</td><td>${CLS.esc(h.deadline_text)}</td>
       <td>${fmtAt(h.at)} · ${h.sent.length} ta${h.fail && h.fail.length ? ` <span class="badge b-bad">${h.fail.length} bormadi</span>` : ""}</td>
-      <td id="hwc_${h.id}">—</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button> <button class="btn btn-secondary btn-sm" data-del="${h.id}" title="Vazifani ro'yxatdan (va o'quvchi kabinetidan) o'chirish">🗑</button></td></tr>`).join("")
+      <td id="hwc_${h.id}">—</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button> ${h.cls ? "" : `<button class="btn btn-secondary btn-sm" data-del="${h.id}" title="Vazifani ro'yxatdan (va o'quvchi kabinetidan) o'chirish">🗑</button>`}</td></tr>`).join("")
       : `<tr><td colspan="6" class="muted">Bu guruhga hali ${HW_IC[hwSk] || ""} ${hwSk[0].toUpperCase() + hwSk.slice(1)} uy vazifasi yuborilmagan.</td></tr>`;
     $("hwListSk").textContent = "· " + (HW_IC[hwSk] || "") + " " + hwSk[0].toUpperCase() + hwSk.slice(1);
     $("hwList").querySelectorAll("button[data-id]").forEach(b => b.onclick = () => hwStatus(b.dataset.id));
@@ -1590,7 +1605,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("hwdT").innerHTML = `${HW_IC[SK] || "📖"} ${E(nm)} <small>· ${E(h.title)}</small>`;
     $("hwdB").innerHTML = `<div class="muted" style="padding:20px">Yuklanmoqda…</div>`;
     $("hwdM").classList.remove("hide"); document.body.style.overflow = "hidden";
-    api({ admin: "hw_detail", skill: SK, t: h.t, k: k }).then(r => {
+    api(Object.assign({ admin: "hw_detail", skill: SK, t: h.t, k: k }, h.cls ? { sid: h.cls } : {})).then(r => {
       if (!r.ok) { $("hwdB").innerHTML = `<div style="padding:20px">⚠️ ${E(r.error)}</div>`; return; }
       const fbBtn = r.fb ? `<button class="btn btn-sm" id="hwdFb">📄 Feedback</button>` : `<span class="muted">Feedback hali yo'q</span>`;
       if (SK === "reading" || SK === "listening") {
@@ -1651,18 +1666,20 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function hwStatus(id) {
     hwCur = id;
     const h = hwLog[id], t = h.t, W = h.skill === "writing", S = h.skill === "speaking", L = h.skill === "listening" || !h.skill || h.skill === "reading", chat = String(CLS.GROUPS[group].chat), info = h.chats[chat];
+    const C = h.cls || "";
     $("hwRmBox").classList.add("hide");
+    $("hwRemind").classList.toggle("hide", !!C);
     $("hwStCard").classList.remove("hide");
     $("hwStMsg").textContent = ""; $("hwFbAll").classList.add("hide");
-    $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · yuborildi ${fmtAt(info.at)} · muddat ${CLS.esc(info.deadline_text)}</small>`;
-    const ck = (h.skill || "reading") + "_" + t, old = hwStC[ck];
+    $("hwStTitle").innerHTML = `${CLS.esc(h.title)} <small>· ${CLS.esc(CLS.GROUPS[group].name)} · ${C ? "🏫 dars" : "yuborildi"} ${fmtAt(info.at)} · ${C ? "" : "muddat "}${CLS.esc(info.deadline_text)}</small>`;
+    const ck = (h.skill || "reading") + "_" + t + (C ? "_" + C : ""), old = hwStC[ck];
     if (!old) $("hwStBody").innerHTML = `<tr><td colspan="8" class="muted">Yuklanmoqda…</td></tr>`;
     $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>${W ? "So'z" : S ? "Javob" : "Ball"}</th><th>${W ? "Paste · chiqish" : S ? "Matnga o'girildi" : "Band"}</th><th>${S ? "Baho (Claude)" : "Daqiqa"}</th>${L ? "<th>Error log</th>" : ""}<th>Qachon</th><th></th></tr>`;
     const draw = r => {
       if (hwCur !== id) return;
       if (S && r.prep) return drawPrep(r);   // Speaking preparation (yozma)
       const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
-      const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
+      const keys = Array.from(new Set(C ? info.sent : info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
         .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
       const late = CLS.now() > new Date(info.deadline).getTime();
       let n = 0, sum = 0, trN = 0, ansN = 0, gN = 0, gSum = 0, sentN = 0, lgN = 0;
@@ -1686,7 +1703,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         if (x) { n++; sum += Number(W ? x.words : x.band) || 0; }
         const st = x ? `<span class="badge b-ok">Topshirdi</span>` + (x.timeUp ? ` <span class="badge b-warn">vaqt tugadi</span>` : "")
           : late ? `<span class="badge b-bad">Topshirmadi</span>` : `<span class="badge b-mut">Kutilmoqda</span>`;
-        return `<tr${x ? ` data-det="${CLS.esc(k)}" class="hwd-row"` : ""}><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${!x ? "—" : W ? x.words : x.raw + "/40"}</td><td>${!x ? "—" : W ? (x.pastes || 0) + " · " + (x.leaves || 0) : CLS.esc(x.band)}</td><td>${x ? x.minutes : "—"}</td>${L ? lgCell(k, x) : ""}<td>${x ? fmtAt(x.at) : "—"}</td><td>${x ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Topshirig'i o'chiriladi (zaxira nusxasi qoladi), o'quvchi testni boshidan qayta ishlaydi">↺ Qayta ochish</button>` : ""}</td></tr>`;
+        return `<tr${x ? ` data-det="${CLS.esc(k)}" class="hwd-row"` : ""}><td>${i + 1}</td><td>${CLS.esc(nm)}</td><td>${st}</td><td>${!x ? "—" : W ? x.words : x.raw + "/40"}</td><td>${!x ? "—" : W ? (x.pastes || 0) + " · " + (x.leaves || 0) : CLS.esc(x.band)}</td><td>${x ? x.minutes : "—"}</td>${L ? lgCell(k, x) : ""}<td>${x ? fmtAt(x.at) : "—"}</td><td>${x && !C ? `<button class="btn btn-secondary btn-sm" data-reopen="${CLS.esc(k)}" title="Topshirig'i o'chiriladi (zaxira nusxasi qoladi), o'quvchi testni boshidan qayta ishlaydi">↺ Qayta ochish</button>` : ""}</td></tr>`;
       }).join("");
       const fbSend = (k, b) => {
         const one = !!k, nm = one ? ((roster[k] || {}).name || k) : "";
@@ -1756,7 +1773,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     }
     // Tez ochish: oxirgi ma'lumot darhol chiziladi, yangisi orqada keladi va farq bo'lsagina qayta chiziladi
     if (old) { draw(old.r); $("hwStMsg").textContent = "↻ yangilanmoqda…"; }
-    hwStFetch(h.skill, t).then(r => {
+    hwStFetch(h.skill, t, C).then(r => {
       if (hwCur !== id) return;
       if ($("hwStMsg").textContent === "↻ yangilanmoqda…") $("hwStMsg").textContent = "";
       if (!r.ok) { if (!old) $("hwStBody").innerHTML = `<tr><td colspan="8">⚠️ ${CLS.esc(r.error)}</td></tr>`; return; }
@@ -1765,24 +1782,24 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   }
   // "Kim topshirdi" keshi: {skill_t: {r, j}}; ro'yxat yuklanganda oxirgi vazifalar oldindan olib qo'yiladi
   const hwStC = {}, hwStP = {};
-  function hwStFetch(skill, t) {
-    const ck = (skill || "reading") + "_" + t;
+  function hwStFetch(skill, t, sid) {
+    const ck = (skill || "reading") + "_" + t + (sid ? "_" + sid : "");
     if (hwStP[ck]) return hwStP[ck];
-    return hwStP[ck] = api({ admin: "status", skill: skill, t: t }).then(r => {
+    return hwStP[ck] = api(Object.assign({ admin: "status", skill: skill, t: t }, sid ? { sid: sid } : {})).then(r => {
       if (r.ok) { hwStC[ck] = { r: r, j: JSON.stringify(r), at: Date.now() }; try { localStorage.setItem("hwst_" + ck, hwStC[ck].j); } catch (e) {} }
       return r;
     }).finally(() => { delete hwStP[ck]; });
   }
   function hwPrefetch(rows) {
     rows.slice(0, 3).forEach(h => {
-      const ck = h.skill + "_" + h.t;
+      const ck = h.skill + "_" + h.t + (h.cls ? "_" + h.cls : "");
       if (!hwStC[ck]) try { const j = localStorage.getItem("hwst_" + ck); if (j) hwStC[ck] = { r: JSON.parse(j), j: j }; } catch (e) {}
       if (hwStC[ck] && hwStC[ck].at > Date.now() - 60000) return;   // yaqinda olingan
-      hwStFetch(h.skill, h.t).then(r => {   // jadvaldagi "topshirdi" ustuni ham to'ladi
+      hwStFetch(h.skill, h.t, h.cls).then(r => {   // jadvaldagi "topshirdi" ustuni ham to'ladi
         if (!r.ok || !hwLog) return;
         const c = $("hwc_" + h.id), info = (hwLog[h.id] || { chats: {} }).chats[String(CLS.GROUPS[group].chat)];
         if (!c || !info || h.skill === "speaking") return;
-        const ks = new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group)));
+        const ks = new Set(h.cls ? info.sent : info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group)));
         c.textContent = r.rows.filter(x => ks.has(x.k)).length + " / " + ks.size;
       }).catch(() => {});
     });
