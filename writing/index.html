@@ -205,8 +205,8 @@
     post(payload).then(r => {
       if (!r.ok) throw new Error(r.error || "Yuborilmadi");
       lsDel(ST); lsDel(PEND);
-      lock(payload.text, `<b style="color:var(--ok)">✅ Topshirildi: ${r.words} so'z. Matningiz topic'ingizga yuborildi.</b> Feedback ustoz tekshirgandan keyin keladi.`);
-      show("✅ Topshirildi", `${esc(me.name)}, essayingiz (${r.words} so'z) ustozga yuborildi.<br>Feedback topic'ingizga keladi.`, "Yaxshi");
+      lock(payload.text, `<b style="color:var(--ok)">✅ Topshirildi: ${r.words} so'z. Matningiz ustozga yuborildi.</b> Feedback ustoz tekshirgandan keyin keladi.`);
+      show("✅ Topshirildi", `${esc(me.name)}, essayingiz (${r.words} so'z) ustozga yuborildi.<br>Feedback kabinetingizga keladi.`, "Yaxshi");
     }).catch(e => {
       $("msg").innerHTML = `<b style="color:var(--bad)">⚠️ ${esc(e.message || "Internet xatosi")}.</b> <button class="btn sec" id="retry">Qayta yuborish</button>`;
       $("retry").onclick = () => send(payload);
@@ -229,7 +229,7 @@
   }
   $("btnSubmit").onclick = () => submit(false);
 
-  if (!KEY || !TID || !API) { $("who").textContent = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  if (!KEY || !TID || !API) { $("who").textContent = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Kabinetingizdagi tugma orqali qayta kiring."); return; }
   api({ action: "hello", skill: "writing", k: KEY, t: TID }).then(r => {
     if (!r.ok) { $("who").textContent = "⛔ " + (r.error || "Xato"); show("Kirish mumkin emas", esc(r.error || "Xato")); return; }
     me = r; total = (r.minutes || 40) * 60; left = total;
@@ -245,7 +245,7 @@
     drawWc(); drawClock();
     if (r.submitted) {
       lock(r.sub.text, `<b style="color:var(--ok)">✅ Siz bu vazifani topshirgansiz (${r.sub.words} so'z).</b> Feedback ustoz tekshirgandan keyin keladi.`);
-      show("Siz bu vazifani topshirgansiz", `${esc(r.name)}, essayingiz (${r.sub.words} so'z) ustozga yuborilgan. Feedback topic'ingizga keladi.`, "Matnimni ko'rish");
+      show("Siz bu vazifani topshirgansiz", `${esc(r.name)}, essayingiz (${r.sub.words} so'z) ustozga yuborilgan. Feedback kabinetingizga keladi.`, "Matnimni ko'rish");
       return;
     }
     const pend = lsGet(PEND);
@@ -285,7 +285,7 @@
       return;
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
-      `${esc(r.title)} · Writing<br><br>` + (PARTS ? `📚 ${PARTS.length} ta topshiriq: tepadagi tugmalar bilan biridan ikkinchisiga o'tasiz.<br>` + (PARTS[0].need ? `✍️ <b>${esc(PARTS[0].need)}</b><br>` : "") : "") + (r.soft ? `⏱ Taxminiy vaqt: ${r.minutes} daqiqa. Shoshilmang: vaqt tugasa ham sahifa yopilmaydi.` : `⏱ Vaqt: ${r.minutes} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.`) + `<br>📝 Kamida ${r.min_words} so'z.<br>Oxirida <b>Topshirish</b> ni bosing: essayingiz topic'ingizga ustozga yuboriladi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
+      `${esc(r.title)} · Writing<br><br>` + (PARTS ? `📚 ${PARTS.length} ta topshiriq: tepadagi tugmalar bilan biridan ikkinchisiga o'tasiz.<br>` + (PARTS[0].need ? `✍️ <b>${esc(PARTS[0].need)}</b><br>` : "") : "") + (r.soft ? `⏱ Taxminiy vaqt: ${r.minutes} daqiqa. Shoshilmang: vaqt tugasa ham sahifa yopilmaydi.` : `⏱ Vaqt: ${r.minutes} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.`) + `<br>📝 Kamida ${r.min_words} so'z.<br>Oxirida <b>Topshirish</b> ni bosing: essayingiz ustozga yuboriladi.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
       "▶ Boshlash", () => start(null));
   }).catch(() => {
     $("who").textContent = "⚠️ Internet xatosi";

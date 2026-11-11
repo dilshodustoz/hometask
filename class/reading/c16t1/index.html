@@ -1102,7 +1102,7 @@ async function afterSubmit() {
   try {
     const r = await fetch('/api/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const d = await r.json();
-    if (d.ok) msg.innerHTML = "<b style='color:#15803d'>✅ Javoblaringiz Telegram mavzuingizga yetkazildi!</b><br><small style='color:#6b7280'>Natija ustoz tekshirgandan keyin yuboriladi.</small>";
+    if (d.ok) msg.innerHTML = "<b style='color:#15803d'>✅ Javoblaringiz ustozga yuborildi!</b><br><small style='color:#6b7280'>Natija ustoz tekshirgandan keyin kabinetingizga keladi.</small>";
     else { sentOnce = false; msg.innerHTML = `<span style='color:#b91c1c'>Xatolik: ${esc(d.description || 'yuborilmadi')}. Ustozga ayting.</span>`; }
   } catch (e) {
     sentOnce = false;
@@ -1169,7 +1169,7 @@ async function afterSubmit() {
     keepAwake();
     closeModals();
     bar.innerHTML = `✅ <b>${CLS.esc(me.name)}</b> · javoblaringiz ustozga yetib bordi`;
-    show("✅ Javoblaringiz qabul qilindi", (why ? why + "<br>" : "") + "Natija Telegram topic'ingizga keladi.");
+    show("✅ Javoblaringiz qabul qilindi", (why ? why + "<br>" : "") + "Natija kabinetingizga keladi.");
   }
   // Submit tugmasi (doSubmit mock rejimida afterSubmit ni chaqiradi)
   afterSubmit = function () { finish(""); };
@@ -1199,7 +1199,7 @@ async function afterSubmit() {
     if (sess.state === "run" && timeLeft <= 0) finish("Vaqt tugadi.");
   }
 
-  if (!K || !SID) { show("⛔ Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  if (!K || !SID) { show("⛔ Havola noto'g'ri", "Kabinetingizdagi tugma orqali qayta kiring."); return; }
   show("Yuklanmoqda…", "Bir soniya kuting.");
   CLS.db.ref("roster/" + K).get().then(r => {
     me = r.val();
@@ -1207,7 +1207,7 @@ async function afterSubmit() {
     const nm = document.getElementById("student-display-name"); if (nm) nm.textContent = me.name;
     return L.get().then(l => {
       const v = l.val() || {};
-      if (v.submitted) { done = true; submitted = true; clearInterval(timerId); show("✅ Siz topshirgansiz", "Javoblaringiz ustozda. Natija topic'ingizga keladi."); bar.innerHTML = `✅ <b>${CLS.esc(me.name)}</b> · topshirilgan`; return; }
+      if (v.submitted) { done = true; submitted = true; clearInterval(timerId); show("✅ Siz topshirgansiz", "Javoblaringiz ustozda. Natija kabinetingizga keladi."); bar.innerHTML = `✅ <b>${CLS.esc(me.name)}</b> · topshirilgan`; return; }
       if (v.ans) { Object.assign(answers, normAns(v.ans)); lastSent = JSON.stringify(ans()); switchPart(curPart); }
       restored = true;
       if (!v.joined) L.child("joined").set(CLS.TS);

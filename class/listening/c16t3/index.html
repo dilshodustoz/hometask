@@ -2554,7 +2554,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     let list = "";
     for (let q = 1; q <= 40; q++) list += '<div class="lo-ans"><b>' + q + '.</b> ' + (CLS.esc(a[q]) || '<i style="color:#94a3b8;">—</i>') + "</div>";
     document.getElementById("lo-done-msg").innerHTML = "✅ Javoblaringiz ustozga yetib bordi.";
-    document.getElementById("lo-done-info").innerHTML = (why ? why + " " : "") + "Javob berilgan: <b>" + Object.keys(a).length + " / 40</b>. Natija Telegram topic'ingizga keladi.";
+    document.getElementById("lo-done-info").innerHTML = (why ? why + " " : "") + "Javob berilgan: <b>" + Object.keys(a).length + " / 40</b>. Natija kabinetingizga keladi.";
     document.getElementById("lo-done-list").innerHTML = list;
     document.getElementById("lo-done").style.display = "flex";
     bar.innerHTML = `✅ <b>${CLS.esc(LO.me.name)}</b> · javoblaringiz ustozga yetib bordi`;
@@ -2935,7 +2935,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
     b.textContent = "👤 " + LO.me.name;
   }
 
-  if (!K || !SID) { show("⛔ Havola noto'g'ri.<br><small style='font-weight:400'>Telegram'dagi o'zingizning tugmangiz orqali kiring.</small>"); return; }
+  if (!K || !SID) { show("⛔ Havola noto'g'ri.<br><small style='font-weight:400'>Kabinetingizdagi tugma orqali qayta kiring.</small>"); return; }
   show("Yuklanmoqda…");
   CLS.db.ref("roster/" + K).get().then(r => {
     LO.me = r.val();
@@ -2950,7 +2950,7 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
       if (v.choice && !LO.choice) LO.choice = v.choice;
       if (v.submitted) {
         LO.done = true; isTestRunning = false;
-        show("✅ Siz bu testni topshirgansiz.<br><small style='font-weight:400'>Javoblaringiz ustozda. Natija topic'ingizga keladi.</small>");
+        show("✅ Siz bu testni topshirgansiz.<br><small style='font-weight:400'>Javoblaringiz ustozda. Natija kabinetingizga keladi.</small>");
         bar.innerHTML = `✅ <b>${CLS.esc(LO.me.name)}</b> · topshirilgan`;
         return;
       }
