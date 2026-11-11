@@ -1139,6 +1139,9 @@ async function afterSubmit() {
 
   function show(t, b) { document.getElementById("clT").innerHTML = t; document.getElementById("clB").innerHTML = b || ""; cover.style.display = "flex"; }
   function hide() { cover.style.display = "none"; }
+  // Firebase 1,2,3… kalitli obyektni massiv qilib qaytaradi ([null,"a","b"]) — solishtirishdan oldin oddiy obyektga keltiramiz,
+  // aks holda har sinxronda "boshqa qurilmadan javob keldi" deb sahifa qayta chizilib, yozilayotgan katak yopilib qolardi.
+  function normAns(v) { const o = {}; if (v) for (const n in v) if (v[n]) o[n] = String(v[n]); return o; }
   function ans() { const a = {}; for (const n in answers) if (answers[n]) a[n] = String(answers[n]).slice(0, 80); return a; }
   function remaining() {
     if (!sess || !sess.end) return (sess && sess.minutes || 60) * 60;
@@ -1205,7 +1208,7 @@ async function afterSubmit() {
     return L.get().then(l => {
       const v = l.val() || {};
       if (v.submitted) { done = true; submitted = true; clearInterval(timerId); show("✅ Siz topshirgansiz", "Javoblaringiz ustozda. Natija topic'ingizga keladi."); bar.innerHTML = `✅ <b>${CLS.esc(me.name)}</b> · topshirilgan`; return; }
-      if (v.ans) { Object.assign(answers, v.ans); lastSent = JSON.stringify(ans()); switchPart(curPart); }
+      if (v.ans) { Object.assign(answers, normAns(v.ans)); lastSent = JSON.stringify(ans()); switchPart(curPart); }
       restored = true;
       if (!v.joined) L.child("joined").set(CLS.TS);
       CLS.db.ref(".info/connected").on("value", c => {
@@ -1217,7 +1220,7 @@ async function afterSubmit() {
       bar.innerHTML = `👤 <b>${CLS.esc(me.name)}</b> · javoblaringiz avtomatik saqlanadi`;
       // boshqa qurilmada kiritilgan javoblar shu yerga ham keladi (eski qurilma yangisini o'chirib yubormasin)
       L.child("ans").on("value", s => {
-        const remote = s.val() || {}, j = JSON.stringify(remote);
+        const remote = normAns(s.val()), j = JSON.stringify(remote);
         if (j === lastSent || j === JSON.stringify(ans())) { lastSent = j; return; }
         for (const n in answers) if (!(n in remote)) answers[n] = "";
         Object.assign(answers, remote); lastSent = j; switchPart(curPart);
