@@ -147,11 +147,15 @@
     const lbl = label(); if (!lbl) return null;
     const B = block(data.sheets.ASSESSMENT || [], lbl); if (!B) return null;
     const st = starts(lbl);
+    // kursdan chiqib ketganlar Baholarda ko'rinmaydi: oxirgi oylik varaqda yo'q yoki o'chirilgan (roster_removed) o'quvchilar
+    const lastM = months().map(m => block(data.sheets[m] || [], lbl)).filter(Boolean).pop(), gn = gone(T().group());
+    const now = lastM ? new Set(lastM.rows.map(r => norm(r[1]))) : null;
+    const rows = B.rows.filter(r => (!now || now.has(norm(r[1]))) && !gn[nKey(r[1])]);
     let lastD = null; const cols = [];
     B.head.forEach((h, i) => { if (i < 2) return; const d = dOf(h); if (d) lastD = d; const name = String(B.sub[i] || "").trim(); if (!name) return;
       const sk = skillOf(name); cols.push({ i, name, d: d || lastD, sk, scale: scaleOf(name), summer: !sk || /daily total/i.test(name) }); });
-    cols.forEach(c => { c.n = B.rows.filter(r => String(r[c.i] || "").trim() !== "").length; c.counts = c.n >= 3 && !c.summer; });
-    const studs = B.rows.map(r => {
+    cols.forEach(c => { c.n = rows.filter(r => String(r[c.i] || "").trim() !== "").length; c.counts = c.n >= 3 && !c.summer; });
+    const studs = rows.map(r => {
       const s = st[norm(r[1])] || (() => { const c = cols.find(c => !c.summer && String(r[c.i] || "").trim() !== ""); return c ? c.d : null; })();
       const due = cols.filter(c => c.counts && (!s || !c.d || c.d >= s)), done = due.filter(c => (num(r[c.i]) || 0) > 0);
       const w = cols.filter(c => c.sk === "writing" && !c.summer && (num(r[c.i]) || 0) > 0).map(c => num(r[c.i]));
@@ -204,7 +208,7 @@
       return `<td class="c-v"><i class="v-p v-${lvl(v, c.scale)}">${esc(raw)}</i></td>`;
     };
     const bar = p => p == null ? '<span class="muted">—</span>' : `<div class="c-bar ${p < 70 ? "lo" : p < 85 ? "mid" : "hi"}"><span style="width:${p}%"></span></div><b>${p}%</b>`;
-    $("bhTbody").innerHTML = studs.map((s, k) => `<tr data-k="${k}" class="${pick === norm(s.name) ? "c-pick" : ""}"><td class="c-n">${esc(s.r[0])}</td><td class="c-nm"><a>${esc(s.name)}</a></td><td class="c-pc">${bar(s.pct)}</td>
+    $("bhTbody").innerHTML = studs.map((s, k) => `<tr data-k="${k}" class="${pick === norm(s.name) ? "c-pick" : ""}"><td class="c-n">${k + 1}</td><td class="c-nm"><a>${esc(s.name)}</a></td><td class="c-pc">${bar(s.pct)}</td>
       ${avSk ? `<td class="c-r">${s.sAvg[avSk] != null ? `<i class="v-p v-${lvl(s.sAvg[avSk], AVG_SC[avSk])}">${s.sAvg[avSk]}</i>` : '<span class="muted">—</span>'}</td>` : ""}${shown.map(c => cell(s, c)).join("")}</tr>`).join("");
     $("bhFoot").innerHTML = `<tr><td></td><td class="c-nm">Guruh o'rtachasi</td><td class="c-pc"><b>${avg != null ? avg + "%" : ""}</b></td>${avSk ? `<td class="c-r c-day">${grpAv != null ? grpAv : ""}</td>` : ""}${shown.map(c => { const a = colAvg(c);
       return `<td class="c-v c-day">${a != null ? a : ""}<span>${c.n}/${studs.length}</span></td>`; }).join("")}</tr>`;
