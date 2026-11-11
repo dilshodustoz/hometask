@@ -65,7 +65,7 @@
   <div class="bar"><i id="barI"></i></div>
 </header>
 <main>
-  <div class="intro">🎙 Har bir savolni o'qing, <b>Javob berish</b> tugmasini bosing va gapiring. Vaqt tugasa yozish o'zi to'xtaydi. Eshitib ko'ring, keyin <b>Yuborish</b>ni bosing. Savollar birma-bir ochiladi: javobni yuborganingizdan keyin keyingi savol chiqadi. Yuborilgan javob ustozga Telegram orqali boradi, uni qayta yuborib bo'lmaydi.</div>
+  <div class="intro">🎙 Har bir savolni o'qing, <b>Javob berish</b> tugmasini bosing va gapiring. Vaqt tugasa yozish o'zi to'xtaydi. Eshitib ko'ring, keyin <b>Yuborish</b>ni bosing. Savollar birma-bir ochiladi: javobni yuborganingizdan keyin keyingi savol chiqadi. Yuborilgan javob ustozga boradi, uni qayta yuborib bo'lmaydi.</div>
   <div id="list"></div>
   <div id="foot"></div>
 </main>
@@ -271,7 +271,7 @@
   }
 
   // ---------- boshlash ----------
-  if (!KEY || !TID || !API) { $("who").textContent = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  if (!KEY || !TID || !API) { $("who").textContent = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Kabinetingizdagi tugma orqali qayta kiring."); return; }
   api({ action: "hello", skill: "speaking", t: TID, k: KEY }).then(r => {
     if (!r.ok) { $("who").textContent = "⛔"; show("Kirib bo'lmadi", esc(r.error)); return; }
     if (r.type === "prep") { location.replace("prep.html" + location.search); return; }   // Speaking preparation (yozma workbook)

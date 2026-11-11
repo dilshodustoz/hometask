@@ -1102,7 +1102,7 @@ async function afterSubmit() {
   try {
     const r = await fetch('/api/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const d = await r.json();
-    if (d.ok) msg.innerHTML = "<b style='color:#15803d'>✅ Javoblaringiz Telegram mavzuingizga yetkazildi!</b><br><small style='color:#6b7280'>Natija ustoz tekshirgandan keyin yuboriladi.</small>";
+    if (d.ok) msg.innerHTML = "<b style='color:#15803d'>✅ Javoblaringiz ustozga yuborildi!</b><br><small style='color:#6b7280'>Natija ustoz tekshirgandan keyin kabinetingizga keladi.</small>";
     else { sentOnce = false; msg.innerHTML = `<span style='color:#b91c1c'>Xatolik: ${esc(d.description || 'yuborilmadi')}. Ustozga ayting.</span>`; }
   } catch (e) {
     sentOnce = false;
@@ -1219,7 +1219,7 @@ async function afterSubmit() {
     if (!EL.wrong.length) { list.innerHTML = "<p>Xato yo'q, error log kerak emas! 🎉</p>"; return; }
     const R = {}; review.review.forEach(x => { R[x.n] = x; });
     const done = EL.wrong.filter(q => elOk(EL.items[q])).length;
-    list.innerHTML = `<div class="el-note">Har bir ❌ savol uchun <b>xato turini</b> tanlang va <b>nega xato qilganingizni</b> qisqa yozing (masalan: "matnda 'rarely' bor edi, men 'never' deb o'ylabman"). Hammasi yozilgach <b>Yuborish</b> ni bosing, log ustozga (topic'ingizga) boradi. Keyin tuzatib qayta yuborsangiz ham bo'ladi.</div>` +
+    list.innerHTML = `<div class="el-note">Har bir ❌ savol uchun <b>xato turini</b> tanlang va <b>nega xato qilganingizni</b> qisqa yozing (masalan: "matnda 'rarely' bor edi, men 'never' deb o'ylabman"). Hammasi yozilgach <b>Yuborish</b> ni bosing, log ustozga boradi. Keyin tuzatib qayta yuborsangiz ham bo'ladi.</div>` +
       (EL.sent ? `<p style="margin:8px 0 0;color:#15803d">✅ Oldin yuborilgan: ${EL.sent.done}/${EL.sent.wrong} (${EL.sent.pct}%).</p>` : "") +
       EL.wrong.map(q => { const x = R[q] || {}, it = EL.items[q] || {};
         return `<div class="el-row${elOk(it) ? " ok" : ""}" data-q="${q}"><b>Question ${q}</b>${qLine_(q)}<div class="meta">Siz: <b>${esc2(qAns_(q, x.you)) || "(javob yo'q)"}</b> · To'g'ri: <b style="color:#166534">${esc2(qAns_(q, x.ans))}</b>${x.loc ? " · " + esc2(x.loc) : ""}</div>${x.quote ? `<div class="quote">📌 “${esc2(x.quote)}”</div>` : ""}
@@ -1326,7 +1326,7 @@ async function afterSubmit() {
     timerOn = true;
   }
 
-  if (!KEY || !API || !TID) { bar.innerHTML = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  if (!KEY || !API || !TID) { bar.innerHTML = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Kabinetingizdagi tugma orqali qayta kiring."); return; }
   show("Yuklanmoqda…", "Bir soniya kuting.");
   api(Object.assign({ action: "hello", k: KEY, t: TID }, CLSID ? { cls: CLSID } : {})).then(r => {
     if (!r.ok) { bar.innerHTML = "⛔ " + esc2(r.error || "Xato"); show("Kirish mumkin emas", esc2(r.error || "Xato")); return; }
@@ -1355,7 +1355,7 @@ async function afterSubmit() {
       return;
     }
     show(`Assalomu alaykum, ${esc2(r.name)}!`,
-      `${esc2(r.title)} · Reading<br><br>⏱ Vaqt: ${r.minutes || 60} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.<br>Oxirida <b>Submit</b> bosing: javoblaringiz tekshiriladi va avtomatik ustozga (topic'ingizga) yuboriladi. Keyin to'g'ri javoblar va isbotlarni ko'rasiz.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
+      `${esc2(r.title)} · Reading<br><br>⏱ Vaqt: ${r.minutes || 60} daqiqa, <b>Boshlash</b> bosilgandan keyin yuradi.<br>Oxirida <b>Submit</b> bosing: javoblaringiz tekshiriladi va avtomatik ustozga yuboriladi. Keyin to'g'ri javoblar va isbotlarni ko'rasiz.<br><br>⚠️ Faqat bir marta topshirish mumkin.`,
       "▶ Boshlash", () => begin(null));
   }).catch(() => {
     bar.innerHTML = "⚠️ Internet xatosi";

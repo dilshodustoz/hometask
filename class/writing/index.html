@@ -210,7 +210,7 @@
 
   function render() {
     const st = sess ? sess.state : null;
-    if (!st || st === "closed") { cover("Dars yakunlangan", "Bu Writing darsi yopilgan. Natijalar topic'ingizga keladi."); return; }
+    if (!st || st === "closed") { cover("Dars yakunlangan", "Bu Writing darsi yopilgan. Natijalar kabinetingizga keladi."); return; }
     $("task").textContent = (tpl().task ? "Writing Task " + tpl().task + " · " : "") + (tpl().name || "");
     $("prompt").textContent = sess.prompt || "Savolni ustoz ekranda ko'rsatadi.";
     if (sess.img) { $("img").src = sess.img; $("img").classList.remove("hide"); } else $("img").classList.add("hide");
@@ -221,10 +221,10 @@
     else if (!os.includes(cur)) { if (os.length) select(os.includes(sess.focus) ? sess.focus : os[0]); }
     else { drawTabs(); drawBtn(); drawModel(); }
     if (!os.length) cover("⏳ Kuting", "Ustoz yozish qismini hali ochmadi.");
-    if (st === "stopped") $("msg").textContent = "Ustoz tekshiruvni yakunladi. Natijalar topic'ingizga keladi.";
+    if (st === "stopped") $("msg").textContent = "Ustoz tekshiruvni yakunladi. Natijalar kabinetingizga keladi.";
   }
 
-  if (!/^[A-Za-z0-9_-]{6,20}$/.test(K) || !SID) { cover("⛔ Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  if (!/^[A-Za-z0-9_-]{6,20}$/.test(K) || !SID) { cover("⛔ Havola noto'g'ri", "Kabinetingizdagi tugma orqali qayta kiring."); return; }
   CLS.db.ref("roster/" + K).get().then(r => {
     me = r.val();
     if (!me) { cover("⛔ Havola noto'g'ri", "Bu havola ro'yxatda yo'q. Ustozga ayting."); return; }

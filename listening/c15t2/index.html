@@ -2876,7 +2876,7 @@
     origStart();
   };
 
-  if (!KEY || !API || !T) { bar.innerHTML = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  if (!KEY || !API || !T) { bar.innerHTML = "⛔ Havola noto'g'ri"; show("Havola noto'g'ri", "Kabinetingizdagi tugma orqali qayta kiring."); return; }
 
   get(Object.assign({ action: "hello", skill: "listening", t: T, k: KEY }, CLS_ID ? { cls: CLS_ID } : {})).then(r => {
     if (!r.ok) { bar.innerHTML = "⛔ " + esc(r.error || "Xato"); show("Kirish mumkin emas", esc(r.error || "Xato")); return; }
@@ -2912,7 +2912,7 @@
     }
     show(`Assalomu alaykum, ${esc(r.name)}!`,
       `${esc(r.title)} · Listening<br><br>🎧 Naushnik taqing. <b>Start Audio</b> bosilgach audio to'xtamasdan 4 part davom etadi, 40 daqiqa vaqt bor.<br>` +
-      `Oxirida <b>Finish Test</b> ni bosing: javoblaringiz ustozga (topic'ingizga) yuboriladi, sahifada esa to'g'ri javoblar, audioscript va audio chiqadi. Keyin <b>✍️ Error log</b> bo'limida xatolaringizni yozib yuborasiz.<br><br>⚠️ Testni faqat bir marta topshirish mumkin.<br><br><b class="hw-pre"></b>`,
+      `Oxirida <b>Finish Test</b> ni bosing: javoblaringiz ustozga yuboriladi, sahifada esa to'g'ri javoblar, audioscript va audio chiqadi. Keyin <b>✍️ Error log</b> bo'limida xatolaringizni yozib yuborasiz.<br><br>⚠️ Testni faqat bir marta topshirish mumkin.<br><br><b class="hw-pre"></b>`,
       "Tushundim");
   }).catch(() => {
     bar.innerHTML = "⚠️ Internet xatosi";

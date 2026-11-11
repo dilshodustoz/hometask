@@ -23,7 +23,7 @@
   const K = CLS.P.get("k") || "";
   const t = document.getElementById("t"), b = document.getElementById("b");
   function say(title, body) { t.innerHTML = title; b.innerHTML = body || ""; }
-  if (!/^[A-Za-z0-9_-]{6,20}$/.test(K)) { say("⛔ Havola noto'g'ri", "Telegram'dagi o'zingizning tugmangiz orqali kiring."); return; }
+  if (!/^[A-Za-z0-9_-]{6,20}$/.test(K)) { say("⛔ Havola noto'g'ri", "Kabinetingizdagi tugma orqali qayta kiring."); return; }
   CLS.db.ref("roster/" + K).get().then(s => {
     const me = s.val();
     if (!me) { say("⛔ Havola noto'g'ri", "Bu havola ro'yxatda yo'q. Ustozga ayting."); return; }
