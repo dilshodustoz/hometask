@@ -1017,7 +1017,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       <div class="msg" id="stMsg"></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><div class="controls"><button class="btn btn-secondary btn-sm" id="cabInboxB" title="O'quvchilar kabinetdan yozgan xabarlar">📥 Xabarlar <b id="cabInboxN" class="hide" style="background:var(--red,#dc2626);color:#fff;border-radius:9px;padding:0 6px;font-size:.75rem">0</b></button><button class="btn btn-secondary btn-sm" id="cabElonB" title="Butun guruhga e'lon: kabinet + telefon bildirishnomasi">📢 E'lon</button><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button><button class="btn btn-secondary btn-sm" id="stCards" title="Kabinetga kirish kodlari bilan kartochkalarni chop etish">🖨 Kartochkalar</button><button class="btn btn-orange btn-sm" id="stNewOpen">＋ Yangi o'quvchi</button></div></div>
+      <div class="card-header"><h3 class="card-title">O'quvchilar <small id="stCount"></small></h3><div class="controls"><button class="btn btn-secondary btn-sm" id="cabElonB" title="Butun guruhga e'lon: kabinet + telefon bildirishnomasi">📢 E'lon</button><button class="btn btn-secondary btn-sm" id="stReload">Yangilash</button><button class="btn btn-secondary btn-sm" id="stCards" title="Kabinetga kirish kodlari bilan kartochkalarni chop etish">🖨 Kartochkalar</button><button class="btn btn-orange btn-sm" id="stNewOpen">＋ Yangi o'quvchi</button></div></div>
       <div class="tbl-wrap"><table class="cards">
         <thead><tr><th>#</th><th>O'quvchi</th><th>Telefon</th><th>Qo'shilgan</th><th title="Shaxsiy kabinetga kirish kodi">Kabinet kodi</th><th title="Shaxsiy kabinetga oxirgi marta qachon kirgan">Oxirgi kirish</th><th></th></tr></thead>
         <tbody id="stBody"><tr><td colspan="7" class="muted">Yuklanmoqda…</td></tr></tbody>
@@ -1963,7 +1963,6 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   // server javobi (roster + groups) → Firebase (sinf sahifalari shu ro'yxatdan foydalanadi) va sahifa
   function stApply(r) {
     stData = { roster: r.roster, archive: r.archive || {}, groups: r.groups, codes: r.codes || (stData && stData.codes) || {}, push: r.push || (stData && stData.push) || {} };
-    if (r.inbox_n != null) cabBadge(r.inbox_n);
     const want = new URLSearchParams(location.search).get("cab");   // Telegram'dagi "Javob berish" tugmasidan
     if (want && !stApply.opened && r.roster[want]) { stApply.opened = 1; setTimeout(() => cabOpen("thread", want), 0); history.replaceState(null, "", location.pathname); }
     const out = {}; let n = 0;
@@ -1996,11 +1995,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   const cabTxt = h => CLS.esc(String(h || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&"));
   const cabWhen = iso => iso ? new Date(iso).toLocaleString("uz-UZ", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
   const cabSum = L => (L || []).reduce((a, x) => a + x.unread, 0);
-  function cabBadge(n) { $("cabInboxN").textContent = n; $("cabInboxN").classList.toggle("hide", !n); }
+  function cabBadge() {}   // 15.11: o'quvchilar endi ustozga yoza olmaydi, 📥 Xabarlar tugmasi olib tashlandi
   function cabOpen(mode, k) {
     cabMode = mode; cabK = k || "";
     $("cabOv").classList.remove("hide"); $("cabMsg").textContent = "";
-    $("cabBack").classList.toggle("hide", mode !== "thread");
+    $("cabBack").classList.add("hide");
     $("cabForm").classList.toggle("hide", mode === "inbox");
     $("cabText").value = "";
     if (mode === "inbox") {
@@ -2037,9 +2036,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("cabBody").scrollTop = $("cabBody").scrollHeight;
   }
   function cabBind() {
-  $("cabInboxB").onclick = () => cabOpen("inbox");
   $("cabElonB").onclick = () => cabOpen("elon");
-  $("cabBack").onclick = () => cabOpen("inbox");
   $("cabX").onclick = () => $("cabOv").classList.add("hide");
   $("cabOv").onclick = ev => { if (ev.target === $("cabOv")) $("cabOv").classList.add("hide"); };
   $("cabBody").onclick = ev => { const r = ev.target.closest("[data-k]"); if (r && cabMode === "inbox") cabOpen("thread", r.dataset.k); };
