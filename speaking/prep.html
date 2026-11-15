@@ -103,7 +103,7 @@
   const P = new URLSearchParams(location.search);
   const API = window.HW_API, TID = P.get("t") || "", KEY = P.get("k") || "", VIEW = P.get("v") === "1";
   const LS = "spp_" + TID + "_" + KEY;
-  let W = null, A = null, me = null, done = false, dirty = false, pastes = 0, active = 0, lastSrv = 0, sw = null;
+  let W = null, A = null, me = null, done = false, dirty = false, pastes = 0, active = 0, lastSrv = 0, sw = null, editAt = 0;
 
   // ---- Javoblar tuzilmasi va to'liqlik (serverdagi spCheck_ bilan bir xil) ----
   function blank(W) {
@@ -126,7 +126,8 @@
 
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function lsGet() { try { return JSON.parse(localStorage.getItem(LS) || "null"); } catch (e) { return null; } }
-  function lsSet() { if (VIEW || done) return; try { localStorage.setItem(LS, JSON.stringify({ a: A, at: Date.now(), pastes: pastes, active: active })); } catch (e) {} }
+  // 15.11: sahifa yuklanmasdan (A yo'q) saqlash taqiqlandi; vaqt = oxirgi TAHRIR vaqti (yashirilganda emas)
+  function lsSet() { if (VIEW || done || !A || !W) return; try { localStorage.setItem(LS, JSON.stringify({ a: A, at: editAt || Date.now(), pastes: pastes, active: active })); } catch (e) {} }
   const OY = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
   const tdt = iso => { const d = new Date(new Date(iso).getTime() + 5 * 3600000); return d.getUTCDate() + "-" + OY[d.getUTCMonth()] + ", " + String(d.getUTCHours()).padStart(2, "0") + ":" + String(d.getUTCMinutes()).padStart(2, "0"); };   // Toshkent vaqti
   const mmss = s => { s = Math.max(0, Math.round(+s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
@@ -222,7 +223,7 @@
   function setP(path, v) {
     const p = path.split("."), o = A[p[0]];
     if (p.length === 2) o[+p[1]] = v; else o[+p[1]][p[2]] = v;
-    dirty = true; lsSet(); refresh();
+    dirty = true; editAt = Date.now(); lsSet(); refresh();
   }
   function getP(path) { const p = path.split("."), o = A[p[0]]; return p.length === 2 ? o[+p[1]] : o[+p[1]][p[2]]; }
   function bind() {
@@ -313,14 +314,14 @@
   }
   // ---- serverga qoralama ----
   function saveSrv(keep) {
-    if (VIEW || done || !dirty || !me) return Promise.resolve();
+    if (VIEW || done || !dirty || !me || !A) return Promise.resolve();
     dirty = false;
     return post({ skill: "speaking", prep: "draft", t: TID, k: KEY, a: A, pastes: pastes, active: Math.round(active) }, keep)
       .then(r => { if (r && r.ok) { lastSrv = Date.now(); $("msg").textContent = "✓ Saqlandi · " + new Date().toTimeString().slice(0, 5); } else dirty = true; })
       .catch(() => { dirty = true; $("msg").textContent = "Internet yo'q: javoblar shu qurilmada saqlanmoqda."; });
   }
   setInterval(() => { if (document.visibilityState === "visible" && me && !done) active += 5; }, 5000);
-  setInterval(() => { if (dirty && Date.now() - lastSrv > 60000) saveSrv(); }, 15000);
+  setInterval(() => { if (dirty && Date.now() - lastSrv > 30000) saveSrv(); }, 10000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { lsSet(); saveSrv(true); } });
   window.addEventListener("pagehide", () => { lsSet(); saveSrv(true); });
 
@@ -357,9 +358,13 @@
       return b; };
     if (r.submitted) { done = true; A = fill(r.sub.a); $("foot").classList.add("hide"); hide(); render(); return; }
     if (VIEW) { A = fill(r.draft && r.draft.a); $("foot").classList.add("hide"); hide(); render(); if (!r.draft) toast("Hali boshlamagan."); return; }
+    // 15.11: bo'sh yoki kamroq to'ldirilgan nusxa hech qachon to'liqroq nusxani bosib ketmaydi
     const loc = lsGet(), srvAt = r.draft ? new Date(r.draft.at).getTime() : 0;
-    if (loc && loc.at >= srvAt) { A = fill(loc.a); pastes = loc.pastes || 0; active = loc.active || 0; dirty = srvAt < loc.at; }
-    else if (r.draft) { A = fill(r.draft.a); pastes = r.draft.pastes || 0; active = r.draft.active || 0; }
+    const LA = loc && loc.a ? fill(loc.a) : null, SA = r.draft && r.draft.a ? fill(r.draft.a) : null;
+    const nL = LA ? check(W, LA).ok : -1, nS = SA ? check(W, SA).ok : -1;
+    const useLoc = LA && nL > 0 && (!SA || (loc.at >= srvAt && nL >= nS * 0.8) || nL > nS);
+    if (useLoc) { A = LA; pastes = loc.pastes || 0; active = Math.max(loc.active || 0, (r.draft && r.draft.active) || 0); editAt = loc.at || 0; dirty = !SA || nL !== nS || srvAt < loc.at; }
+    else if (SA) { A = SA; pastes = r.draft.pastes || 0; active = r.draft.active || 0; editAt = srvAt; lsSet(); }
     else A = blank(W);
     render();
     if (r.closed) { show("Muddat tugagan", "Bu vazifaning muddati (" + esc(r.deadline) + ") o'tib ketgan. Yozganlaringizni ko'rishingiz mumkin, lekin topshirib bo'lmaydi.", "Yopish"); $("btnSubmit").disabled = true; $("btnSubmit").onclick = null; return; }
