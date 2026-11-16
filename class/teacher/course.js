@@ -1,4 +1,4 @@
-// Kurs bo'limlari: Yo'qlama (davomat + hisob-kitob) va Baholar (ASSESSMENT).
+// Kurs bo'limlari: Yo'qlama (davomat + hisob-kitob) va Baholar (ASSESSMENT).  (16.11: "✓ Hammasi keldi" qo'shildi)
 // Manba: Google Sheet "Course" (yagona manba; har kuni Drive "Hometask/Course zaxira" ga .xlsx nusxa olinadi).
 (function () {
   const $ = id => document.getElementById(id);
