@@ -520,6 +520,10 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   .c-wait{opacity:.35;pointer-events:none}
   .c-editing .c-wrap{border-color:#F4B183;box-shadow:0 0 0 3px #FFF1E8}
   .c-pop{position:fixed;z-index:200;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18);padding:12px;min-width:220px;max-width:300px}
+  .c-all-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+  .c-all-r{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--line,rgba(127,127,127,.25));border-radius:10px;cursor:pointer;font-size:.9rem}
+  .c-all-r input{width:18px;height:18px;accent-color:#16a34a;flex:none} .c-all-r span{flex:1;min-width:0}
+  .c-all-r small{color:var(--muted);font-size:11px} .c-all-r.c-all-x{opacity:.6;cursor:default} .c-all-r .c-new{color:#b45309}
   .c-pop-h{font-weight:700;color:var(--ink);font-size:.88rem;margin-bottom:8px}
   .c-pop-s{font-size:.75rem;color:var(--muted);margin:-4px 0 8px}
   .c-pop-b{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -954,7 +958,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     <div class="card hide" id="atTool"></div>
     <div class="card">
       <div class="card-header"><h3 class="card-title">Yo'qlama <small id="atGroup"></small></h3>
-        <div class="c-tools"><div class="seg" id="atMonths"></div><span class="c-src" id="atAt"></span><button class="btn btn-secondary btn-sm" id="atNewM">➕ Yangi oy</button><button class="btn btn-secondary btn-sm" id="atEdit">✎ Kiritish</button><button class="btn btn-secondary btn-sm" id="atReload">↻ Yangilash</button></div></div>
+        <div class="c-tools"><div class="seg" id="atMonths"></div><span class="c-src" id="atAt"></span><button class="btn btn-secondary btn-sm" id="atAll">✓ Hammasi keldi</button><button class="btn btn-secondary btn-sm" id="atNewM">➕ Yangi oy</button><button class="btn btn-secondary btn-sm" id="atEdit">✎ Kiritish</button><button class="btn btn-secondary btn-sm" id="atReload">↻ Yangilash</button></div></div>
       <div class="msg" id="atMsg" style="margin:0"></div>
       <div id="atBody" class="hide">
         <div class="stats c-stats" id="atStats"></div>
