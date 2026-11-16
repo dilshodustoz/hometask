@@ -334,6 +334,76 @@
     }).catch(() => {});
   }
 
+  // ---------- Yo'qlama: "Hammasi keldi" — tanlangan kundagi BO'SH kataklarga "+" ----------
+  // Qo'yilgan belgilar (✓/✕) o'zgartirilmaydi. Yangi o'quvchi (shu kungacha hech qayerda belgisi yo'q) — birinchi kuni
+  // belgilanmaydi, shuning uchun ro'yxatda belgisiz turadi; kerak bo'lsa ustoz o'zi tanlaydi.
+  function allOpen() {
+    const box = $("atTool");
+    if (!box.classList.contains("hide") && box.dataset.k === "all") { box.classList.add("hide"); return; }
+    load(false).then(() => {
+      const lbl = label(), B = lbl && block(data.sheets[month] || [], lbl);
+      if (!B) { alert("Bu oy varag'ida guruh bloki topilmadi."); return; }
+      const H = B.head, dc = H.map((x, i) => dOf(x) ? i : -1).filter(i => i >= 0);
+      if (!dc.length) { alert("Bu varaqda dars sanalari yo'q."); return; }
+      const now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const past = dc.filter(i => dOf(H[i]) <= t0), today = dc.find(i => +dOf(H[i]) === +t0);
+      let col = today != null ? today : past.length ? past[past.length - 1] : dc[0];
+      // ketganlarni yo'qlamaga kiritmaymiz (drawAt bilan bir xil qoida)
+      const GN = gone(T().group()), m1 = new Date(dOf(H[dc[dc.length - 1]]).getTime() + 864e5);
+      const rows = B.rows.filter(r => { const d = GN[nKey(r[1])]; return !d || d >= m1; });
+      const ms = months(), pv = ms[ms.indexOf(month) - 1], PB = pv && block(data.sheets[pv] || [], lbl);
+      const mk = v => /^[+-]$/.test(String(v || "").trim());
+      const fresh = (r, c) => {   // shu kungacha (shu oy + o'tgan oy) birorta belgisi yo'q
+        if (dc.some(i => i < c && mk(r[i]))) return false;
+        const pr = PB && PB.rows.find(x => nKey(x[1]) === nKey(r[1]));
+        return !(pr && pr.some((v, i) => i > 1 && mk(v)));
+      };
+      const draw = () => {
+        const list = rows.map(r => {
+          const v = String(r[col] || "").trim(), nw = !mk(v) && fresh(r, col);
+          return `<label class="c-all-r${mk(v) ? " c-all-x" : ""}"><input type="checkbox" data-r="${esc(r[1])}" ${mk(v) ? "disabled" : nw ? "" : "checked"}>
+            <span>${esc(r[1])}</span>${v === "+" ? '<i class="m-y">✓</i><small>allaqachon</small>' : v === "-" ? '<i class="m-n">✕</i><small>allaqachon</small>' : nw ? '<small class="c-new">🆕 yangi? birinchi kuni belgilanmaydi</small>' : ""}</label>`;
+        }).join("");
+        box.innerHTML = `<div class="card-header"><h3 class="card-title">✓ Hammasi keldi <small>${esc(OY[norm(month)] || month)} · bo'sh kataklarga "+" qo'yiladi, qo'yilgan belgilar o'zgarmaydi</small></h3><button class="btn btn-secondary btn-sm" id="alX">✕</button></div>
+          <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <label><span class="field-label">Dars kuni</span><select class="field" id="alD">${dc.map(i => `<option value="${i}" ${i === col ? "selected" : ""}>${esc(H[i].slice(0, 5))}${i === today ? " · bugun" : ""}</option>`).join("")}</select></label>
+            <span class="muted" id="alN"></span></div>
+          <div class="c-all-l" id="alL">${list}</div>
+          <div class="muted" style="margin:8px 0">Kelmaganlarni ro'yxatdan olib tashlang (belgini oling) yoki keyin "✎ Kiritish" bilan ✕ qo'ying.</div>
+          <button class="btn btn-orange" id="alGo">✓ Belgilash</button>
+          <div class="msg" id="alMsg"></div>`;
+        const cnt = () => { const n = box.querySelectorAll("#alL input:checked:not(:disabled)").length; $("alN").textContent = `${n} ta o'quvchiga "+" qo'yiladi`; $("alGo").disabled = !n; };
+        box.querySelectorAll("#alL input").forEach(x => x.onchange = cnt); cnt();
+        $("alD").onchange = () => { col = +$("alD").value; draw(); };
+        $("alX").onclick = () => box.classList.add("hide");
+        $("alGo").onclick = () => {
+          const names = [...box.querySelectorAll("#alL input:checked:not(:disabled)")].map(x => x.dataset.r);
+          if (!names.length) return;
+          $("alGo").disabled = true; $("alD").disabled = true;
+          let i = 0, ok = 0;
+          const next = () => {
+            if (i >= names.length) {
+              box.classList.add("hide"); drawAt();
+              $("atMsg").textContent = `✅ ${H[col].slice(0, 5)}: ${ok} ta o'quvchiga "+" qo'yildi. Kelmaganlarni "✎ Kiritish" bilan ✕ qiling.`;
+              return;
+            }
+            $("alMsg").textContent = `Yozilmoqda… ${i + 1} / ${names.length} (${names[i]})`;
+            T().api({ admin: "course_set", sheet: month, label: lbl, name: names[i], col: col, head: H[col], sub: B.sub[col], value: "+" }).then(r => {
+              if (!r.ok) throw new Error(r.error);
+              data.sheets[r.sheet] = r.values; data.at = r.at; ok++; i++; next();
+            }).catch(e => {
+              drawAt(); $("alGo").disabled = false; $("alD").disabled = false;
+              $("alMsg").textContent = `⚠️ ${names[i]}: ${e.message}. ${ok} tasi yozildi; qolganlari uchun ↻ Yangilash qilib qayta bosing.`;
+            });
+          };
+          next();
+        };
+      };
+      box.dataset.k = "all"; box.classList.remove("hide"); draw();
+      box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }).catch(() => {});
+  }
+
   // ---------- Baholar: yangi ustun va natijalarni Course'ga yozish ----------
   const KIND = { hw: "uy vazifasi", cls: "sinf darsi", log: "error log (to'liqlik %)", sp: "Speaking bahosi" };
   const todayDD = () => dd(new Date());
@@ -433,6 +503,7 @@
     $("bhEdit").onclick = () => { edBh = !edBh; edBtn("bhEdit", edBh); popClose(); drawBh(); };
     $("atTbody").addEventListener("click", onAt);
     $("atNewM").onclick = monthOpen;
+    $("atAll").onclick = allOpen;
     $("bhCol").onclick = colOpen;
     $("bhImp").onclick = impOpen;
     $("bhTbody").addEventListener("click", onBh, true);
