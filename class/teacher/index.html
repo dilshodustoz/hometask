@@ -706,6 +706,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 
 <main class="container hide" id="app">
   <!-- boshqa bo'limda dars ochiq bo'lsa -->
+  <div class="notice hide" id="unsentBox" style="border-color:var(--red);color:var(--text)"><span id="unsentText"></span><button class="btn btn-primary btn-sm" id="unsentGo">Natijalarni yuborish</button></div>
   <div class="notice hide" id="otherNotice"><span id="otherText"></span><button class="btn btn-secondary btn-sm" id="otherGo">O'tish</button></div>
 
   <!-- Reading: darsni ochish -->
@@ -2367,7 +2368,35 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       detach();
     });
   }
-  function detach() { sid = null; sess = null; live = {}; layout(); }
+  function detach() { sid = null; sess = null; live = {}; layout(); checkUnsent(); }
+  // 2026-11-18: yopilgan, lekin natijasi LC Panel'ga yuborilmagan dars (Reading/Listening): bir tugma bilan qayta ochib yuborish
+  let unsent = null;
+  function checkUnsent() {
+    $("unsentBox").classList.add("hide"); unsent = null;
+    const g0 = group;
+    if (sid || !g0) return;
+    db.ref("sessions").orderByChild("group").equalTo(g0).limitToLast(20).once("value").then(s => {
+      if (g0 !== group || sid) return;
+      const all = s.val() || {}, now = CLS.now(), at = v => v.start || v.created || 0;
+      const ids = Object.keys(all).filter(id => { const v = all[id];
+        return v && v.start && (v.skill === "reading" || v.skill === "listening") && v.state === "closed" && !v.graded && now - at(v) < 3 * 86400000; })
+        .sort((a, b) => at(all[b]) - at(all[a]));
+      if (!ids.length) return;
+      unsent = ids[0];
+      const v = all[unsent], d = new Date(at(v));
+      $("unsentText").textContent = `⚠️ ${CLS.GROUPS[v.group].name}: ${v.title} (${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}) yopilgan, lekin natijalari bazaga yuborilmagan.`;
+      $("unsentBox").classList.remove("hide");
+    }).catch(() => {});
+  }
+  $("unsentGo").onclick = () => {
+    if (!unsent || sid) return;
+    const id = unsent;
+    $("unsentBox").classList.add("hide");
+    db.ref("live/" + id).get().then(() => {
+      attach(id);
+      setTimeout(() => { if (sid === id && sess) doGrade(false); }, 1200);
+    });
+  };
   function attach(id) {
     sid = id;
     let first = true;
@@ -2438,6 +2467,14 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   };
   $("btnStop").onclick = () => { if (confirm("Testni hamma uchun yakunlaysizmi? Kiritilgan javoblar avtomatik topshiriladi.")) upd({ state: "stopped", stoppedAt: CLS.now() }).then(() => JR.log(jg() + ": to'xtatish", `⏹ Test to'xtatildi. ${jDone()}\nNatijalar avtomatik yuboriladi.`)); };
   $("btnClose").onclick = () => {
+    const pend = sess && !sess.graded && sess.state === "stopped" && (sess.skill === "reading" || sess.skill === "listening") &&
+      Object.keys(live).some(k => live[k] && live[k].joined && roster[k] && !live[k].result);
+    if (pend) {   // 2026-11-18: natija yuborilmasdan yopilib qolmasin
+      if (!confirm("⚠️ Natijalar hali bazaga yuborilmagan.\nAvval yuborib, keyin darsni yopaymi?")) return;
+      const s0 = sid;
+      doGrade(true).then(() => { if (sid === s0 && sess && sess.graded) { const jt = jg(); upd({ state: "closed" }).then(() => db.ref("current/" + group).remove()).then(() => { detach(); JR.log(jt + ": darsni yopish", "✅ Natijalar yuborildi va dars yopildi."); }); } });
+      return;
+    }
     if (!confirm("Darsni yopasizmi? O'quvchilar endi kira olmaydi." + (sess.graded ? "" : "\n⚠️ Natijalar hali yuborilmagan!"))) return;
     const jt = jg();
     upd({ state: "closed" }).then(() => db.ref("current/" + group).remove()).then(() => { detach(); JR.log(jt + ": darsni yopish", "✅ Dars yopildi. O'quvchilar endi kira olmaydi."); });
@@ -2472,9 +2509,9 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   $("elDueDef").onclick = () => { const ms = elDueDefault(); $("elDue").value = toInp(ms); elDueSave(ms); };
   function doGrade(auto) {
     const keys = Object.keys(live).filter(k => live[k] && live[k].joined && roster[k] && !(live[k].result));
-    if (!keys.length) { $("liveMsg").textContent = "Yuboriladigan yangi natija yo'q."; return; }
-    if (!auto && !confirm(`${keys.length} ta o'quvchining natijasi tekshirilib, topic'lariga yuborilsinmi? (taxminan ${Math.ceil(keys.length * 3.2 / 60)} daqiqa)`)) return;
-    if ($("btnGrade").disabled) return;
+    if (!keys.length) { $("liveMsg").textContent = "Yuboriladigan yangi natija yo'q."; return Promise.resolve(); }
+    if (!auto && !confirm(`${keys.length} ta o'quvchining natijasi tekshirilib, topic'lariga yuborilsinmi? (taxminan ${Math.ceil(keys.length * 3.2 / 60)} daqiqa)`)) return Promise.resolve();
+    if ($("btnGrade").disabled) return Promise.resolve();
     $("btnGrade").disabled = true;
     $("liveMsg").textContent = `⏳ ${keys.length} ta natija tekshirilmoqda va yuborilmoqda… Sahifani yopmang.`;
     const startT = sess.start || CLS.now();
@@ -2483,7 +2520,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       return { k: k, answers: live[k].ans || {}, minutes: Math.min(sess.minutes, Math.round((end - startT - (sess.pausedTotal || 0)) / 60000)) };
     });
     const elAt = elDueMs() || sess.elDue || elDueDefault(sess.created || sess.start);
-    api({ admin: "class_grade", skill: sess.skill || "reading", t: sess.test, sid: sid, entries: entries, el_due: new Date(elAt).toISOString() }).then(r => {
+    return api({ admin: "class_grade", skill: sess.skill || "reading", t: sess.test, sid: sid, entries: entries, el_due: new Date(elAt).toISOString() }).then(r => {
       if (!r.ok) throw new Error(r.error);
       const up = {}; let tg = 0;
       r.results.forEach(x => { if (x.raw != null) { up[x.k + "/result"] = Object.assign({ raw: x.raw, band: x.band }, x.ok ? { ok: x.ok } : {}); if (x.telegram || x.already) tg++; } });
@@ -2540,7 +2577,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     $("btnPause").classList.toggle("hide", !(sess.state === "run" || sess.state === "paused"));
     $("btnPause").textContent = sess.state === "paused" ? "Davom ettirish" : "Pauza";
     $("btnStop").classList.toggle("hide", !(sess.state === "run" || sess.state === "paused"));
-    $("btnGrade").classList.toggle("hide", sess.state !== "stopped");
+    $("btnGrade").classList.toggle("hide", !(sess.state === "stopped" || (sess.state === "closed" && !sess.graded)));
     $("liveTaBtn").classList.toggle("hide", !(sess.skill === "reading" || sess.skill === "listening"));
     elDueDraw();
     drawTable();
