@@ -1,4 +1,4 @@
-// Kurs bo'limlari: Yo'qlama (davomat + hisob-kitob) va Baholar (ASSESSMENT).  (16.11: "✓ Hammasi keldi" qo'shildi)
+// Kurs bo'limlari: Yo'qlama (davomat + hisob-kitob) va Baholar (ASSESSMENT).  (16.11: "Bugungi davomat" oynasi — Keldi/Sababli/Kelmadi/Kechikdi)
 // Manba: Google Sheet "Course" (yagona manba; har kuni Drive "Hometask/Course zaxira" ga .xlsx nusxa olinadi).
 (function () {
   const $ = id => document.getElementById(id);
@@ -10,6 +10,8 @@
   let data = null, loading = null, month = null, skill = "all", summer = false, pick = null, edAt = false, edBh = false, curAt = null, curBh = null;
   try { month = localStorage.getItem("cls_c_month"); skill = localStorage.getItem("cls_c_skill") || "all"; } catch (e) {}
 
+  const ST = [["+", "Keldi", "y"], ["s", "Sababli", "s"], ["-", "Kelmadi", "n"], ["k", "Kechikdi", "k"]];
+  const isMark = v => /^[+\-sk]$/i.test(String(v || "").trim());
   const T = () => window.CLS_TP;   // asosiy skript beradi: api, group(), groups
   const norm = s => String(s || "").toLowerCase().replace(/[‘’ʻʼ`']/g, "'").replace(/\s+/g, " ").trim();
   const dOf = s => { const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(String(s).trim()); return m ? new Date(+m[3], m[2] - 1, +m[1]) : null; };
@@ -81,11 +83,12 @@
     const leftNow = B.rows.filter(r => left(r) === "during").map(r => `${r[1]} (${ddm(GN[nKey(r[1])])})`);
     const cK = ci(/Keldi/i), cM = ci(/Kelmadi/i), cP = ci(/Davomat/i), cD = ci(/To.lov kun/i), cS = ci(/O.quvchi to.lov/i), cT = ci(/O.qituvchi/i);
     // o'tilgan darslar: kamida bitta belgi qo'yilgan sana
-    const held = dc.filter(i => B.rows.some(r => /^[+-]$/.test(String(r[i] || "").trim())));
+    const held = dc.filter(i => B.rows.some(r => isMark(r[i])));
     const last = held[held.length - 1];
     const pct = r => { const k = +r[cK] || 0, m = +r[cM] || 0; return k + m ? Math.round(100 * k / (k + m)) : null; };
     const low = rowsAt.filter(r => { const p = pct(r); return p != null && p < 70; });
-    const lastIn = last != null ? B.rows.filter(r => String(r[last]).trim() === "+").length : 0, lastAll = last != null ? B.rows.filter(r => /^[+-]$/.test(String(r[last]).trim())).length : 0;
+    const here = v => /^[+k]$/i.test(String(v || "").trim());   // keldi yoki kechikdi = darsda bo'lgan
+    const lastIn = last != null ? B.rows.filter(r => here(r[last])).length : 0, lastAll = last != null ? B.rows.filter(r => isMark(r[last])).length : 0;
     $("atStats").innerHTML = [
       ["O'rtacha davomat", B.tot && B.tot[cP] || "—", "c-big"],
       ["O'tilgan darslar", held.length + " / " + dc.length, ""],
@@ -96,11 +99,11 @@
     curAt = { sheet: month, B };
     $("atBody").classList.toggle("c-editing", edAt);
     $("atHead").innerHTML = `<tr><th class="c-n">#</th><th class="c-nm">O'quvchi</th>${dc.map(wd).join("")}<th class="c-r">Keldi</th><th class="c-r">Kelmadi</th><th class="c-pc">Davomat</th></tr>`;
-    const mark = v => { v = String(v || "").trim(); return v === "+" ? '<i class="m-y">✓</i>' : v === "-" ? '<i class="m-n">✕</i>' : '<i class="m-0"></i>'; };
+    const mark = v => { v = String(v || "").trim().toLowerCase(); return v === "+" ? '<i class="m-y">✓</i>' : v === "-" ? '<i class="m-n">✕</i>' : v === "s" ? '<i class="m-s" title="Sababli">S</i>' : v === "k" ? '<i class="m-k" title="Kechikdi">K</i>' : '<i class="m-0"></i>'; };
     const bar = p => p == null ? '<span class="muted">—</span>' : `<div class="c-bar ${p < 70 ? "lo" : p < 85 ? "mid" : "hi"}"><span style="width:${p}%"></span></div><b>${p}%</b>`;
     $("atTbody").innerHTML = rowsAt.map(r => `<tr><td class="c-n">${esc(r[0])}</td><td class="c-nm">${esc(r[1])}</td>${dc.map(i => `<td class="c-d${i === last ? " c-last" : ""}${edAt ? " c-ed" : ""}" data-r="${esc(r[1])}" data-c="${i}">${mark(r[i])}</td>`).join("")}
       <td class="c-r">${esc(r[cK])}</td><td class="c-r">${esc(r[cM])}</td><td class="c-pc">${bar(pct(r))}</td></tr>`).join("");
-    const perDay = i => { const n = B.rows.filter(r => String(r[i]).trim() === "+").length, a = B.rows.filter(r => /^[+-]$/.test(String(r[i]).trim())).length; return a ? `${n}<span>/${a}</span>` : ""; };
+    const perDay = i => { const n = B.rows.filter(r => here(r[i])).length, a = B.rows.filter(r => isMark(r[i])).length; return a ? `${n}<span>/${a}</span>` : ""; };
     $("atFoot").innerHTML = `<tr><td class="c-n"></td><td class="c-nm">Guruh bo'yicha jami</td>${dc.map(i => `<td class="c-d c-day${i === last ? " c-last" : ""}">${perDay(i)}</td>`).join("")}
       <td class="c-r">${esc(B.tot ? B.tot[cK] : "")}</td><td class="c-r">${esc(B.tot ? B.tot[cM] : "")}</td><td class="c-pc"><b>${esc(B.tot ? B.tot[cP] : "")}</b></td></tr>`;
     const w = $("atTbody").closest(".c-wrap"); requestAnimationFrame(() => { const c = w.querySelector("th.c-last"); if (c) w.scrollLeft = Math.max(0, c.offsetLeft + c.offsetWidth - w.clientWidth + 4); });   // oxirgi darslar ko'rinib tursin
@@ -136,7 +139,7 @@
     months().forEach(m => {
       const B = block(data.sheets[m] || [], lbl); if (!B) return;
       const dc = B.head.map((x, i) => dOf(x) ? i : -1).filter(i => i >= 0);
-      B.rows.forEach(r => { const i = dc.find(i => /^[+-]$/.test(String(r[i] || "").trim())); if (i == null) return;
+      B.rows.forEach(r => { const i = dc.find(i => isMark(r[i])); if (i == null) return;
         const k = norm(r[1]), d = dOf(B.head[i]); if (!st[k] || d < st[k]) st[k] = d; });
     });
     return st;
@@ -264,7 +267,7 @@
     const td = e.target.closest("td.c-ed"); if (!td || !edAt) return;
     const d = curAt.B.head[+td.dataset.c];
     popOpen(td, `<div class="c-pop-h">${esc(td.dataset.r)} · ${esc(d.slice(0, 5))}</div><div class="c-pop-b">
-      <button class="btn btn-sm c-py" data-v="+">✓ Keldi</button><button class="btn btn-sm c-pn" data-v="-">✕ Kelmadi</button><button class="btn btn-secondary btn-sm" data-v="">Bo'sh</button></div>`);
+      <button class="btn btn-sm c-py" data-v="+">✓ Keldi</button><button class="btn btn-sm c-ps" data-v="s">Sababli</button><button class="btn btn-sm c-pn" data-v="-">✕ Kelmadi</button><button class="btn btn-sm c-pk" data-v="k">Kechikdi</button><button class="btn btn-secondary btn-sm" data-v="">Bo'sh</button></div>`);
     $("cPop").querySelectorAll("button").forEach(b => b.onclick = () => save(curAt, td, b.dataset.v, drawAt));
   }
   function onBh(e) {
@@ -334,13 +337,15 @@
     }).catch(() => {});
   }
 
-  // ---------- Yo'qlama: "Hammasi keldi" — tanlangan kundagi BO'SH kataklarga "+" ----------
-  // Qo'yilgan belgilar (✓/✕) o'zgartirilmaydi. Yangi o'quvchi (shu kungacha hech qayerda belgisi yo'q) — birinchi kuni
-  // belgilanmaydi, shuning uchun ro'yxatda belgisiz turadi; kerak bo'lsa ustoz o'zi tanlaydi.
-  function allOpen() {
-    const box = $("atTool");
-    if (!box.classList.contains("hide") && box.dataset.k === "all") { box.classList.add("hide"); return; }
+  // ---------- Yo'qlama: "Bugungi davomat" oynasi (16.11) ----------
+  // Har o'quvchiga 4 holat: Keldi "+", Sababli "s", Kelmadi "-", Kechikdi "k" (Course oy varag'iga shu belgilar yoziladi).
+  // Kartochka faqat "-" ga beriladi, shuning uchun "Sababli" = o'sha kun uchun kartochka yo'q. Bosilgan belgi darhol
+  // (0,7 s yig'ib) LC Panel course_att orqali jadvalga yoziladi. Ketgan o'quvchilar ro'yxatda yo'q; yangi o'quvchi
+  // (shu kungacha belgisi yo'q) "Hammasi keldi" ga qo'shilmaydi — birinchi kuni belgilanmaydi.
+  function attOpen() {
     load(false).then(() => {
+      const ms0 = months();
+      if (!ms0.includes(month)) month = ms0.find(n => norm(n) === Object.keys(OY)[new Date().getMonth()]) || ms0[ms0.length - 1];
       const lbl = label(), B = lbl && block(data.sheets[month] || [], lbl);
       if (!B) { alert("Bu oy varag'ida guruh bloki topilmadi."); return; }
       const H = B.head, dc = H.map((x, i) => dOf(x) ? i : -1).filter(i => i >= 0);
@@ -348,59 +353,84 @@
       const now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const past = dc.filter(i => dOf(H[i]) <= t0), today = dc.find(i => +dOf(H[i]) === +t0);
       let col = today != null ? today : past.length ? past[past.length - 1] : dc[0];
-      // ketganlarni yo'qlamaga kiritmaymiz (drawAt bilan bir xil qoida)
-      const GN = gone(T().group()), m1 = new Date(dOf(H[dc[dc.length - 1]]).getTime() + 864e5);
-      const rows = B.rows.filter(r => { const d = GN[nKey(r[1])]; return !d || d >= m1; });
+      const GN = gone(T().group()), gname = T().groups[T().group()].name;
       const ms = months(), pv = ms[ms.indexOf(month) - 1], PB = pv && block(data.sheets[pv] || [], lbl);
-      const mk = v => /^[+-]$/.test(String(v || "").trim());
-      const fresh = (r, c) => {   // shu kungacha (shu oy + o'tgan oy) birorta belgisi yo'q
-        if (dc.some(i => i < c && mk(r[i]))) return false;
+      const WD = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
+      const OYG = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
+      let q = "", onlyEmpty = false, sel = 0, pend = {}, busy = false, timer = null, err = "";
+      const cur = () => block(data.sheets[month] || [], lbl) || B;
+      const rowsOf = () => { const d = dOf(H[col]); return cur().rows.filter(r => { const g = GN[nKey(r[1])]; return !g || g > d; }); };
+      const fresh = r => {
+        if (dc.some(i => i < col && isMark(r[i]))) return false;
         const pr = PB && PB.rows.find(x => nKey(x[1]) === nKey(r[1]));
-        return !(pr && pr.some((v, i) => i > 1 && mk(v)));
+        return !(pr && pr.some((v, i) => i > 1 && isMark(v)));
       };
+      const val = r => r[1] in pend ? pend[r[1]] : String(r[col] || "").trim().toLowerCase();
+      const ini = s => String(s).split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+      const ov = document.createElement("div"); ov.className = "at-ov"; document.body.appendChild(ov);
+      document.body.style.overflow = "hidden";
+      const close = () => {
+        if (Object.keys(pend).length && !confirm("Hali yozilmagan belgilar bor. Baribir yopilsinmi?")) return;
+        document.removeEventListener("keydown", key); ov.remove(); document.body.style.overflow = ""; drawAt();
+      };
+      const flush = () => {
+        clearTimeout(timer); timer = null;
+        const names = Object.keys(pend); if (!names.length || busy) return;
+        busy = true; const batch = names.map(n => [n, pend[n]]), c = col; draw();
+        T().api({ admin: "course_att", sheet: month, label: lbl, col: c, head: H[c], sub: B.sub[c], marks: batch }).then(r => {
+          if (!r.ok) throw new Error(r.error);
+          data.sheets[r.sheet] = r.values; data.at = r.at; err = "";
+          batch.forEach(([n, v]) => { if (pend[n] === v) delete pend[n]; });
+        }).catch(e => { err = "⚠️ Jadvalga yozilmadi: " + e.message + " — qayta urinish uchun istalgan belgini bosing."; })
+          .then(() => { busy = false; draw(); if (Object.keys(pend).length && !err) flush(); });
+      };
+      const set = (name, v) => { pend[name] = v; err = ""; clearTimeout(timer); timer = setTimeout(flush, 700); draw(); };
       const draw = () => {
-        const list = rows.map(r => {
-          const v = String(r[col] || "").trim(), nw = !mk(v) && fresh(r, col);
-          return `<label class="c-all-r${mk(v) ? " c-all-x" : ""}"><input type="checkbox" data-r="${esc(r[1])}" ${mk(v) ? "disabled" : nw ? "" : "checked"}>
-            <span>${esc(r[1])}</span>${v === "+" ? '<i class="m-y">✓</i><small>allaqachon</small>' : v === "-" ? '<i class="m-n">✕</i><small>allaqachon</small>' : nw ? '<small class="c-new">🆕 yangi? birinchi kuni belgilanmaydi</small>' : ""}</label>`;
-        }).join("");
-        box.innerHTML = `<div class="card-header"><h3 class="card-title">✓ Hammasi keldi <small>${esc(OY[norm(month)] || month)} · bo'sh kataklarga "+" qo'yiladi, qo'yilgan belgilar o'zgarmaydi</small></h3><button class="btn btn-secondary btn-sm" id="alX">✕</button></div>
-          <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-            <label><span class="field-label">Dars kuni</span><select class="field" id="alD">${dc.map(i => `<option value="${i}" ${i === col ? "selected" : ""}>${esc(H[i].slice(0, 5))}${i === today ? " · bugun" : ""}</option>`).join("")}</select></label>
-            <span class="muted" id="alN"></span></div>
-          <div class="c-all-l" id="alL">${list}</div>
-          <div class="muted" style="margin:8px 0">Kelmaganlarni ro'yxatdan olib tashlang (belgini oling) yoki keyin "✎ Kiritish" bilan ✕ qo'ying.</div>
-          <button class="btn btn-orange" id="alGo">✓ Belgilash</button>
-          <div class="msg" id="alMsg"></div>`;
-        const cnt = () => { const n = box.querySelectorAll("#alL input:checked:not(:disabled)").length; $("alN").textContent = `${n} ta o'quvchiga "+" qo'yiladi`; $("alGo").disabled = !n; };
-        box.querySelectorAll("#alL input").forEach(x => x.onchange = cnt); cnt();
-        $("alD").onchange = () => { col = +$("alD").value; draw(); };
-        $("alX").onclick = () => box.classList.add("hide");
-        $("alGo").onclick = () => {
-          const names = [...box.querySelectorAll("#alL input:checked:not(:disabled)")].map(x => x.dataset.r);
-          if (!names.length) return;
-          $("alGo").disabled = true; $("alD").disabled = true;
-          let i = 0, ok = 0;
-          const next = () => {
-            if (i >= names.length) {
-              box.classList.add("hide"); drawAt();
-              $("atMsg").textContent = `✅ ${H[col].slice(0, 5)}: ${ok} ta o'quvchiga "+" qo'yildi. Kelmaganlarni "✎ Kiritish" bilan ✕ qiling.`;
-              return;
-            }
-            $("alMsg").textContent = `Yozilmoqda… ${i + 1} / ${names.length} (${names[i]})`;
-            T().api({ admin: "course_set", sheet: month, label: lbl, name: names[i], col: col, head: H[col], sub: B.sub[col], value: "+" }).then(r => {
-              if (!r.ok) throw new Error(r.error);
-              data.sheets[r.sheet] = r.values; data.at = r.at; ok++; i++; next();
-            }).catch(e => {
-              drawAt(); $("alGo").disabled = false; $("alD").disabled = false;
-              $("alMsg").textContent = `⚠️ ${names[i]}: ${e.message}. ${ok} tasi yozildi; qolganlari uchun ↻ Yangilash qilib qayta bosing.`;
-            });
-          };
-          next();
-        };
+        const all = rowsOf(), d = dOf(H[col]);
+        const news = all.filter(r => !isMark(val(r)) && fresh(r));
+        const cnt = { "+": 0, s: 0, "-": 0, k: 0, "": 0 };
+        all.forEach(r => { const v = val(r); cnt[isMark(v) ? v : ""]++; });
+        const qq = norm(q), list = all.filter(r => (!qq || norm(r[1]).includes(qq)) && (!onlyEmpty || !isMark(val(r))));
+        if (sel >= list.length) sel = Math.max(0, list.length - 1);
+        const empties = all.filter(r => !isMark(val(r)) && !fresh(r)).length;
+        ov.innerHTML = `<div class="at-m" role="dialog" aria-label="Bugungi davomat">
+          <div class="at-h"><div><h3>${col === today ? "Bugungi davomat" : "Davomat"}</h3>
+            <div class="at-sub">${esc(gname)} · ${WD[d.getDay()]}, ${d.getDate()} ${OYG[d.getMonth()]}
+              <select id="atDay">${dc.map(i => `<option value="${i}" ${i === col ? "selected" : ""}>${esc(H[i].slice(0, 5))}${i === today ? " · bugun" : ""}</option>`).join("")}</select></div></div>
+            <button class="at-x" id="atX" aria-label="Yopish">✕</button></div>
+          ${news.length ? `<div class="at-note">Bu kunga davomat qo'yilmaydi (yangi o'quvchi, birinchi kuni): ${news.map(r => esc(r[1])).join(", ")}. Kerak bo'lsa qatordan o'zingiz belgilang.</div>` : ""}
+          <div class="at-cnt"><span><i class="d-y"></i>Keldi <b>${cnt["+"]}</b></span><span><i class="d-s"></i>Sababli <b>${cnt.s}</b></span><span><i class="d-n"></i>Kelmadi <b>${cnt["-"]}</b></span><span><i class="d-k"></i>Kechikdi <b>${cnt.k}</b></span><span><i class="d-0"></i>Belgilanmagan <b>${cnt[""]}</b></span></div>
+          <div class="at-tools"><label class="at-q"><span>🔍</span><input id="atQ" placeholder="O'quvchini qidirish…" value="${esc(q)}"></label>
+            <button class="at-f${onlyEmpty ? " on" : ""}" id="atF">☰ Faqat belgilanmaganlar</button>
+            <button class="at-all" id="atAllGo" ${empties ? "" : "disabled"}>✓ Hammasi keldi</button></div>
+          <div class="at-hint">Qatorni tanlab 1 · 2 · 3 · 4 tugmalarini bosing (↑ ↓ — qator almashtirish)</div>
+          <div class="at-l" id="atL">${list.map((r, i) => { const v = val(r), st = ST.find(s => s[0] === v), nw = !isMark(v) && fresh(r), p = r[1] in pend;
+            return `<div class="at-r${i === sel ? " sel" : ""}" data-i="${i}"><span class="at-av${st ? " a-" + st[2] : ""}">${esc(ini(r[1]))}</span>
+              <span class="at-nm">${esc(r[1])}${nw ? '<small class="c-new">🆕 yangi — birinchi kuni</small>' : ""}${p ? `<small>${busy ? "yozilmoqda…" : "navbatda…"}</small>` : ""}</span>
+              <span class="at-seg">${ST.map((s, k) => `<button data-n="${esc(r[1])}" data-v="${s[0]}" class="b-${s[2]}${v === s[0] ? " on" : ""}" title="${k + 1}">${v === s[0] ? "✓ " : ""}${s[1]}</button>`).join("")}</span></div>`; }).join("") || '<div class="muted" style="padding:16px">Hech kim topilmadi.</div>'}</div>
+          <div class="at-ft"><span>${all.length - cnt[""]}/${all.length} belgilandi${err ? ` <b class="at-err">${esc(err)}</b>` : busy || Object.keys(pend).length ? " · yozilmoqda…" : " · ✓ jadvalda saqlangan"}</span><button class="at-close" id="atC">Yopish</button></div></div>`;
+        $("atX").onclick = close; $("atC").onclick = close; ov.onclick = e => { if (e.target === ov) close(); };
+        $("atDay").onchange = () => { if (Object.keys(pend).length) flush(); col = +$("atDay").value; sel = 0; draw(); };
+        const qi = $("atQ"); qi.oninput = () => { q = qi.value; sel = 0; draw(); const n = $("atQ"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
+        $("atF").onclick = () => { onlyEmpty = !onlyEmpty; sel = 0; draw(); };
+        $("atAllGo").onclick = () => { all.forEach(r => { if (!isMark(val(r)) && !fresh(r)) pend[r[1]] = "+"; }); err = ""; flush(); draw(); };
+        ov.querySelectorAll(".at-seg button").forEach(b => b.onclick = () => { sel = +b.closest(".at-r").dataset.i; set(b.dataset.n, b.dataset.v); });
+        ov.querySelectorAll(".at-r").forEach(x => x.onmousedown = e => { if (!e.target.closest("button")) { sel = +x.dataset.i; ov.querySelectorAll(".at-r").forEach(y => y.classList.toggle("sel", y === x)); } });
+        ov._list = list;
       };
-      box.dataset.k = "all"; box.classList.remove("hide"); draw();
-      box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      const key = e => {
+        if (e.target && e.target.id === "atQ" && !/^(ArrowUp|ArrowDown|Escape)$/.test(e.key)) return;
+        if (e.target && e.target.tagName === "SELECT") return;
+        const list = ov._list || [];
+        if (e.key === "Escape") { close(); return; }
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); sel = Math.max(0, Math.min(list.length - 1, sel + (e.key === "ArrowDown" ? 1 : -1))); draw();
+          const s = ov.querySelector(".at-r.sel"); if (s) s.scrollIntoView({ block: "nearest" }); return; }
+        const k = "1234".indexOf(e.key);
+        if (k >= 0 && list[sel]) { e.preventDefault(); set(list[sel][1], ST[k][0]); if (sel < list.length - 1 && !onlyEmpty) sel++; draw();
+          const s = ov.querySelector(".at-r.sel"); if (s) s.scrollIntoView({ block: "nearest" }); }
+      };
+      document.addEventListener("keydown", key);
+      draw();
     }).catch(() => {});
   }
 
@@ -503,7 +533,7 @@
     $("bhEdit").onclick = () => { edBh = !edBh; edBtn("bhEdit", edBh); popClose(); drawBh(); };
     $("atTbody").addEventListener("click", onAt);
     $("atNewM").onclick = monthOpen;
-    $("atAll").onclick = allOpen;
+    $("atAll").onclick = attOpen;
     $("bhCol").onclick = colOpen;
     $("bhImp").onclick = impOpen;
     $("bhTbody").addEventListener("click", onBh, true);
