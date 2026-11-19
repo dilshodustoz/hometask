@@ -42,8 +42,8 @@
     <ol>
       <li>O'ng tomonda (telefonda tepada) guruhni tanlang: <b>Morning</b> yoki <b>Afternoon</b>.</li>
       <li><b>Reading</b> yoki <b>Listening</b> bo'limida testni tanlab <b>ochish</b>ni bosing. Listening'da rejim: telefon, kolonka yoki aralash.</li>
-      <li>O'quvchilar o'z topic'idagi doimiy tugmani bosadi, test o'zi ochiladi. Jonli jadvalda kim qayerdaligi ko'rinadi.</li>
-      <li>Oxirida yig'ing: ball avtomatik hisoblanadi va har bir o'quvchining topic'iga boradi.</li>
+      <li>O'quvchilar kabinetdagi «🎓 Darsga kirish» tugmasini bosadi, test o'zi ochiladi. Jonli jadvalda kim qayerdaligi ko'rinadi.</li>
+      <li>Oxirida yig'ing: ball avtomatik hisoblanadi va har bir o'quvchining kabinetiga boradi.</li>
       <li><b>Writing</b> darsida turini tanlab savolni qo'yasiz; o'quvchi qism-qism yozadi, Gemini tekshiradi.</li>
     </ol>
     <div class="tip">Sinf natijasini Course'ga yozish: <b>Baholar → 📥 Natijalarni yozish</b>, manbadan "sinf darsi"ni tanlang (pastda, 6-bo'lim).</div>
@@ -62,7 +62,7 @@
 
   <section id="log">
     <h2>3. Listening error log (forma orqali)</h2>
-    <p>O'quvchi testni topshirgach, natija oynasida <b>✍️ Error log</b> bo'limi chiqadi. Faqat xato qilgan (❌) savollari ro'yxati bo'ladi: uning javobi, to'g'ri javob, xato turi (Spelling, Distractor, Didn't hear…) va sabab yozadigan joy. Yozganlari telefonda saqlanib boradi, <b>📤 Yuborish</b>da log topic'ga va jadvalga tushadi. Keyin to'ldirib qayta yuborsa, yangilanadi.</p>
+    <p>O'quvchi testni topshirgach, natija oynasida <b>✍️ Error log</b> bo'limi chiqadi. Faqat xato qilgan (❌) savollari ro'yxati bo'ladi: uning javobi, to'g'ri javob, xato turi (Spelling, Distractor, Didn't hear…) va sabab yozadigan joy. Yozganlari telefonda saqlanib boradi, <b>📤 Yuborish</b>da log jadvalga va kabinetga tushadi. Keyin to'ldirib qayta yuborsa, yangilanadi.</p>
     <ul>
       <li>To'liqlik foizi o'zi hisoblanadi: nechta ❌ savolga turi va sababi yozilgan.</li>
       <li>Sinfdagi test uchun ham ishlaydi (natija xabaridagi "Audioscript va xatolarim" tugmasi).</li>
@@ -116,15 +116,14 @@
     <h3>Yangi o'quvchi</h3>
     <ol>
       <li><b>O'quvchilar → + Yangi o'quvchi</b>: ism-familiya, guruh. "Course qatori" belgisini qoldiring.</li>
-      <li>Topic ochiladi, doimiy sinf tugmasi yuboriladi, Course'ga qator qo'shiladi.</li>
-      <li>Bir martalik <b>taklif havolasi</b> chiqadi: uni o'quvchiga o'zingiz yuborasiz (bot odamni guruhga qo'sha olmaydi).</li>
+      <li>O'quvchi ro'yxatga va Course'ga qo'shiladi, kabinet kartochkasi (kod + QR) tayyor bo'ladi.</li>
+      <li>Kartochkani chop etib o'quvchiga bering: QR'ni skanerlab kabinetga kiradi.</li>
     </ol>
-    <p>Arxivlash, qaytarish, ism o'zgartirish, o'chirish: ro'yxatdagi tugmalar. O'chirilgan o'quvchini Telegram guruhidan o'zingiz chiqarasiz.</p>
+    <p>Arxivlash, qaytarish, ism o'zgartirish, o'chirish: ro'yxatdagi tugmalar.</p>
     <h3>Yangi guruh</h3>
     <ol>
-      <li>Telegram'da guruh oching, <b>Topics</b>ni yoqing, botni admin qiling (<i>Manage topics</i> va <i>Invite users</i> huquqlari bilan).</li>
       <li>Saytda <b>O'quvchilar → Guruhlar → Guruh yaratish</b> ("Course jadvalida blok ochish" belgisi bilan).</li>
-      <li><b>Telegramga ulash → Telegram guruhini topish</b> (yoki chat raqamini kiriting).</li>
+      <li>Guruh darrov ishlaydi: tepada uni tanlab o'quvchi qo'shasiz.</li>
     </ol>
   </section>
 
@@ -156,7 +155,7 @@
     <table>
       <tr><th>Belgi</th><th>Nima qilish kerak</th></tr>
       <tr><td>"Maxfiy kalit mos emas" yoki aloqa yo'q</td><td>Sozlash → Aloqani tekshirish. Apps Script → Project Settings → Script Properties'da <code>CLASS_SECRET</code> sahifadagi kalit bilan bir xil bo'lsin.</td></tr>
-      <tr><td>Telegram'ga xabar bormayapti</td><td>Script Properties'da <code>TELEGRAM_BOT_TOKEN</code> bormi; bot guruhda adminmi.</td></tr>
+      <tr><td>Zaxira Telegram'ga kelmayapti</td><td>Script Properties'da <code>TELEGRAM_BOT_TOKEN</code> bormi; bot bilan shaxsiy chatda /start bosilganmi.</td></tr>
       <tr><td>Writing AI ishlamayapti</td><td>Sozlash → "Writing AI (Gemini) ni tekshirish". Kalit: Script Properties → <code>GEMINI_API_KEY</code>. Bepul limit tugagan bo'lsa, ertaga o'zi tiklanadi.</td></tr>
       <tr><td>"Jadvalda ustunlar o'zgargan"</td><td>↻ Yangilash bosib qaytadan kiriting (jadvalni boshqa joyda o'zgartirgansiz).</td></tr>
       <tr><td>Course'da ism topilmadi</td><td>Course'dagi ism bilan O'quvchilar ro'yxatidagi ism bir xil bo'lsin (familiya-ism tartibi farqi muhim emas).</td></tr>
@@ -168,7 +167,7 @@
   <section id="claude">
     <h2>12. Hali Claude kerak bo'ladigan ishlar</h2>
     <ul>
-      <li><b>Writing va Speaking feedback</b> (sizning qaroringiz: Claude tekshiradi). Claude'siz: essay topic'da, Speaking matni "Hometask natijalari" jadvalida tayyor; bahoni o'zingiz "✎ Kiritish" bilan qo'yasiz.</li>
+      <li><b>Writing va Speaking feedback</b> (sizning qaroringiz: Claude tekshiradi). Claude'siz: essay ustoz sahifasidagi «Kim topshirdi» oynasida, Speaking matni "Hometask natijalari" jadvalida tayyor; bahoni o'zingiz "✎ Kiritish" bilan qo'yasiz.</li>
       <li><b>Yangi test qo'shish</b> (masalan Cambridge 19, New Reading Tests). Hozir saytda 26 ta Reading va 20 ta Listening testi bor (C12–C18). Yangi test PDF'dan aniq ko'chirilishi, kaliti Drive'ga, audiosi saytga qo'yilishi kerak.</li>
       <li><b>Sayt kodini o'zgartirish</b> va xatolarni tuzatish.</li>
     </ul>
