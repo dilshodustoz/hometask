@@ -28,6 +28,18 @@
   .kk .kp{height:6px;background:var(--soft);border-radius:4px;margin-top:4px}.kk .kp div{height:6px;border-radius:4px;background:#3fa45f}
   .kk details{margin-top:8px;font-size:.82rem;color:var(--muted)}.kk summary{cursor:pointer;font-weight:600}.kk details p{margin:6px 0}
   *{box-sizing:border-box}
+  /* 🔑 Kirish kodim (20.11): o'quvchi o'z kodini ko'radi va nusxalaydi */
+  #keyB{font-size:1.05rem}
+  #keyM{position:fixed;inset:0;z-index:66;display:flex;align-items:center;justify-content:center;padding:16px}
+  #keyM .kbg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+  #keyM .kp2{position:relative;background:var(--card);width:100%;max-width:380px;border-radius:20px;padding:22px 20px 18px;text-align:center}
+  #keyM h3{margin:0 0 4px;font-size:1.12rem;text-transform:none;letter-spacing:0;color:var(--ink)}
+  #keyM .kv{font:700 2rem 'JetBrains Mono',monospace;letter-spacing:.18em;background:var(--soft);border:1px dashed var(--line);border-radius:14px;padding:14px 8px 14px calc(8px + .18em);margin:14px 0 12px;color:var(--ink);user-select:all;word-break:break-all}
+  #keyM .kv.mask{letter-spacing:.3em;color:var(--muted)}
+  #keyM .kr{display:flex;gap:8px}#keyM .kr .btn{flex:1;justify-content:center;padding:12px}
+  #keyM .kt{font-size:.84rem;line-height:1.45;color:var(--muted);margin:12px 0 0;text-align:left}
+  #keyM .kx{width:100%;justify-content:center;padding:12px;margin-top:12px}
+  #login .lhint{margin-top:10px;font-size:.84rem;color:var(--muted);line-height:1.45;background:var(--soft);border-radius:10px;padding:9px 11px;text-align:left}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
   button{font:inherit}
   .tvbar{background:#FEF3C7;color:#78350F;border:1px solid #F59E0B;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:.88rem;line-height:1.45}
@@ -199,6 +211,7 @@
     <a class="cls hide" id="cls" href="#" title="Onlayn darsdagi testga kirish">🎓 <span class="l">Darsga kirish</span><span class="s">Dars</span></a>
     <button class="bell" id="sync" title="Yangilash">↻</button>
     <button class="bell" id="bell" title="Xabarlar"><svg class="dm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M22 3 9.2 10.8"/><path d="M22 3 15 21l-5.8-10.2L2 7.5 22 3Z"/></svg><b id="bellN" class="hide">0</b></button>
+    <button class="bell hide" id="keyB" title="Kirish kodim">🔑</button>
     <button class="out" id="out" title="Bu qurilmadan chiqish"><span class="l">Chiqish</span><span class="s">🚪</span></button>
   </div>
   <nav>
@@ -233,9 +246,16 @@
     <button type="button" class="eye" id="lEye" title="Kodni ko'rsatish">👁</button></div>
   <div id="lErr"></div>
   <button class="btn" id="lGo" type="submit">Kirish</button>
-  <div class="mt" style="margin-top:14px">Kodni hech kimga bermang. Yo'qotsangiz, ustozdan yangisini so'rang.</div>
+  <div class="lhint">🔑 Kodni unutdingizmi? Telefoningizdagi kabinetni oching va yuqoridagi <b>🔑</b> tugmasini bosing: kodingiz o'sha yerda turadi.</div>
+  <div class="mt" style="margin-top:12px">Kodni hech kimga bermang. Telefoningizda ham kabinet yo'q bo'lsa, ustozdan so'rang.</div>
 </form></div>
 <div id="sheet" class="hide"><div class="sbg" id="shBg"></div><div class="sp2"><h3 id="shH">📲 Ilova qilib o'rnatish</h3><div class="mt" id="shS"></div><ol id="shL"></ol><div id="shX2"></div><button class="btn" id="shOk">Tushunarli</button></div></div>
+<div id="keyM" class="hide"><div class="kbg" id="kBg"></div><div class="kp2" role="dialog" aria-labelledby="kH">
+  <h3 id="kH">🔑 Kirish kodim</h3><div class="mt" id="kN"></div>
+  <div class="kv mask" id="kV">•••••••</div>
+  <div class="kr"><button class="btn sec" id="kShow">👁 Ko'rsatish</button><button class="btn" id="kCopy">📋 Nusxa olish</button></div>
+  <div class="kt" id="kT">Shu kod bilan istalgan telefon yoki kompyuterdan (masalan, kompyuterxonada) kabinetingizga kirasiz. <b>Yozib oling</b> yoki skrinshot qilib qo'ying. Kodni boshqalarga bermang.</div>
+  <button class="btn sec kx" id="kX">Yopish</button></div></div>
 <div class="arr hide" id="arr">⬇️</div>
 <div class="toast" id="toast"></div>
 <script src="../speaking/config.js"></script>
@@ -536,6 +556,7 @@
       D = r;
       if (r.k && !TV) { $("cls").href = "../class/?k=" + encodeURIComponent(r.k); $("cls").classList.remove("hide"); }
       $("who").textContent = r.name;
+      if (!TV) $("keyB").classList.remove("hide");
       if (TV) $("tvN").textContent = r.name;
       else if (!pushInit.done) { pushInit.done = 1; try { pushInit(); } catch (e) {} try { onbInit(); } catch (e) {} }
       render();
@@ -605,7 +626,7 @@
       .catch(e => { if (e.stale) return; if (e.out) { remember(c); return; } CODE = ""; $("lErr").textContent = e.message; $("lCode").select(); })
       .finally(() => { $("lGo").disabled = false; $("lGo").textContent = "Kirish"; });
   };
-  $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; pushOff(true); forget(); pushInit.done = 0; $("push").classList.add("hide"); $("setB").classList.add("hide"); closeNotes(); showLogin(""); };
+  $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; pushOff(true); keyClose(); $("keyB").classList.add("hide"); forget(); pushInit.done = 0; $("push").classList.add("hide"); $("setB").classList.add("hide"); closeNotes(); showLogin(""); };
   // Ilova qilib o'rnatish: Android Chrome va noutbukdagi Chrome/Edge o'zi taklif qiladi; iPhone'da faqat qo'lda
   if (isIOS) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Safari → <b>Ulashish</b> (⬆︎) → <b>Add to Home Screen</b>. Shunda kabinet ilova kabi ochiladi.";
   else if (isAnd) $("a2hsT").innerHTML = "📱 Telefon ekraniga qo'shib qo'ying: Chrome → <b>⋮</b> → <b>Bosh ekranga qo'shish</b> yoki <b>Ilovani o'rnatish</b>. Shunda kabinet ilova kabi ochiladi.";
@@ -812,6 +833,31 @@
   window.addEventListener("popstate", () => { if (layerOpen()) closeLayer(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && layerOpen()) { if (history.state && history.state.layer) history.back(); else closeLayer(); } });
   // Kod yopiq kiritiladi; har bosilgan belgi bir lahza ko'rinadi (hamma telefon va noutbukda bir xil)
+  // 🔑 Kirish kodim: kod shu qurilmada (kab_c) saqlangan; serverga qo'shimcha so'rov yo'q. 15 soniyadan keyin yana yashiriladi.
+  function keyShow(on) {
+    const v = $("kV"); clearTimeout(keyShow.h);
+    v.classList.toggle("mask", !on); v.textContent = on ? CODE : "•••••••";
+    $("kShow").textContent = on ? "🙈 Yashirish" : "👁 Ko'rsatish";
+    if (on) keyShow.h = setTimeout(() => keyShow(false), 15000);
+  }
+  function keyOpen() {
+    $("kN").textContent = D && D.name ? D.name : "";
+    const has = CODE_RE.test(CODE);
+    $("kV").classList.toggle("hide", !has); $("kShow").parentNode.classList.toggle("hide", !has);
+    $("kT").innerHTML = has ? "Shu kod bilan istalgan telefon yoki kompyuterdan (masalan, kompyuterxonada) kabinetingizga kirasiz. <b>Yozib oling</b> yoki skrinshot qilib qo'ying. Kodni boshqalarga bermang."
+      : "Bu qurilmada kabinet maxsus havola orqali ochilgan, shuning uchun kod bu yerda saqlanmagan. Kirish kodingizni ustozdan so'rang.";
+    keyShow(false); $("keyM").classList.remove("hide");
+  }
+  function keyClose() { keyShow(false); $("keyM").classList.add("hide"); }
+  $("keyB").onclick = keyOpen;
+  $("kX").onclick = $("kBg").onclick = keyClose;
+  $("kShow").onclick = () => keyShow($("kV").classList.contains("mask"));
+  $("kCopy").onclick = () => {
+    const ok = () => toast("📋 Kod nusxalandi"), bad = () => { keyShow(true); toast("Nusxalab bo'lmadi: kodni yozib oling"); };
+    try { if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(CODE).then(ok, bad); } catch (e) {}
+    try { const t = document.createElement("textarea"); t.value = CODE; document.body.appendChild(t); t.select(); const r = document.execCommand("copy"); t.remove(); r ? ok() : bad(); } catch (e) { bad(); }
+  };
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("keyM").classList.contains("hide")) keyClose(); });
   $("lCode").addEventListener("input", e => {
     const v = $("lCode").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     $("lCnt").textContent = v.length ? v.length + "/7" : "";
