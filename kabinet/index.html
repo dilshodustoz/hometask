@@ -517,9 +517,13 @@
     try { const r = JSON.parse(localStorage.getItem(cacheKey()) || "null"); if (r && r.ok && r.tasks) { apply(r); return true; } } catch (e) {}
     return false;
   }
+  // Chiqish bosilganda SES oshadi: chiqishdan oldin yuborilgan so'rov javobi kelsa ham, oldingi o'quvchini qayta ochmaydi (20.11)
+  let SES = 0;
   function load(first, lite) {
     $("sync").classList.add("busy");
+    const ses = SES;
     return api(Object.assign({ action: "cab" }, auth(), lite && D ? { lite: 1 } : {})).finally(() => $("sync").classList.remove("busy")).then(r => {
+      if (ses !== SES) { const e = new Error("chiqildi"); e.stale = true; throw e; }
       if (!r.ok) { const e = new Error(r.error || "xato"); e.auth = !!r.auth; e.lock = !!r.lock; e.out = r.out || null; if (e.out) showOut(e.out); throw e; }
       if (r.lite) {   // yengil yangilash: faqat xabarlar va materiallar; yangi xabar kelsa vazifalarni ham to'liq yangilaymiz
         if (!D) return load(first);
@@ -544,13 +548,19 @@
   function start() {
     if (fromCache()) {   // darhol ko'rsatamiz, keyin yangilaymiz
       tab0();
-      return load(false).catch(e => { if (e.auth) throw e; toast("⚠️ Yangilab bo'lmadi: " + e.message); });
+      return load(false).catch(e => { if (e.auth || e.stale) throw e; toast("⚠️ Yangilab bo'lmadi: " + e.message); });
     }
     return load(true).then(tab0);
   }
   function forget() {
-    try { localStorage.removeItem(cacheKey()); localStorage.removeItem("kab_c"); localStorage.removeItem("kab_k"); } catch (e) {}
-    CODE = ""; KEY = ""; D = null; authSave("");
+    SES++;
+    try {
+      localStorage.removeItem(cacheKey()); localStorage.removeItem("kab_c"); localStorage.removeItem("kab_k"); localStorage.removeItem("kab_tab");
+      Object.keys(localStorage).filter(x => x.indexOf("kab_d_") === 0).forEach(x => localStorage.removeItem(x));
+    } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
+    CODE = ""; KEY = ""; VIA_QR = false; D = null; authSave("");
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}   // ?q= / ?k= manzilda qolmasin: yangilansa ham qayta kirmaydi
   }
   // iPhone: Safari va bosh ekrandagi ilova localStorage'ni bo'lishmaydi; Cache Storage'da ham saqlab qo'yamiz (iOS 14+ ko'pincha umumiy)
   function authSave(c) {
@@ -592,7 +602,7 @@
     $("lGo").disabled = true; $("lGo").textContent = "Tekshirilmoqda…"; $("lErr").textContent = "";
     CODE = c; KEY = "";
     start().then(() => remember(c))
-      .catch(e => { if (e.out) { remember(c); return; } CODE = ""; $("lErr").textContent = e.message; $("lCode").select(); })
+      .catch(e => { if (e.stale) return; if (e.out) { remember(c); return; } CODE = ""; $("lErr").textContent = e.message; $("lCode").select(); })
       .finally(() => { $("lGo").disabled = false; $("lGo").textContent = "Kirish"; });
   };
   $("out").onclick = () => { if (!confirm("Bu qurilmadan chiqasizmi? Qayta kirish uchun kod kerak bo'ladi.")) return; pushOff(true); forget(); pushInit.done = 0; $("push").classList.add("hide"); $("setB").classList.add("hide"); closeNotes(); showLogin(""); };
@@ -814,6 +824,7 @@
   if (STANDALONE) $("a2hs").classList.add("hide");
   function boot() {
     start().then(() => { if (CODE) remember(CODE); }).catch(e => {
+      if (e.stale) return;
       if (e.out) { if (CODE) remember(CODE); return; }
       if (e.auth) { forget(); showLogin(VIA_QR ? e.message + " Kartochkadagi QR eskirgan bo'lishi mumkin: ustozdan yangi kartochka so'rang yoki kodni kiriting." : e.message); return; }
       $("cT").textContent = "⚠️ Kabinet ochilmadi"; $("cB").textContent = e.message;
