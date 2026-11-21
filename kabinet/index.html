@@ -10,6 +10,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kabinet">
 <meta name="theme-color" content="#FFFFFF">
+<script>
+  // Tungi rejim (21.11): o'quvchi tanlovi (kab_theme) yoki telefon sozlamasi. Sahifa chizilishidan oldin qo'yiladi (oq miltillash bo'lmasin).
+  (function () {
+    var t = ""; try { t = localStorage.getItem("kab_theme") || ""; } catch (e) {}
+    if (t !== "dark" && t !== "light") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", t);
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#181B21" : "#FFFFFF";
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
 <style>
@@ -201,6 +210,22 @@
     .tlab span:nth-child(2){display:none}
     .stat span{font-size:.66rem}
   }
+  /* ---- Tungi rejim ---- */
+  html[data-theme="dark"]{color-scheme:dark;--bg:#0F1115;--card:#181B21;--ink:#ECEDEF;--muted:#9AA0A9;--line:#2A2E36;--soft:#23272E;--primary:#F2661A;--ok:#4ADE80;--okbg:rgba(34,197,94,.14);--bad:#F87171;--badbg:rgba(239,68,68,.16);--warn:#FBBF24;--warnbg:rgba(245,158,11,.14)}
+  html[data-theme="dark"] .brand,html[data-theme="dark"] #login .logo{filter:invert(1) brightness(.92)}
+  html[data-theme="dark"] .kk .s:not(.l){border-color:#3A3F48;color:#6B717B}
+  html[data-theme="dark"] .ic.reading{background:rgba(59,130,246,.16)}html[data-theme="dark"] .ic.listening{background:rgba(139,92,246,.18)}html[data-theme="dark"] .ic.speaking{background:rgba(249,115,22,.16)}html[data-theme="dark"] .ic.writing{background:rgba(34,197,94,.14)}
+  html[data-theme="dark"] .chip.part{background:rgba(59,130,246,.18);color:#93C5FD}
+  html[data-theme="dark"] .chip.urg{background:rgba(239,68,68,.2);color:#FCA5A5}
+  html[data-theme="dark"] .tvbar{background:rgba(245,158,11,.14);color:#FDE68A;border-color:rgba(245,158,11,.5)}
+  html[data-theme="dark"] .note.new{background:rgba(242,102,26,.08)}
+  html[data-theme="dark"] .note.elon{border-left-color:#A78BFA}
+  html[data-theme="dark"] .onb{background:linear-gradient(135deg,#2A1C12,#33200F);border-color:#5A3A22}
+  html[data-theme="dark"] .onb .ot{color:#D6C2B2}html[data-theme="dark"] .onb .ol{color:#C2A48D}
+  html[data-theme="dark"] .setb:hover{background:rgba(255,255,255,.06)}
+  html[data-theme="dark"] .toast,html[data-theme="dark"] #lPeek{background:#ECEDEF;color:#16181D}
+  html[data-theme="dark"] .card,html[data-theme="dark"] .stat,html[data-theme="dark"] .kk{box-shadow:none}
+  nav .thm{flex:none;width:38px;margin:4px 0 6px 2px;border:0;border-radius:11px;background:var(--soft);font-size:1.05rem;cursor:pointer;padding:0;line-height:1}
 </style>
 </head>
 <body>
@@ -218,6 +243,7 @@
     <button data-tab="tasks" class="on">📋 Vazifalar</button>
     <button data-tab="res">📊 Natijalar</button>
     <button data-tab="mat">📚 Materiallar</button>
+    <button class="thm" id="thm" type="button" title="Tungi rejim" aria-label="Tungi rejim">🌙</button>
   </nav>
 </header>
 <main>
@@ -441,7 +467,7 @@
   function render() { renderTasks(); renderNotes(); renderRes(); renderMat(); badge(); }
   function show(t) {
     tab = t;
-    document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+    document.querySelectorAll("nav button[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
     ["tasks", "res", "mat"].forEach(s => $(s).classList.toggle("hide", s !== t));
     try { localStorage.setItem("kab_tab", t); } catch (e) {}
   }
@@ -457,7 +483,21 @@
       }, 1500);
     }
   }
-  document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.tab));
+  document.querySelectorAll("nav button[data-tab]").forEach(b => b.onclick = () => show(b.dataset.tab));
+  // Tungi rejim tugmasi: 🌙 bosilsa qorong'i, ☀️ bosilsa yorug'. Tanlov shu qurilmada eslab qolinadi.
+  function thmSet(t, save) {
+    document.documentElement.setAttribute("data-theme", t);
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === "dark" ? "#181B21" : "#FFFFFF";
+    $("thm").textContent = t === "dark" ? "☀️" : "🌙";
+    $("thm").title = $("thm").ariaLabel = t === "dark" ? "Kunduzgi rejim" : "Tungi rejim";
+    if (save) try { localStorage.setItem("kab_theme", t); } catch (e) {}
+  }
+  thmSet(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
+  $("thm").onclick = () => { const t = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark"; thmSet(t, true); toast(t === "dark" ? "🌙 Tungi rejim yoqildi" : "☀️ Kunduzgi rejim"); };
+  try {   // o'quvchi o'zi tanlamagan bo'lsa, telefon sozlamasi o'zgarganda ergashadi
+    const mq = matchMedia("(prefers-color-scheme: dark)"), f = e => { if (!localStorage.getItem("kab_theme")) thmSet(e.matches ? "dark" : "light"); };
+    mq.addEventListener ? mq.addEventListener("change", f) : mq.addListener(f);
+  } catch (e) {}
   $("bell").onclick = openNotes;
   $("sync").onclick = () => { if (D) load(false).then(() => toast("✓ Yangilandi")).catch(e => toast("⚠️ " + e.message)); };
   $("cmpT").addEventListener("input", () => { const t = $("cmpT"); t.style.height = "auto"; t.style.height = Math.min(120, t.scrollHeight) + "px"; });
