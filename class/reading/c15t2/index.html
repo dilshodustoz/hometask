@@ -1211,6 +1211,8 @@ async function afterSubmit() {
       if (v.ans) { Object.assign(answers, normAns(v.ans)); lastSent = JSON.stringify(ans()); switchPart(curPart); }
       restored = true;
       if (!v.joined) L.child("joined").set(CLS.TS);
+      // eski oyna (sahifa yangilanganda) uzilishi kechikib "online:false" yozib qo'yishi mumkin — har 20 s da qayta tasdiqlaymiz
+      setInterval(() => { if (!done && !document.hidden) L.child("online").set(true).catch(() => {}); }, 20000);
       CLS.db.ref(".info/connected").on("value", c => {
         if (!c.val() || done) return;
         L.child("online").onDisconnect().set(false);
