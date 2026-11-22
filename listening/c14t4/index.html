@@ -2678,6 +2678,14 @@
     const n = elCount(), all = EL.wrong.length;
     document.getElementById("elCnt").innerHTML = `Yozildi: <b>${n} / ${all}</b>` + (EL.sent ? ` · <span style="color:#15803d">✅ yuborilgan ${esc(new Date(EL.sent.at).toLocaleString())} (${EL.sent.done}/${EL.sent.wrong}). O'zgartirsangiz, qayta yuboring.</span>` : "");
   }
+
+  // LOG_RETRY_ (22.11): log yuborilmasa avtomatik qayta urinish, oxirida katta ogohlantirish
+  function postRetry(b, n) {
+    n = n || 0;
+    return post(b).then(r => { if (r && r.busy && n < 2) return new Promise(ok => setTimeout(ok, 4000 * (n + 1))).then(() => postRetry(b, n + 1)); return r; },
+      e => { if (n < 2) return new Promise(ok => setTimeout(ok, 3000 * (n + 1))).then(() => postRetry(b, n + 1)); throw e; });
+  }
+  function elFail(m) { try { alert("❌ ERROR LOG YUBORILMADI!\n\n" + (m || "Internet xatosi") + "\n\nYozganlaringiz shu qurilmada saqlanib turibdi. Internetni tekshirib, 📤 Yuborish ni qayta bosing va «✅ Yuborildi» chiqqanini ko'ring."); } catch (x) {} }
   function elSend() {
     const items = EL.wrong.map(q => Object.assign({ q: q }, EL.items[q] || {})).filter(x => x.type || String(x.why || "").trim());
     const msg = document.getElementById("elMsg"), b = document.getElementById("elSend");
@@ -2687,13 +2695,13 @@
     const n = elCount();
     if (n < EL.wrong.length && !confirm(`${EL.wrong.length} ta xatodan ${n} tasi to'liq yozilgan. Shunday yuborilsinmi? (keyin to'ldirib qayta yuborsangiz bo'ladi)`)) return;
     b.disabled = true; msg.textContent = "📤 Yuborilmoqda…";
-    post(Object.assign({ skill: "listening", log: true, t: T, k: KEY, items: items }, CLS_ID ? { cls: CLS_ID } : {})).then(r => {
+    postRetry(Object.assign({ skill: "listening", log: true, t: T, k: KEY, items: items }, CLS_ID ? { cls: CLS_ID } : {})).then(r => {
       b.disabled = false;
       if (!r.ok) throw new Error(r.error || "Yuborilmadi");
       EL.sent = { at: r.at, done: r.done, wrong: r.wrong };
       msg.innerHTML = `✅ Error log ustozga yuborildi: <b>${r.done} / ${r.wrong}</b> (${r.pct}%).` + (r.pct < 100 ? " Qolganlarini ham yozib, qayta yuboring." : " Barakalla!");
       elFoot();
-    }).catch(e => { b.disabled = false; msg.textContent = "⚠️ " + (e.message === "Failed to fetch" ? "Internet xatosi, qayta urinib ko'ring." : e.message); });
+    }).catch(e => { b.disabled = false; msg.textContent = "⚠️ " + (e.message === "Failed to fetch" ? "Internet xatosi, qayta urinib ko'ring." : e.message); elFail(e.message === "Failed to fetch" ? "" : e.message); });
   }
   // Natija oynasida audio pleer: istalgan Part, istalgan joy, ±10 s, tezlik. Savol yonidagi "▶" audioni
   // audioscriptdagi javob joyidan ~20 s oldinroqqa qo'yadi (joy matndagi o'rniga qarab taxminiy).
