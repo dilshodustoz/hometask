@@ -1237,6 +1237,14 @@ async function afterSubmit() {
     });
     document.getElementById("elSend").onclick = elSend;
   }
+
+  // LOG_RETRY_ (22.11): log yuborilmasa avtomatik qayta urinish, oxirida katta ogohlantirish
+  function postRetry(b, n) {
+    n = n || 0;
+    return post(b).then(r => { if (r && r.busy && n < 2) return new Promise(ok => setTimeout(ok, 4000 * (n + 1))).then(() => postRetry(b, n + 1)); return r; },
+      e => { if (n < 2) return new Promise(ok => setTimeout(ok, 3000 * (n + 1))).then(() => postRetry(b, n + 1)); throw e; });
+  }
+  function elFail(m) { try { alert("❌ ERROR LOG YUBORILMADI!\n\n" + (m || "Internet xatosi") + "\n\nYozganlaringiz shu qurilmada saqlanib turibdi. Internetni tekshirib, 📤 Yuborish ni qayta bosing va «✅ Yuborildi» chiqqanini ko'ring."); } catch (x) {} }
   function elSend() {
     const items = EL.wrong.map(q => Object.assign({ q: q }, EL.items[q] || {})).filter(it => it.type || (it.why || "").trim());
     if (!items.length) { EL.msg = "⚠️ Hech bo'lmasa bitta savolga yozing"; drawReview(); return; }
@@ -1245,11 +1253,11 @@ async function afterSubmit() {
     const miss = EL.wrong.length - items.filter(elOk).length;
     if (miss && !confirm(miss + " ta savol to'liq yozilmagan. Shunday yuborilsinmi? (keyin to'ldirib qayta yuborish mumkin)")) return;
     EL.busy = true; EL.msg = "⏳ Yuborilmoqda…"; drawReview();
-    post(Object.assign({ skill: "reading", log: 1, t: TID, k: KEY, items: items }, CLSID ? { cls: CLSID } : {})).then(r => {
+    postRetry(Object.assign({ skill: "reading", log: 1, t: TID, k: KEY, items: items }, CLSID ? { cls: CLSID } : {})).then(r => {
       EL.busy = false;
-      if (!r.ok) { EL.msg = "⚠️ " + esc2(r.error || "Yuborilmadi"); drawReview(); return; }
+      if (!r.ok) { EL.msg = "⚠️ " + esc2(r.error || "Yuborilmadi"); drawReview(); elFail(r.error); return; }
       EL.sent = r; EL.msg = `✅ Yuborildi: ${r.done}/${r.wrong} (${r.pct}%)`; lsDel(LOGK); drawReview();
-    }).catch(() => { EL.busy = false; EL.msg = "⚠️ Internet xatosi, qayta bosing"; drawReview(); });
+    }).catch(() => { EL.busy = false; EL.msg = "⚠️ Internet xatosi, qayta bosing"; drawReview(); elFail(); });
   }
 
   function drawReview() {
