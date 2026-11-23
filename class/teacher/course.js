@@ -357,7 +357,7 @@
       const ms = months(), pv = ms[ms.indexOf(month) - 1], PB = pv && block(data.sheets[pv] || [], lbl);
       const WD = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
       const OYG = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];
-      let q = "", onlyEmpty = false, sel = 0, pend = {}, busy = false, timer = null, err = "";
+      let q = "", onlyEmpty = false, sel = 0, pend = {}, busy = false, timer = null, err = "", allBusy = false, saved = {}, okT = null;
       const cur = () => block(data.sheets[month] || [], lbl) || B;
       const rowsOf = () => { const d = dOf(H[col]); return cur().rows.filter(r => { const g = GN[nKey(r[1])]; return !g || g > d; }); };
       const fresh = r => {
@@ -380,11 +380,14 @@
         T().api({ admin: "course_att", sheet: month, label: lbl, col: c, head: H[c], sub: B.sub[c], marks: batch }).then(r => {
           if (!r.ok) throw new Error(r.error);
           data.sheets[r.sheet] = r.values; data.at = r.at; err = "";
-          batch.forEach(([n, v]) => { if (pend[n] === v) delete pend[n]; });
+          const t = Date.now(); batch.forEach(([n, v]) => { if (pend[n] === v) { delete pend[n]; saved[n] = t; } });
+          clearTimeout(okT); okT = setTimeout(() => { saved = {}; if (ov.isConnected) draw(); }, 1800);   // "✓ saqlandi" 1,8 s ko'rinadi
         }).catch(e => { err = "⚠️ Jadvalga yozilmadi: " + e.message + " — qayta urinish uchun istalgan belgini bosing."; })
-          .then(() => { busy = false; draw(); if (Object.keys(pend).length && !err) flush(); });
+          .then(() => { busy = false; if (!Object.keys(pend).length || err) allBusy = false; draw(); if (Object.keys(pend).length && !err) flush(); });
       };
-      const set = (name, v) => { pend[name] = v; err = ""; clearTimeout(timer); timer = setTimeout(flush, 700); draw(); };
+      // 23.11: bosilgan belgi darhol ekranda ko'rinadi (optimistik), 0,4 s ichidagi bosishlar bitta so'rovga yig'iladi
+      const set = (name, v) => { pend[name] = v; err = ""; delete saved[name]; clearTimeout(timer); timer = setTimeout(flush, 400); draw(); };
+      const SP = '<i class="at-sp" aria-hidden="true"></i>';
       const draw = () => {
         const all = rowsOf(), d = dOf(H[col]);
         const news = all.filter(r => !isMark(val(r)) && fresh(r));
@@ -393,6 +396,9 @@
         const qq = norm(q), list = all.filter(r => (!qq || norm(r[1]).includes(qq)) && (!onlyEmpty || !isMark(val(r))));
         if (sel >= list.length) sel = Math.max(0, list.length - 1);
         const empties = all.filter(r => !isMark(val(r)) && !fresh(r)).length;
+        // 23.11: qayta chizishda ro'yxat tepaga sakramasin — scroll joyini saqlab, keyin qaytaramiz
+        const l0 = $("atL"), m0 = ov.querySelector(".at-m"), sT = l0 ? l0.scrollTop : 0, mT = m0 ? m0.scrollTop : 0;
+        const pn = Object.keys(pend).length;
         ov.innerHTML = `<div class="at-m" role="dialog" aria-label="Bugungi davomat">
           <div class="at-h"><div><h3>${col === today ? "Bugungi davomat" : "Davomat"}</h3>
             <div class="at-sub">${esc(gname)} · ${WD[d.getDay()]}, ${d.getDate()} ${OYG[d.getMonth()]}
@@ -402,21 +408,22 @@
           <div class="at-cnt"><span><i class="d-y"></i>Keldi <b>${cnt["+"]}</b></span><span><i class="d-s"></i>Sababli <b>${cnt.s}</b></span><span><i class="d-n"></i>Kelmadi <b>${cnt["-"]}</b></span><span><i class="d-k"></i>Kechikdi <b>${cnt.k}</b></span><span><i class="d-0"></i>Belgilanmagan <b>${cnt[""]}</b></span></div>
           <div class="at-tools"><label class="at-q"><span>🔍</span><input id="atQ" placeholder="O'quvchini qidirish…" value="${esc(q)}"></label>
             <button class="at-f${onlyEmpty ? " on" : ""}" id="atF">☰ Faqat belgilanmaganlar</button>
-            <button class="at-all" id="atAllGo" ${empties ? "" : "disabled"}>✓ Hammasi keldi</button></div>
+            <button class="at-all${allBusy ? " busy" : ""}" id="atAllGo" ${empties && !allBusy ? "" : "disabled"}>${allBusy ? SP + "Yozilmoqda…" : "✓ Hammasi keldi"}</button></div>
           <div class="at-hint">Qatorni tanlab 1 · 2 · 3 · 4 tugmalarini bosing (↑ ↓ — qator almashtirish)</div>
           <div class="at-l" id="atL">${list.map((r, i) => { const v = val(r), st = ST.find(s => s[0] === v), nw = !isMark(v) && fresh(r), p = r[1] in pend;
             return `<div class="at-r${i === sel ? " sel" : ""}" data-i="${i}"><span class="at-av${st ? " a-" + st[2] : ""}">${esc(ini(r[1]))}</span>
-              <span class="at-nm">${esc(r[1])}${nw ? '<small class="c-new">🆕 yangi — birinchi kuni</small>' : ""}${p ? `<small>${busy ? "yozilmoqda…" : "navbatda…"}</small>` : ""}</span>
-              <span class="at-seg">${ST.map((s, k) => `<button data-n="${esc(r[1])}" data-v="${s[0]}" class="b-${s[2]}${v === s[0] ? " on" : ""}" title="${k + 1}">${v === s[0] ? "✓ " : ""}${s[1]}</button>`).join("")}</span></div>`; }).join("") || '<div class="muted" style="padding:16px">Hech kim topilmadi.</div>'}</div>
-          <div class="at-ft"><span>${all.length - cnt[""]}/${all.length} belgilandi${err ? ` <b class="at-err">${esc(err)}</b>` : busy || Object.keys(pend).length ? " · yozilmoqda…" : " · ✓ jadvalda saqlangan"}</span><button class="at-close" id="atC">Yopish</button></div></div>`;
+              <span class="at-nm">${esc(r[1])}${nw ? '<small class="c-new">🆕 yangi — birinchi kuni</small>' : ""}${p ? `<small class="at-pd">${SP}${busy ? "yozilmoqda…" : "navbatda…"}</small>` : saved[r[1]] ? '<small class="at-ok">✓ saqlandi</small>' : ""}</span>
+              <span class="at-seg">${ST.map((s, k) => `<button data-n="${esc(r[1])}" data-v="${s[0]}" class="b-${s[2]}${v === s[0] ? " on" : ""}${v === s[0] && p ? " wr" : ""}" title="${k + 1}">${v === s[0] ? (p ? SP : "✓ ") : ""}${s[1]}</button>`).join("")}</span></div>`; }).join("") || '<div class="muted" style="padding:16px">Hech kim topilmadi.</div>'}</div>
+          <div class="at-ft"><span>${all.length - cnt[""]}/${all.length} belgilandi${err ? ` <b class="at-err">${esc(err)}</b>` : busy || pn ? ` · <span class="at-pd">${SP}yozilmoqda… (${pn})</span>` : " · ✓ jadvalda saqlangan"}</span><button class="at-close" id="atC">Yopish</button></div></div>`;
         $("atX").onclick = close; $("atC").onclick = close; ov.onclick = e => { if (e.target === ov) close(); };
         $("atDay").onchange = () => { if (Object.keys(pend).length) flush(); col = +$("atDay").value; sel = 0; draw(); };
         const qi = $("atQ"); qi.oninput = () => { q = qi.value; sel = 0; draw(); const n = $("atQ"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); };
         $("atF").onclick = () => { onlyEmpty = !onlyEmpty; sel = 0; draw(); };
-        $("atAllGo").onclick = () => { all.forEach(r => { if (!isMark(val(r)) && !fresh(r)) pend[r[1]] = "+"; }); err = ""; flush(); draw(); };
+        $("atAllGo").onclick = () => { all.forEach(r => { if (!isMark(val(r)) && !fresh(r)) { pend[r[1]] = "+"; delete saved[r[1]]; } }); err = ""; allBusy = true; flush(); draw(); };
         ov.querySelectorAll(".at-seg button").forEach(b => b.onclick = () => { sel = +b.closest(".at-r").dataset.i; set(b.dataset.n, b.dataset.v); });
         ov.querySelectorAll(".at-r").forEach(x => x.onmousedown = e => { if (!e.target.closest("button")) { sel = +x.dataset.i; ov.querySelectorAll(".at-r").forEach(y => y.classList.toggle("sel", y === x)); } });
         ov._list = list;
+        { const l1 = $("atL"), m1 = ov.querySelector(".at-m"); if (l1) l1.scrollTop = sT; if (m1) m1.scrollTop = mT; }
       };
       const key = e => {
         if (e.target && e.target.id === "atQ" && !/^(ArrowUp|ArrowDown|Escape)$/.test(e.key)) return;
