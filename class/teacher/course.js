@@ -547,4 +547,7 @@
     document.addEventListener("click", e => { if (!e.target.closest("#cPop") && !e.target.closest("td.c-ed")) popClose(); });
     window.addEventListener("scroll", () => { if (Date.now() - popAt > 600) popClose(); }, true);
   }
+  // Bosh sahifa (home.js) uchun: shu yuklangan Course ma'lumoti va Baholar modeli (qayta so'rov yo'q)
+  window.CLS_COURSE = { load, model: () => data ? model() : null, months: () => data ? months() : [], block, label, isMark, dOf, num, norm, scaleOf,
+    open(name) { pick = norm(name); const b = document.querySelector('.tab-btn[data-tab="grades"]'); if (b) b.click(); } };
 })();
