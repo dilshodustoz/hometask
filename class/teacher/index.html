@@ -1165,14 +1165,23 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       $("login").classList.remove("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.add("hide")); return; }
     $("who").textContent = u.email;
     try { localStorage.setItem("cls_in", "1"); } catch (e) {}
-    db.ref("admin").get().then(s => {
+    let tries = 0;
+    const loadAdmin = () => db.ref("admin").get().then(s => {
       admin = s.val() || {};
+      $("loginMsg").textContent = "";
       $("login").classList.add("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.remove("hide"));
       start();
-    }).catch(() => {
-      $("loginMsg").textContent = "Bu akkauntga ruxsat yo'q (" + u.email + ").";
-      auth.signOut();
+    }).catch(e => {
+      // Faqat haqiqatan ruxsat yo'q bo'lsa chiqaramiz; internet uzilishi yoki sekin ulanishda qayta urinamiz
+      if (/permission/i.test(String(e && (e.code || e.message)))) {
+        $("loginMsg").textContent = "Bu akkauntga ruxsat yo'q (" + u.email + ").";
+        auth.signOut(); return;
+      }
+      tries++;
+      $("loginMsg").textContent = "Internet aloqasi sekin, qayta ulanmoqda… (" + tries + ")";
+      setTimeout(loadAdmin, Math.min(15000, 1500 * tries));
     });
+    loadAdmin();
   });
 
   // ---------- Apps Script ----------
