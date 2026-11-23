@@ -1149,6 +1149,12 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   const db = CLS.db, auth = firebase.auth();
   // Kirish qurilmada saqlansin (iPhone'da har yangilashda qayta so'ramasin): avval IndexedDB, bo'lmasa localStorage
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+  // Safari (Mac/iPhone) ba'zan Firebase'ning IndexedDB'dagi kirish yozuvini yo'qotadi, localStorage esa saqlanadi.
+  // Shuning uchun kirish yozuvining nusxasini localStorage'ga ham yozamiz: Firebase IndexedDB'da topmasa, shu yerdan o'qiydi.
+  const AUTH_BK = "firebase:authUser:" + window.FB_CONFIG.apiKey + ":[DEFAULT]";
+  auth.onIdTokenChanged(u => {
+    try { if (u) localStorage.setItem(AUTH_BK, JSON.stringify(u.toJSON())); else localStorage.removeItem(AUTH_BK); } catch (e) {}
+  });
   const DEFAULT_API = "https://script.google.com/macros/s/AKfycbyG1ztRvvg2zdwdel1FhDjUytbhkZ0BGjITPkUAo_DNSddF23lbtlVMvbvex6CsG1ZGDw/exec";
   const STUDENT_URL = "https://dilshodustoz.github.io/hometask/class/";
   let admin = {}, roster = {}, group = null, sid = null, sess = null, live = {}, offS = null, offL = null, tab = "listening", mode = "phone";
