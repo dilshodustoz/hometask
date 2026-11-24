@@ -166,7 +166,7 @@
       if (card) {
         const ph = SP.p2phase(step, SP.clock(sess.cur, step, CLS.now()).el).k;
         h += `<div class="tag">Cue card</div><div class="q">${esc(card.q)}</div><div class="v">You should say:</div><ul class="cue ro">${card.cue.map(b => `<li><span class="bx"></span>${esc(b)}</li>`).join("")}</ul>`;
-        h += `<div class="help">${ph === "prep" ? (step.att === 1 ? "📝 Qog'ozga 5–7 ta kalit so'z yozing. Uydagi prep yozuvlaringizni ochmang." : "📝 Imtihondagidek: 1 daqiqa, qog'ozga qisqa reja.") : ph === "talk" ? (step.att === 2 ? "🎤 Eslatmasiz gapiring. 2 daqiqagacha to'xtamang." : "🎤 2 daqiqa gapiring. Barcha bandlarni qamrang.") : "❓ Sherigingiz bitta qisqa savol beradi."}</div>`;
+        h += `<div class="help">${ph === "prep" ? "📝 1 daqiqa: qog'ozga 5–7 ta kalit so'z yozing. Uydagi prep yozuvlaringizni ochmang." : ph === "talk" ? "🎤 2 daqiqa gapiring. Barcha bandlarni qamrang." : "❓ Sherigingiz bitta qisqa savol beradi."}</div>`;
       } else h += `<div class="hint">${step.b === "p1" ? "Part 1: 2–4 gap. Javob → sabab yoki misol → qisqa shaxsiy detal." : "Part 3 (AREA): Answer → Reason → Example → Alternative / cheklov."}</div>`;
       page(h + `</div>` + flagHtml(g)); bindFlag(); return;
     }

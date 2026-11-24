@@ -15,18 +15,16 @@ window.SP = (function () {
     return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 12);
   }
 
-  const DEF = { p1: { r: 6, s: 120 }, p2: { cards: 2, prep: 60, talk: 120, fu: 30 }, p3: { r: 5, s: 150 } };
+  const DEF = { p1: { r: 6, s: 120 }, p2: { r: 3, prep: 60, talk: 120, fu: 0 }, p3: { r: 5, s: 150 } };
   const ATT = { 1: "1-urinish: eslatma bilan", 2: "2-urinish: eslatmasiz", 3: "3-urinish: imtihon sharoitida" };
   // reja: har qadam = bitta yarim raund (h=0: 1-kishi javob beradi, h=1: rollar almashadi)
   function plan(c) {
     c = c || DEF;
     const st = []; let ri = 0;
     for (let r = 1; r <= c.p1.r; r++) { ri++; for (let h = 0; h < 2; h++) st.push({ b: "p1", r: ri, br: r, h: h, dur: c.p1.s }); }
-    for (let cd = 1; cd <= c.p2.cards; cd++) for (let a = 1; a <= 3; a++) {
-      ri++;
-      const prep = a === 2 ? 0 : c.p2.prep;
-      for (let h = 0; h < 2; h++) st.push({ b: "p2", r: ri, br: (cd - 1) * 3 + a, cd: cd, att: a, h: h, prep: prep, talk: c.p2.talk, fu: c.p2.fu, dur: prep + c.p2.talk + c.p2.fu });
-    }
+    // Part 2 (25.11 soddalashtirildi): har raundda 1 daqiqa tayyorlanish + 2 daqiqa gapirish, har safar o'quvchi hali gapirmagan yangi karta
+    const p2 = Object.assign({}, DEF.p2, c.p2 || {}), p2r = p2.r != null ? p2.r : (p2.cards || 0) * 3;
+    for (let r = 1; r <= p2r; r++) { ri++; for (let h = 0; h < 2; h++) st.push({ b: "p2", r: ri, br: r, h: h, prep: p2.prep, talk: p2.talk, fu: p2.fu || 0, dur: p2.prep + p2.talk + (p2.fu || 0) }); }
     for (let r = 1; r <= c.p3.r; r++) { ri++; for (let h = 0; h < 2; h++) st.push({ b: "p3", r: ri, br: r, h: h, dur: c.p3.s }); }
     return st;
   }
@@ -60,7 +58,7 @@ window.SP = (function () {
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
   function stepLabel(step) {
     if (!step) return "";
-    if (step.b === "p2") return `Part 2 · ${step.cd}-karta · ${ATT[step.att]}`;
+    if (step.b === "p2" && step.att) return `Part 2 · ${step.cd}-karta · ${ATT[step.att]}`;
     return `${BN[step.b]} · ${step.br}-raund`;
   }
   // ism qisqartmasi (ekranda joy tejash)

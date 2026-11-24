@@ -71,8 +71,8 @@
       else if (ck.over) { const nx = plan[cur.i + 1]; ins = !nx ? "🎉 Mashq yakunlandi." : nx.r === step.r ? "🔄 Rollarni almashtiring." : "⏭ Ustoz keyingi raundni boshlaydi."; }
       else if (step.b === "p1") ins = "Part 1: 2–4 gap. Javob → sabab yoki misol → shaxsiy detal.";
       else if (step.b === "p3") ins = "Part 3 (AREA): Answer → Reason → Example → Alternative.";
-      else ins = step.att === 1 ? "1 daqiqa: qog'ozga 5–7 kalit so'z. Keyin 2 daqiqa gapiring." : step.att === 2 ? "Eslatmasiz! Darhol gapirishni boshlang." : "Imtihon sharoiti: 1 daqiqa reja, 2 daqiqa nutq, bitta savol.";
-      app.innerHTML = `<div class="left"><div class="ttl">${esc(les ? les.title : "")}</div><div><div class="blk">${SP.BN[step.b]}${step.b === "p2" ? " · " + step.cd + "-karta" : " · " + step.br + "-raund"}</div>${step.b === "p2" ? `<div class="att">${SP.ATT[step.att]}</div>` : ""}<div class="muted" style="margin-top:4px">${step.h === 0 ? "1-yarim" : "2-yarim: rollar almashdi"}</div></div>
+      else ins = "1 daqiqa tayyorlanish (qog'ozga 5–7 kalit so'z), keyin 2 daqiqa gapirish.";
+      app.innerHTML = `<div class="left"><div class="ttl">${esc(les ? les.title : "")}</div><div><div class="blk">${SP.BN[step.b]}${step.b === "p2" && step.att ? " · " + step.cd + "-karta" : " · " + step.br + "-raund"}</div>${step.b === "p2" && step.att ? `<div class="att">${SP.ATT[step.att]}</div>` : ""}<div class="muted" style="margin-top:4px">${step.h === 0 ? "1-yarim" : "2-yarim: rollar almashdi"}</div></div>
         <div class="ph" id="ph"></div><div class="timer" id="tm"></div><div class="ins">${ins}</div></div>
         <div class="right"><div class="grid">${groups}</div>${waiting.length ? `<div class="wait">⏳ Keyingi raundda qo'shiladi: ${waiting.map(p => esc(nm(p))).join(", ")}</div>` : ""}</div>`;
     }

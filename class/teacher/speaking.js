@@ -30,7 +30,7 @@
       <div class="row" style="margin-top:12px">
         <label><span class="field-label">Part 1 raundlar</span><input class="field" id="spP1r" type="number" min="0" max="12" value="${c.p1.r}" style="width:90px"></label>
         <label><span class="field-label">Part 1 soniya (har kishiga)</span><input class="field" id="spP1s" type="number" min="30" max="300" step="10" value="${c.p1.s}" style="width:110px"></label>
-        <label><span class="field-label">Part 2 kartalar</span><input class="field" id="spP2c" type="number" min="0" max="3" value="${c.p2.cards}" style="width:90px"></label>
+        <label><span class="field-label">Part 2 raundlar</span><input class="field" id="spP2c" type="number" min="0" max="8" value="${c.p2.r != null ? c.p2.r : 3}" style="width:90px"></label>
         <label><span class="field-label">Part 3 raundlar</span><input class="field" id="spP3r" type="number" min="0" max="12" value="${c.p3.r}" style="width:90px"></label>
         <label><span class="field-label">Part 3 soniya (har kishiga)</span><input class="field" id="spP3s" type="number" min="30" max="300" step="10" value="${c.p3.s}" style="width:110px"></label>
       </div>
@@ -46,14 +46,14 @@
     $("spOpenBtn").onclick = openLesson;
   }
   function readCfg() {
-    const n = (id, a, b, d) => Math.max(a, Math.min(b, parseInt($(id).value, 10) || d));
-    const c = { p1: { r: n("spP1r", 0, 12, 6), s: n("spP1s", 30, 300, 120) }, p2: Object.assign({}, SP.DEF.p2, { cards: n("spP2c", 0, 3, 2) }), p3: { r: n("spP3r", 0, 12, 5), s: n("spP3s", 30, 300, 150) } };
-    if (!$("spP1r").value) c.p1.r = 0; if (!$("spP2c").value) c.p2.cards = 0; if (!$("spP3r").value) c.p3.r = 0;
+    const n = (id, a, b, d) => { const v = parseInt($(id).value, 10); return Math.max(a, Math.min(b, isNaN(v) ? d : v)); };
+    const c = { p1: { r: n("spP1r", 0, 12, 6), s: n("spP1s", 30, 300, 120) }, p2: Object.assign({}, SP.DEF.p2, { r: n("spP2c", 0, 8, 3) }), p3: { r: n("spP3r", 0, 12, 5), s: n("spP3s", 30, 300, 150) } };
+    if (!$("spP1r").value) c.p1.r = 0; if (!$("spP2c").value) c.p2.r = 0; if (!$("spP3r").value) c.p3.r = 0;
     return c;
   }
   function planHint() {
     const c = readCfg(), p = SP.plan(c), rounds = new Set(p.map(s => s.r)).size;
-    $("spPlanHint").textContent = `Reja: Part 1 — ${c.p1.r} raund, Part 2 — ${c.p2.cards} karta × 3 urinish (eslatma bilan → eslatmasiz → imtihon), Part 3 — ${c.p3.r} raund. Jami ${rounds} raund, gapirish vaqti ≈ ${SP.minutes(p) + Math.round(rounds * 20 / 60)} daqiqa (+ tanaffus va hot seat).`;
+    $("spPlanHint").textContent = `Reja: Part 1 — ${c.p1.r} raund, Part 2 — ${c.p2.r} raund (1 daqiqa tayyorlanish + 2 daqiqa gapirish, har raundda yangi karta), Part 3 — ${c.p3.r} raund. Jami ${rounds} raund, gapirish vaqti ≈ ${SP.minutes(p) + Math.round(rounds * 20 / 60)} daqiqa (+ tanaffus va hot seat).`;
   }
 
   // ---------- dars ochish ----------
@@ -302,7 +302,7 @@
     st.rows.forEach(r => {
       const on = live ? (r.dev === "none" || (live[p2k[r.pid]] || {}).online) : true;
       h += `<tr${r.gone ? ' style="opacity:.5"' : ""}><td>${weak.includes(r) ? "🎯 " : ""}${esc(r.n)} <span class="muted">${({ pc: "💻", phone: "📱", none: "🙋" })[r.dev] || ""}${on ? "" : " · chiqqan"}</span></td><td>${r.ans}</td><td>${pct(r.er)}</td>
-        <td>${r.tl.length ? r.tl.map(x => `<span class="badge ${x.t < 90 ? "b-bad" : x.t < 110 ? "b-warn" : "b-ok"}" title="${SP.ATT[x.att]}">${SP.fmt(x.t)}</span>`).join(" ") : "—"}</td><td>${pct(r.cov)}</td><td>${r.tu} / ${r.nT}</td><td>${r.pz} / ${r.uz}</td><td>${r.tavg == null ? "—" : ["", "Zaif", "O'rta", "Yaxshi"][Math.round(r.tavg)]}</td></tr>`;
+        <td>${r.tl.length ? r.tl.map(x => `<span class="badge ${x.t < 90 ? "b-bad" : x.t < 110 ? "b-warn" : "b-ok"}" title="${x.att ? SP.ATT[x.att] : "Part 2"}">${SP.fmt(x.t)}</span>`).join(" ") : "—"}</td><td>${pct(r.cov)}</td><td>${r.tu} / ${r.nT}</td><td>${r.pz} / ${r.uz}</td><td>${r.tavg == null ? "—" : ["", "Zaif", "O'rta", "Yaxshi"][Math.round(r.tavg)]}</td></tr>`;
     });
     h += `</tbody></table></div>`;
     if (st.unused.length) h += `<div style="margin-top:12px"><b>Hech kim ishlatmagan target iboralar (${st.unused.length}):</b> <span class="muted">${st.unused.map(esc).join(" · ")}</span></div>`;
