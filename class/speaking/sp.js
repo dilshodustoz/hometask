@@ -6,10 +6,10 @@ window.SP = (function () {
   const base = (document.currentScript && document.currentScript.src || location.href).replace(/[^/]*$/, "");
   const cache = {};
   function lesson(id) {
-    if (!cache[id]) cache[id] = fetch(base + "lessons/" + id + ".json?v=1").then(r => { if (!r.ok) throw new Error("Dars fayli topilmadi: " + id); return r.json(); });
+    if (!cache[id]) cache[id] = fetch(base + "lessons/" + id + ".json?v=2").then(r => { if (!r.ok) throw new Error("Dars fayli topilmadi: " + id); return r.json(); });
     return cache[id];
   }
-  function lessons() { return fetch(base + "lessons/index.json?v=1").then(r => r.json()); }
+  function lessons() { return fetch(base + "lessons/index.json?v=2").then(r => r.json()); }
   async function pid(k, sid) {
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(k + "|" + sid));
     return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 12);
