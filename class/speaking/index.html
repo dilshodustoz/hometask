@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speaking darsi · Dilshod ustoz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F6F6F4;--card:#FFF;--ink:#16181D;--muted:#6B6F76;--line:#E4E4E0;--primary:#E8590C;--ok:#15803D;--ok-bg:#F0FDF4;--bad:#B91C1C;--bad-bg:#FEF2F2;--warn:#B45309;--warn-bg:#FFFBEB;--blue:#1D4ED8;--blue-bg:#EFF6FF}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 'Plus Jakarta Sans',system-ui,sans-serif;min-height:100vh}
+  header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+  header .who{font-weight:700}
+  header .sp{flex:1}
+  header .step{color:var(--muted);font-size:.8rem;text-align:right}
+  main{max-width:640px;margin:0 auto;padding:14px 16px 40px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+  .center{text-align:center}
+  .role{display:flex;align-items:center;gap:10px;border-radius:14px;padding:12px 14px;margin-bottom:12px;font-weight:700}
+  .role.ex{background:var(--blue-bg);color:var(--blue)}
+  .role.ca{background:#FFF1E6;color:var(--primary)}
+  .role.ob{background:#F1F1EE;color:var(--muted)}
+  .role .em{font-size:1.6rem}
+  .role small{display:block;font-weight:500;color:var(--muted);font-size:.85rem}
+  .timer{font:700 2.6rem 'JetBrains Mono',monospace;letter-spacing:-.02em;line-height:1}
+  .timer.low{color:var(--bad)}
+  .tline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .tline .ph{font-weight:700;color:var(--muted);font-size:.9rem}
+  .tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--primary);margin-bottom:4px}
+  .q{font-size:1.25rem;font-weight:700;line-height:1.35}
+  .v{color:var(--muted);font-size:.88rem;margin-top:6px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font:600 .92rem 'Plus Jakarta Sans',sans-serif;color:var(--ink);cursor:pointer;text-align:left}
+  .chip small{display:block;font-weight:500;color:var(--muted);font-size:.72rem}
+  .chip.t{border-color:#FDBA74}
+  .chip.on{background:var(--ok);border-color:var(--ok);color:#fff}
+  .chip.on small{color:#DCFCE7}
+  .hint{color:var(--muted);font-size:.85rem}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{flex:1;border:0;border-radius:12px;padding:14px 12px;font:700 1rem 'Plus Jakarta Sans',sans-serif;cursor:pointer;background:var(--ink);color:#fff;min-height:52px}
+  .btn.ok{background:var(--ok)}
+  .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  .btn.sm{flex:0 0 auto;padding:9px 12px;min-height:0;font-size:.85rem}
+  .cnt{display:flex;gap:8px;margin-top:12px}
+  .cnt button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 8px;font:600 .85rem 'Plus Jakarta Sans',sans-serif;cursor:pointer;color:var(--ink)}
+  .cnt b{font-family:'JetBrains Mono',monospace}
+  ul.cue{list-style:none;margin:10px 0 0;padding:0}
+  ul.cue li{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1.5px solid var(--line);border-radius:12px;margin-bottom:6px;cursor:pointer;font-weight:600}
+  ul.cue li .bx{flex:0 0 22px;height:22px;border-radius:6px;border:2px solid #C9C9C3;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#fff}
+  ul.cue li.on{border-color:var(--ok);background:var(--ok-bg)}
+  ul.cue li.on .bx{background:var(--ok);border-color:var(--ok)}
+  ul.cue.ro li{cursor:default}
+  .help{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:.9rem;margin-top:10px}
+  .give{background:var(--primary);color:#fff;border-radius:14px;padding:14px;font-weight:700;margin-bottom:12px;text-align:center;font-size:1.05rem}
+  .over{position:fixed;inset:0;z-index:20;background:rgba(22,24,29,.88);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
+  .over h2{font-size:1.6rem;margin:0 0 8px}
+  .partner{font-size:1.6rem;font-weight:800;margin:6px 0}
+  .muted{color:var(--muted)}
+  .hide{display:none!important}
+  details.flag{margin-top:14px}
+  details.flag summary{color:var(--muted);font-size:.85rem;cursor:pointer}
+  .done{font-size:.85rem;color:var(--muted);margin-top:10px}
+</style>
+</head>
+<body>
+<header><span class="who" id="who">…</span><span class="sp"></span><span class="step" id="stepLbl"></span></header>
+<main id="main"><div class="card center"><h2>⏳ Yuklanmoqda…</h2></div></main>
+<div class="over hide" id="over"></div>
+<script src="../fb/firebase-app-compat.js"></script>
+<script src="../fb/firebase-database-compat.js"></script>
+<script src="../fb/config.js"></script>
+<script src="../fb/cls.js"></script>
+<script src="sp.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id), esc = SP.esc;
+  const K = CLS.P.get("k") || "", SID = CLS.P.get("s") || "";
+  const S = CLS.db.ref("sessions/" + SID), L = CLS.db.ref("live/" + SID + "/" + K);
+  const DEV = (matchMedia("(pointer:coarse)").matches && Math.min(screen.width, screen.height) < 820) ? "phone" : "pc";
+  let me = null, my = null, sess = null, les = null, REC = {}, lastKey = "", tick = null;
+
+  function page(h) { $("main").innerHTML = h; }
+  function msg(t, b) { page(`<div class="card center"><h2>${t}</h2><div class="muted">${b || ""}</div></div>`); }
+  function over(h) { $("over").innerHTML = h ? `<div>${h}</div>` : ""; $("over").classList.toggle("hide", !h); }
+  const nm = p => p && sess.ppl && sess.ppl[p] ? sess.ppl[p].n : "?";
+  const dev = p => p && sess.ppl && sess.ppl[p] ? sess.ppl[p].dev : "phone";
+  const icon = p => ({ pc: "💻", phone: "📱", none: "🙋" })[dev(p)] || "📱";
+
+  // ---------- baho yozuvi (har tegishda saqlanadi; internet bo'lmasa Firebase o'zi navbatga qo'yadi) ----------
+  function rec(i, c, by) {
+    const k = String(i);
+    if (!REC[k] || REC[k].c !== c || REC[k].by !== by) REC[k] = Object.assign({ c: c, by: by, a: {}, u: {}, cv: {}, pz: 0, uz: 0, pos: 0 }, REC[k] && REC[k].c === c && REC[k].by === by ? REC[k] : {});
+    return REC[k];
+  }
+  let svT = {};
+  function save(i) {
+    const k = String(i), r = REC[k]; if (!r) return;
+    try { localStorage.setItem("sp_" + SID + "_" + k, JSON.stringify(r)); } catch (e) {}
+    clearTimeout(svT[k]);
+    svT[k] = setTimeout(() => L.child("sp/" + k).set(Object.assign({}, r, { at: CLS.TS })).catch(() => {}), 250);
+  }
+
+  // ---------- chizish ----------
+  function render() {
+    if (!sess || sess.state === "closed") { over(""); msg("Dars yakunlandi", "Rahmat! Natijalaringizni ustoz ko'radi."); $("stepLbl").textContent = ""; return; }
+    if (!les) return;
+    const cur = sess.cur, plan = sess.plan || [];
+    if (!cur || cur.i == null || cur.i < 0 || !plan[cur.i]) {
+      over(""); $("stepLbl").textContent = les.title;
+      msg(`Assalomu alaykum, ${esc(me.name)}!`, `🗣️ Speaking darsi: <b>${esc(les.title)}</b><br><br>Ustoz boshlashini kuting. Sahifani yopmang: hammasi o'zi ochiladi.<br><br><span class="hint">Qurilmangiz: ${DEV === "pc" ? "💻 noutbuk (joyingizda o'tirasiz)" : "📱 telefon"}</span>`);
+      return;
+    }
+    const step = plan[cur.i], round = (sess.rounds || {})[step.r], gi = SP.findGroup(round, my);
+    $("stepLbl").textContent = SP.stepLabel(step);
+    if ((sess.gone || {})[my] || gi < 0) {
+      over(""); msg("⏳ Kuting", "Bu raund boshlanib bo'lgan. Ustoz keyingi raundda sizni juftlikka qo'shadi (yoki hozir qo'shib qo'yadi)."); lastKey = ""; return;
+    }
+    const g = round.g[gi], R = SP.roles(g, step.h), now = CLS.now(), ck = SP.clock(cur, step, now);
+    const key = cur.i + "|" + g.join(",") + "|" + (cur.pz ? 1 : 0);
+    // boshlanishdan oldin: sherik va kim kimning yoniga boradi
+    if (ck.wait > 0) {
+      const others = g.filter(x => x !== my);
+      const anchor = g.find(x => dev(x) === "pc") || g.find(x => dev(x) === "phone") || g[0];
+      const mv = my === anchor ? `📍 Joyingizda qoling: ${others.map(nm).map(esc).join(" va ")} yoningizga keladi.` : `📍 <b>${esc(nm(anchor))}</b> ${icon(anchor)} ning yoniga boring.`;
+      over(`<div class="muted">${SP.stepLabel(step)}</div><div style="margin-top:10px">Sherigingiz:</div><div class="partner">${others.map(p => esc(nm(p)) + " " + icon(p)).join("<br>")}</div><div style="margin:12px 0">${mv}</div><div class="timer">${SP.fmt(ck.wait)}</div><div class="muted" style="margin-top:6px">dan keyin boshlanadi</div>`);
+      lastKey = ""; return;
+    }
+    if (ck.over) {
+      const nx = plan[cur.i + 1];
+      over(`<h2>⏱ Vaqt tugadi</h2><div>${!nx ? "Mashq yakunlandi. Ustozni tinglang." : nx.r === step.r ? "Rollar almashadi…" : "Ustoz keyingi raundni boshlaydi. Kuting."}</div>`);
+      lastKey = ""; return;
+    }
+    over(cur.pz ? `<h2>⏸ Pauza</h2><div>Ustoz to'xtatib turibdi.</div>` : "");
+    if (key !== lastKey) { lastKey = key; build(step, round, gi, g, R); }
+    timerOnly(step, ck);
+  }
+
+  function timerOnly(step, ck) {
+    const t = $("tm"); if (!t) return;
+    if (step.b === "p2") {
+      const ph = SP.p2phase(step, ck.el);
+      t.textContent = SP.fmt(ph.left); t.classList.toggle("low", ph.left <= 10);
+      const pe = $("ph"); if (pe) pe.textContent = ph.n;
+      if (pe && pe.dataset.k !== ph.k) { pe.dataset.k = ph.k; lastKey = ""; }   // bosqich almashsa qayta chizamiz
+      const sw = $("sw"); if (sw) { const r = REC[String(sess.cur.i)]; sw.textContent = r && r.t != null ? "⏹ " + SP.fmt(r.t) + " gapirdi" : ph.k === "talk" ? "⏱ " + SP.fmt(ck.el - step.prep) : ""; }
+    } else { t.textContent = SP.fmt(ck.left); t.classList.toggle("low", ck.left <= 10); }
+  }
+
+  function chipsHtml(ch, r, pre) {
+    return `<div class="chips">${(ch || []).map((c, j) => { const id = pre + ":" + j; return `<button class="chip${c.t ? " t" : ""}${r.u[id] ? " on" : ""}" data-chip="${esc(id)}">${esc(c.e)}${c.u ? `<small>${esc(c.u)}</small>` : ""}</button>`; }).join("")}</div>`;
+  }
+  function flagHtml(g) {
+    const o = g.filter(x => x !== my);
+    return `<details class="flag"><summary>Sherigim darsdan chiqib ketdi</summary><div class="row" style="margin-top:8px">${o.map(p => `<button class="btn ghost sm" data-gone="${p}">${esc(nm(p))} ketdi</button>`).join("")}</div></details>`;
+  }
+  const qById = id => { const b = id.split("_")[0]; return (les[b] || []).find(x => x.id === id); };
+
+  function build(step, round, gi, g, R) {
+    const i = sess.cur.i, isC = my === R.c, isE = my === R.e, eNone = dev(R.e) === "none";
+    const card = step.b === "p2" ? les.p2.find(c => c.id === (round.card || {})[R.c]) || les.p2[0] : null;
+    const tl = `<div class="tline"><span class="ph" id="ph">${step.b === "p2" ? "" : SP.BN[step.b]}</span><span class="timer" id="tm">—</span></div>`;
+    // nomzod (o'zi gapiradi) — examiner qurilmasi bor bo'lsa
+    if (isC && !eNone) {
+      let h = `<div class="role ca"><span class="em">🎤</span><div>Siz javob berasiz<small>Savol beradi: ${esc(nm(R.e))} ${icon(R.e)}</small></div></div><div class="card">${tl}`;
+      if (card) {
+        const ph = SP.p2phase(step, SP.clock(sess.cur, step, CLS.now()).el).k;
+        h += `<div class="tag">Cue card</div><div class="q">${esc(card.q)}</div><div class="v">You should say:</div><ul class="cue ro">${card.cue.map(b => `<li><span class="bx"></span>${esc(b)}</li>`).join("")}</ul>`;
+        h += `<div class="help">${ph === "prep" ? (step.att === 1 ? "📝 Qog'ozga 5–7 ta kalit so'z yozing. Uydagi prep yozuvlaringizni ochmang." : "📝 Imtihondagidek: 1 daqiqa, qog'ozga qisqa reja.") : ph === "talk" ? (step.att === 2 ? "🎤 Eslatmasiz gapiring. 2 daqiqagacha to'xtamang." : "🎤 2 daqiqa gapiring. Barcha bandlarni qamrang.") : "❓ Sherigingiz bitta qisqa savol beradi."}</div>`;
+      } else h += `<div class="hint">${step.b === "p1" ? "Part 1: 2–4 gap. Javob → sabab yoki misol → qisqa shaxsiy detal." : "Part 3 (AREA): Answer → Reason → Example → Alternative / cheklov."}</div>`;
+      page(h + `</div>` + flagHtml(g)); bindFlag(); return;
+    }
+    // examiner yoki kuzatuvchi (yoki qurilmasiz examiner uchun nomzodning qurilmasi)
+    const by = isC && eNone ? R.e : my, obs = !isE && !(isC && eNone);
+    const r = rec(i, R.c, by);
+    let h = isC && eNone ? `<div class="give">📲 Qurilmani ${esc(nm(R.e))} ga bering: endi u sizga savol beradi</div>` : "";
+    h += obs ? `<div class="role ob"><span class="em">👀</span><div>Kuzatuvchi<small>${esc(nm(R.c))} javob beradi, ${esc(nm(R.e))} so'raydi. Siz ham iboralarni belgilang.</small></div></div>`
+             : `<div class="role ex"><span class="em">🧑‍⚖️</span><div>Siz EXAMINERsiz${isC && eNone ? ` (${esc(nm(R.e))})` : ""}<small>Javob beradi: ${esc(nm(R.c))} ${icon(R.c)}</small></div></div>`;
+    h += `<div class="card">${tl}`;
+    if (card) {
+      const el = SP.clock(sess.cur, step, CLS.now()).el, ph = SP.p2phase(step, el).k;
+      h += `<div class="tag">Cue card · ${esc(card.id)}</div><div class="q">${esc(card.q)}</div>`;
+      h += `<ul class="cue">${card.cue.map((b, j) => `<li class="${r.cv["b" + j] ? "on" : ""}" data-cv="b${j}"><span class="bx">✓</span>${esc(b)}</li>`).join("")}</ul><div class="hint">Gapirgan bandini bosing.</div>`;
+      if (ph === "prep") h += `<div class="help">⏳ ${esc(nm(R.c))} tayyorlanmoqda.${dev(R.c) === "none" ? " Kartani unga ko'rsating." : ""} Jim turing.</div>`;
+      if (ph === "talk") {
+        const miss = card.cue.filter((b, j) => !r.cv["b" + j]);
+        h += `<div class="row" style="margin-top:12px;align-items:center"><button class="btn ok" id="stopBtn"${r.t != null ? " disabled" : ""}>⏹ Gapirib bo'ldi</button><span class="hint" id="sw"></span></div>`;
+        if (miss.length) h += `<div class="help">Erta to'xtasa, yordamchi savol bering:<br>${miss.slice(0, 2).map(b => "• <i>Can you tell me more about " + esc(b.replace(/^(and |explain )/i, "")) + "?</i>").join("<br>")}<br>• <i>Why was that important to you?</i></div>`;
+      }
+      if (ph === "fu") h += `<div class="help">❓ Bitta qisqa savol bering, masalan: <i>"Would you like to … again?"</i> yoki <i>"Do many people in your country …?"</i></div><div class="hint" id="sw" style="margin-top:6px"></div>`;
+      h += chipsHtml(card.ch, r, card.id);
+      h += cntHtml(r) + `</div>`;
+      page(h + flagHtml(g)); bindCommon(i, r); bindP2(i, r, step); return;
+    }
+    // Part 1 / Part 3: savollar ro'yxati (ustoz sahifasi har nomzod uchun hali berilmaganlarini oldinga qo'yadi)
+    const qs = (((round.q || {})[gi] || {})[step.h] || []).map(qById).filter(Boolean);
+    const q = qs[r.pos];
+    if (q) {
+      h += `<div class="tag">${esc(q.topic)} · ${r.pos + 1}-savol</div><div class="q">${esc(q.q)}</div>${q.v.length ? `<div class="v">yoki: ${q.v.map(esc).join(" / ")}</div>` : ""}`;
+      h += q.ch.length ? chipsHtml(q.ch, r, q.id) : `<div class="hint" style="margin-top:10px">Bu savolga maxsus ibora yo'q: javob uzunligi va misolga quloq soling.</div>`;
+      h += `<div class="hint" style="margin-top:14px">Javob tugagach bosing:</div><div class="row" style="margin-top:6px"><button class="btn ghost" data-ans="0">Qisqa javob</button><button class="btn ok" data-ans="1">Kengaytirdi ✓</button></div>`;
+    } else h += `<div class="q">Savollar tugadi 👏</div><div class="hint">Vaqt tugaguncha o'zingiz qo'shimcha savol bering: "Why?", "Can you give an example?"</div>`;
+    const n = Object.keys(r.a).length;
+    h += cntHtml(r) + `<div class="done">${esc(nm(R.c))}: ${n} ta savolga javob berdi${n ? ", " + Object.values(r.a).filter(x => x).length + " tasi kengaytirilgan" : ""}.${r.pos > 0 ? ` <a href="#" id="backQ">← oldingi savol</a>` : ""}</div></div>`;
+    page(h + flagHtml(g)); bindCommon(i, r);
+    document.querySelectorAll("[data-ans]").forEach(b => b.onclick = () => { if (!q) return; r.a[q.id] = +b.dataset.ans; r.pos++; save(i); lastKey = ""; render(); });
+    const bk = $("backQ"); if (bk) bk.onclick = e => { e.preventDefault(); r.pos = Math.max(0, r.pos - 1); save(i); lastKey = ""; render(); };
+  }
+  function cntHtml(r) {
+    return `<div class="cnt"><button data-cnt="pz">⏸ Uzoq jim qoldi <b>${r.pz || 0}</b></button><button data-cnt="uz">🇺🇿 O'zbekcha so'z <b>${r.uz || 0}</b></button></div>`;
+  }
+  function bindCommon(i, r) {
+    document.querySelectorAll("[data-chip]").forEach(b => b.onclick = () => { const id = b.dataset.chip; if (r.u[id]) delete r.u[id]; else r.u[id] = 1; b.classList.toggle("on", !!r.u[id]); save(i); });
+    document.querySelectorAll("[data-cnt]").forEach(b => b.onclick = () => { const f = b.dataset.cnt; r[f] = (r[f] || 0) + 1; b.querySelector("b").textContent = r[f]; save(i); });
+    bindFlag();
+  }
+  function bindP2(i, r, step) {
+    document.querySelectorAll("[data-cv]").forEach(li => li.onclick = () => { const j = li.dataset.cv; if (r.cv[j]) delete r.cv[j]; else r.cv[j] = 1; li.classList.toggle("on", !!r.cv[j]); save(i); });
+    const sb = $("stopBtn"); if (sb) sb.onclick = () => { const el = SP.clock(sess.cur, step, CLS.now()).el; r.t = Math.max(0, Math.min(step.talk, Math.round(el - step.prep))); save(i); sb.disabled = true; timerOnly(step, SP.clock(sess.cur, step, CLS.now())); };
+  }
+  function bindFlag() {
+    document.querySelectorAll("[data-gone]").forEach(b => b.onclick = () => {
+      if (!confirm(nm(b.dataset.gone) + " darsdan chiqib ketdimi? Ustozga xabar boradi va sizni boshqa juftlikka qo'shadi.")) return;
+      L.child("flag").set({ p: b.dataset.gone, at: CLS.TS }).catch(() => {}); b.disabled = true; b.textContent = "Yuborildi";
+    });
+  }
+  // Part 2: nutq vaqti tugmasi bosilmasa, vaqt tugaganda to'liq 2:00 deb yoziladi
+  function autoStop() {
+    if (!sess || !sess.cur || !sess.plan) return;
+    const step = sess.plan[sess.cur.i]; if (!step || step.b !== "p2") return;
+    const r = REC[String(sess.cur.i)]; if (!r || r.t != null) return;
+    const el = SP.clock(sess.cur, step, CLS.now()).el;
+    if (el >= step.prep + step.talk) { r.t = step.talk; save(sess.cur.i); }
+  }
+
+  // ---------- kirish ----------
+  if (!/^[A-Za-z0-9_-]{6,20}$/.test(K) || !SID) { msg("⛔ Havola noto'g'ri", "Kabinetingizdagi tugma orqali qayta kiring."); return; }
+  CLS.db.ref("roster/" + K).get().then(async r => {
+    me = r.val();
+    if (!me) { msg("⛔ Havola noto'g'ri", "Bu havola ro'yxatda yo'q. Ustozga ayting."); return; }
+    $("who").textContent = me.name;
+    my = await SP.pid(K, SID);
+    const l = (await L.get()).val() || {};
+    REC = {}; const sp0 = l.sp || {};
+    for (const k in sp0) if (sp0[k] && sp0[k].c) REC[k] = sp0[k];
+    for (const k in REC) { REC[k].a = REC[k].a || {}; REC[k].u = REC[k].u || {}; REC[k].cv = REC[k].cv || {}; try { const loc = JSON.parse(localStorage.getItem("sp_" + SID + "_" + k) || "null"); if (loc && loc.c === REC[k].c && Object.keys(loc.a).length + Object.keys(loc.u).length >= Object.keys(REC[k].a).length + Object.keys(REC[k].u).length) REC[k] = loc; } catch (e) {} }
+    if (!l.joined) L.child("joined").set(CLS.TS).catch(() => {});
+    CLS.db.ref(".info/connected").on("value", c => {
+      if (!c.val()) return;
+      L.child("online").onDisconnect().set(false);
+      L.child("leftAt").onDisconnect().set(CLS.TS);
+      L.update({ online: true, name: me.name, seen: CLS.TS, dev: DEV }).catch(() => {});
+    });
+    S.on("value", async s => {
+      sess = s.val();
+      if (sess && sess.test && !les) { try { les = await SP.lesson(sess.test); } catch (e) { msg("⚠️ Dars fayli yuklanmadi", "Sahifani yangilang."); return; } }
+      if (sess && sess.state === "closed") { const c = CLS.db.ref("current/" + me.group); c.get().then(x => { const v = x.val(); if (v && v.sid && v.sid !== SID) location.replace("../?k=" + encodeURIComponent(K) + CLS.emu); }); }
+      lastKey = ""; render();
+    });
+    tick = setInterval(() => { autoStop(); render(); }, 500);
+    // ekran o'chmasin
+    const wl = () => { try { navigator.wakeLock && navigator.wakeLock.request("screen").catch(() => {}); } catch (e) {} };
+    wl(); document.addEventListener("visibilitychange", () => { if (!document.hidden) wl(); });
+  }).catch(() => msg("⚠️ Internet xatosi", "Ulanishni tekshirib, sahifani yangilang."));
+})();
+</script>
+</body>
+</html>

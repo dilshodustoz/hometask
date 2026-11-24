@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speaking · Ekran</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#111318;--card:#1B1E25;--ink:#F5F5F4;--muted:#9CA3AF;--line:#2A2E37;--primary:#FB923C;--ok:#4ADE80;--bad:#F87171;--blue:#93C5FD}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:18px/1.4 'Plus Jakarta Sans',system-ui,sans-serif}
+  .wrap{display:grid;grid-template-columns:minmax(320px,34%) 1fr;gap:24px;height:100vh;padding:24px}
+  .left{display:flex;flex-direction:column;gap:18px}
+  .ttl{color:var(--muted);font-size:1rem}
+  .blk{font-size:2rem;font-weight:800;line-height:1.15}
+  .att{color:var(--primary);font-weight:700;font-size:1.15rem}
+  .timer{font:700 clamp(5rem,11vw,10rem) 'JetBrains Mono',monospace;letter-spacing:-.04em;line-height:1}
+  .timer.low{color:var(--bad)}
+  .ph{font-size:1.6rem;font-weight:700}
+  .ins{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;font-size:1.15rem}
+  .right{overflow:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .g{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+  .g .n{color:var(--muted);font-size:.8rem;font-weight:700;margin-bottom:4px}
+  .m{display:flex;align-items:center;gap:8px;font-size:1.15rem;font-weight:700;padding:2px 0}
+  .m .r{margin-left:auto;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:999px}
+  .m .r.c{background:rgba(251,146,60,.18);color:var(--primary)}
+  .m .r.e{background:rgba(147,197,253,.16);color:var(--blue)}
+  .m .r.o{background:#2A2E37;color:var(--muted)}
+  .wait{margin-top:16px;color:var(--muted);font-size:1rem}
+  .big{display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;flex-direction:column;gap:14px;padding:24px}
+  .big h1{font-size:3rem;margin:0}
+  .muted{color:var(--muted)}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr;height:auto}}
+</style>
+</head>
+<body>
+<div id="app" class="big"><h1>⏳</h1></div>
+<script src="../fb/firebase-app-compat.js"></script>
+<script src="../fb/firebase-database-compat.js"></script>
+<script src="../fb/config.js"></script>
+<script src="../fb/cls.js"></script>
+<script src="sp.js"></script>
+<script>
+(function () {
+  const esc = SP.esc, SID = CLS.P.get("s") || "", app = document.getElementById("app");
+  let sess = null, les = null, lastKey = "";
+  const nm = p => sess.ppl && sess.ppl[p] ? SP.short(sess.ppl[p].n) : "?";
+  const icon = p => ({ pc: "💻", phone: "📱", none: "🙋" })[(sess.ppl[p] || {}).dev] || "📱";
+  function big(h) { app.className = "big"; app.innerHTML = h; lastKey = ""; }
+  function draw() {
+    if (!sess) { big(`<h1>Dars topilmadi</h1>`); return; }
+    if (sess.state === "closed") { big(`<h1>🎉 Speaking darsi yakunlandi</h1><div class="muted">Rahmat!</div>`); return; }
+    const cur = sess.cur, plan = sess.plan || [], step = cur && plan[cur.i];
+    const ppl = Object.keys(sess.ppl || {}).filter(p => !(sess.gone || {})[p]);
+    if (!step) { big(`<div class="muted">${esc(les ? les.title : "")}</div><h1>🗣️ Speaking aylanma</h1><div style="font-size:1.4rem">Kirganlar: <b>${ppl.length}</b></div><div class="muted" style="max-width:900px">${ppl.map(p => esc(nm(p)) + " " + icon(p)).join(" · ")}</div><div class="muted">Kabinetdagi sinf havolasi orqali kiring. Ustoz boshlashini kuting.</div>`); return; }
+    const round = (sess.rounds || {})[step.r] || { g: [] }, ck = SP.clock(cur, step, CLS.now());
+    const key = cur.i + "|" + JSON.stringify(round.g) + "|" + ppl.length + "|" + (ck.wait > 0) + (ck.over ? 1 : 0);
+    if (key !== lastKey) {
+      lastKey = key; app.className = "wrap";
+      const inG = new Set([].concat(...round.g.filter(Boolean)));
+      const waiting = ppl.filter(p => !inG.has(p));
+      const groups = round.g.map((g, i) => {
+        if (!g) return "";
+        const R = SP.roles(g, step.h);
+        return `<div class="g"><div class="n">${i + 1}-juftlik</div>${g.map(p => `<div class="m">${esc(nm(p))} ${icon(p)}<span class="r ${p === R.c ? "c" : p === R.e ? "e" : "o"}">${p === R.c ? "🎤 javob beradi" : p === R.e ? "so'raydi" : "kuzatadi"}</span></div>`).join("")}</div>`;
+      }).join("");
+      let ins;
+      if (ck.wait > 0) ins = "📍 Juftliklar yangilandi. 💻 noutbukli o'quvchilar joyida qoladi, 📱 telefonlilar sherigining yoniga boradi.";
+      else if (ck.over) { const nx = plan[cur.i + 1]; ins = !nx ? "🎉 Mashq yakunlandi." : nx.r === step.r ? "🔄 Rollarni almashtiring." : "⏭ Ustoz keyingi raundni boshlaydi."; }
+      else if (step.b === "p1") ins = "Part 1: 2–4 gap. Javob → sabab yoki misol → shaxsiy detal.";
+      else if (step.b === "p3") ins = "Part 3 (AREA): Answer → Reason → Example → Alternative.";
+      else ins = step.att === 1 ? "1 daqiqa: qog'ozga 5–7 kalit so'z. Keyin 2 daqiqa gapiring." : step.att === 2 ? "Eslatmasiz! Darhol gapirishni boshlang." : "Imtihon sharoiti: 1 daqiqa reja, 2 daqiqa nutq, bitta savol.";
+      app.innerHTML = `<div class="left"><div class="ttl">${esc(les ? les.title : "")}</div><div><div class="blk">${SP.BN[step.b]}${step.b === "p2" ? " · " + step.cd + "-karta" : " · " + step.br + "-raund"}</div>${step.b === "p2" ? `<div class="att">${SP.ATT[step.att]}</div>` : ""}<div class="muted" style="margin-top:4px">${step.h === 0 ? "1-yarim" : "2-yarim: rollar almashdi"}</div></div>
+        <div class="ph" id="ph"></div><div class="timer" id="tm"></div><div class="ins">${ins}</div></div>
+        <div class="right"><div class="grid">${groups}</div>${waiting.length ? `<div class="wait">⏳ Keyingi raundda qo'shiladi: ${waiting.map(p => esc(nm(p))).join(", ")}</div>` : ""}</div>`;
+    }
+    const tm = document.getElementById("tm"), ph = document.getElementById("ph");
+    if (!tm) return;
+    if (cur.pz) { ph.textContent = "⏸ Pauza"; }
+    if (ck.wait > 0) { ph.textContent = "Joyingizga o'ting"; tm.textContent = SP.fmt(ck.wait); tm.classList.remove("low"); return; }
+    if (ck.over) { ph.textContent = "⏱ Vaqt tugadi"; tm.textContent = "0:00"; tm.classList.add("low"); return; }
+    let left = ck.left;
+    if (step.b === "p2") { const p = SP.p2phase(step, ck.el); left = p.left; if (!cur.pz) ph.textContent = p.n; }
+    else if (!cur.pz) ph.textContent = step.h === 0 ? "Gapirish" : "Gapirish";
+    tm.textContent = SP.fmt(left); tm.classList.toggle("low", left <= 10);
+  }
+  if (!SID) { big("<h1>Havola noto'g'ri</h1>"); return; }
+  CLS.db.ref("sessions/" + SID).on("value", async s => {
+    sess = s.val();
+    if (sess && !les) try { les = await SP.lesson(sess.test); } catch (e) {}
+    lastKey = ""; draw();
+  });
+  setInterval(draw, 250);
+  try { navigator.wakeLock && navigator.wakeLock.request("screen").catch(() => {}); } catch (e) {}
+})();
+</script>
+</body>
+</html>
