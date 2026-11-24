@@ -80,7 +80,6 @@
     const GN = gone(g), m0 = dc.length ? dOf(H[dc[0]]) : null, m1 = dc.length ? new Date(dOf(H[dc[dc.length - 1]]).getTime() + 864e5) : null;
     const left = r => { const d = GN[nKey(r[1])]; return !d || !m0 ? null : d < m0 ? "before" : d < m1 ? "during" : null; };
     const rowsAt = B.rows.filter(r => !left(r)), rowsMn = B.rows.filter(r => left(r) !== "before");
-    const leftNow = B.rows.filter(r => left(r) === "during").map(r => `${r[1]} (${ddm(GN[nKey(r[1])])})`);
     const cK = ci(/Keldi/i), cM = ci(/Kelmadi/i), cP = ci(/Davomat/i), cD = ci(/To.lov kun/i), cS = ci(/O.quvchi to.lov/i), cT = ci(/O.qituvchi/i);
     // o'tilgan darslar: kamida bitta belgi qo'yilgan sana
     const held = dc.filter(i => B.rows.some(r => isMark(r[i])));
@@ -95,7 +94,7 @@
       ["Oxirgi dars" + (last != null ? " · " + H[last].slice(0, 5) : ""), last != null ? `${lastIn} / ${lastAll}` : "—", ""],
       ["Davomati 70% dan past", low.length, low.length ? "c-bad" : ""]].map(s => `<div class="stat ${s[2]}"><b>${esc(s[1])}</b>${esc(s[0])}</div>`).join("");
     const wd = i => { const d = dOf(H[i]); return `<th class="c-d${i === last ? " c-last" : ""}"><b>${d.getDate()}</b><span>${esc(String(B.sub[i] || "").slice(0, 4))}</span></th>`; };
-    $("atMsg").textContent = leftNow.length ? `Guruhdan chiqqanlar yo'qlamadan olib tashlandi: ${leftNow.join(", ")}. Hisob-kitobda chiqqan kungacha qoladi, keyingi oyga ko'chirilmaydi.` : "";
+    $("atMsg").textContent = "";   // 24.11: "Guruhdan chiqqanlar..." eslatmasi olib tashlandi (Dilshod so'rovi)
     curAt = { sheet: month, B };
     $("atBody").classList.toggle("c-editing", edAt);
     $("atHead").innerHTML = `<tr><th class="c-n">#</th><th class="c-nm">O'quvchi</th>${dc.map(wd).join("")}<th class="c-r">Keldi</th><th class="c-r">Kelmadi</th><th class="c-pc">Davomat</th></tr>`;
