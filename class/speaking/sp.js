@@ -63,5 +63,18 @@ window.SP = (function () {
   }
   // ism qisqartmasi (ekranda joy tejash)
   function short(n) { const p = String(n || "").trim().split(/\s+/); return p.length > 1 ? p[0] + " " + p[1][0] + "." : p[0] || "?"; }
-  return { lesson, lessons, pid, plan, DEF, ATT, BN, minutes, clock, p2phase, roles, findGroup, fmt, esc, stepLabel, short };
+  // signal (25.11): bitta qisqa "ding" — fayl kerak emas, WebAudio. Brauzer birinchi bosishdan keyin ovozga ruxsat beradi.
+  let actx = null;
+  function audio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch (e) {} return actx; }
+  function ding() {
+    const a = audio(); if (!a) return;
+    const t = a.currentTime;
+    [[880, 0], [1320, 0.004]].forEach(([f, d], i) => {
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t + d); g.gain.exponentialRampToValueAtTime(i ? 0.18 : 0.45, t + d + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 1.4);
+      o.connect(g); g.connect(a.destination); o.start(t + d); o.stop(t + d + 1.5);
+    });
+  }
+  return { lesson, lessons, pid, plan, DEF, ATT, BN, minutes, clock, p2phase, roles, findGroup, fmt, esc, stepLabel, short, audio, ding };
 })();

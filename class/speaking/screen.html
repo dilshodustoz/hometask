@@ -6,37 +6,63 @@
 <title>Speaking · Ekran</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<script>try { document.documentElement.dataset.th = localStorage.getItem("sp_screen_th") || "dark"; } catch (e) { document.documentElement.dataset.th = "dark"; }</script>
 <style>
-  :root{--bg:#111318;--card:#1B1E25;--ink:#F5F5F4;--muted:#9CA3AF;--line:#2A2E37;--primary:#FB923C;--ok:#4ADE80;--bad:#F87171;--blue:#93C5FD}
+  /* 25.11 dizayn: "Sahna" — markazda taymer kartasi, atrofida kamayib boruvchi ramka, juftliklar atrofda suzib turadi */
+  :root{--bg:#0B1220;--bg2:#111C33;--card:#111A2E;--line:#1E2B47;--ink:#F1F5F9;--muted:#94A3B8;--accent:#22D3EE;--accentInk:#0B1220;--track:#1B2742;--cand:#FB923C;--candBg:rgba(251,146,60,.14);--exam:#60A5FA;--obs:#334155;--bad:#F87171;--shadow:0 12px 34px rgba(0,0,0,.35);--glow:0 0 120px rgba(34,211,238,.16)}
+  html[data-th=light]{--bg:#F4F1EC;--bg2:#FFFFFF;--card:#FFFFFF;--line:#E6DFD4;--ink:#1F2937;--muted:#6B7280;--accent:#0891B2;--accentInk:#FFFFFF;--track:#E7E2DA;--cand:#EA580C;--candBg:#FFF1E6;--exam:#2563EB;--obs:#CBD5E1;--bad:#DC2626;--shadow:0 10px 28px rgba(60,40,10,.09);--glow:0 24px 70px rgba(8,145,178,.14)}
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:18px/1.4 'Plus Jakarta Sans',system-ui,sans-serif}
-  .wrap{display:grid;grid-template-columns:minmax(320px,34%) 1fr;gap:24px;height:100vh;padding:24px}
-  .left{display:flex;flex-direction:column;gap:18px}
-  .ttl{color:var(--muted);font-size:1rem}
-  .blk{font-size:2rem;font-weight:800;line-height:1.15}
-  .att{color:var(--primary);font-weight:700;font-size:1.15rem}
-  .timer{font:700 clamp(5rem,11vw,10rem) 'JetBrains Mono',monospace;letter-spacing:-.04em;line-height:1}
-  .timer.low{color:var(--bad)}
-  .ph{font-size:1.6rem;font-weight:700}
-  .ins{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;font-size:1.15rem}
-  .right{overflow:auto}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-  .g{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
-  .g .n{color:var(--muted);font-size:.8rem;font-weight:700;margin-bottom:4px}
-  .m{display:flex;align-items:center;gap:8px;font-size:1.15rem;font-weight:700;padding:2px 0}
-  .m .r{margin-left:auto;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:999px}
-  .m .r.c{background:rgba(251,146,60,.18);color:var(--primary)}
-  .m .r.e{background:rgba(147,197,253,.16);color:var(--blue)}
-  .m .r.o{background:#2A2E37;color:var(--muted)}
-  .wait{margin-top:16px;color:var(--muted);font-size:1rem}
-  .big{display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;flex-direction:column;gap:14px;padding:24px}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:18px/1.35 'Plus Jakarta Sans',system-ui,sans-serif;overflow:hidden;transition:background .3s,color .3s}
+  #stage{position:relative;width:100vw;height:100vh}
+  .top{position:absolute;top:18px;left:0;right:0;text-align:center;color:var(--muted);font-weight:600;font-size:1rem;pointer-events:none}
+  .steps{display:flex;gap:5px;justify-content:center;margin-top:8px;flex-wrap:wrap;max-width:70vw;margin-left:auto;margin-right:auto}
+  .steps i{width:22px;height:6px;border-radius:4px;background:var(--track)}
+  .steps i.d{background:var(--muted);opacity:.55}.steps i.a{background:var(--accent);opacity:1}
+  .steps b{width:10px}
+  /* markaz */
+  .core{position:absolute;left:50%;top:50%;width:var(--cw);height:var(--ch);transform:translate(-50%,-50%);border-radius:40px;background:linear-gradient(180deg,var(--bg2),var(--card));box-shadow:var(--glow);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 26px}
+  .core svg{position:absolute;inset:-14px;width:calc(100% + 28px);height:calc(100% + 28px);overflow:visible;pointer-events:none}
+  .core .trk{fill:none;stroke:var(--track);stroke-width:12}
+  .core .rng{fill:none;stroke:var(--accent);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .25s linear,stroke .3s}
+  .core.low .rng{stroke:var(--bad)}
+  .blk{font-size:1.55rem;font-weight:800}
+  .sub{color:var(--accent);font-weight:700;margin-top:2px}
+  .tm{font:700 clamp(5rem,8.6vw,9rem)/1 'JetBrains Mono',monospace;letter-spacing:-.04em;margin:10px 0 12px}
+  .core.low .tm{color:var(--bad)}
+  .ph{display:inline-block;font-size:1.25rem;font-weight:800;color:var(--accentInk);background:var(--accent);padding:6px 22px;border-radius:999px}
+  .core.low .ph{background:var(--bad);color:#fff}
+  .ins{margin-top:14px;color:var(--muted);font-weight:600;font-size:1.05rem;max-width:92%}
+  /* juftliklar */
+  .slot{position:absolute;transform:translate(-50%,-50%)}
+  .pr{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-width:250px;white-space:nowrap;box-shadow:var(--shadow);animation:float var(--d,6s) ease-in-out var(--dl,0s) infinite alternate;font-size:var(--fs,1rem)}
+  .pr .n{padding:8px 14px 3px;font-size:.7em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .pr .m{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 12px;font-size:1.25em;font-weight:700;border-left:5px solid transparent}
+  .pr .m .r{margin-left:auto;padding-left:14px;font-size:.88em}
+  .pr .m.c{background:var(--candBg);border-left-color:var(--cand)}.pr .m.c .r{color:var(--cand)}
+  .pr .m.e{border-left-color:var(--exam)}.pr .m.e .r{color:var(--exam)}
+  .pr .m.o{border-left-color:var(--obs);color:var(--muted)}
+  .pr .m:last-child{padding-bottom:9px}
+  @keyframes float{0%{transform:translate(0,0) rotate(-.6deg)}50%{transform:translate(4px,-7px) rotate(.3deg)}100%{transform:translate(-3px,5px) rotate(.6deg)}}
+  @media (prefers-reduced-motion:reduce){.pr{animation:none}}
+  html.still .pr{animation:none}
+  .wait{position:absolute;bottom:20px;right:28px;color:var(--muted);font-weight:600;max-width:40vw;text-align:right}
+  /* tugmalar */
+  .tools{position:fixed;top:14px;right:16px;display:flex;gap:8px;z-index:5;opacity:.35;transition:opacity .2s}
+  .tools:hover{opacity:1}
+  .tools button{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:1.15rem;cursor:pointer}
+  .snd{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 18px;font-weight:600;font-size:.95rem;z-index:5;cursor:pointer;box-shadow:var(--shadow)}
+  /* katta xabar */
+  .big{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:14px;padding:24px}
   .big h1{font-size:3rem;margin:0}
   .muted{color:var(--muted)}
-  @media (max-width:900px){.wrap{grid-template-columns:1fr;height:auto}}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:1000px}
+  .chips span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:700;animation:float 6s ease-in-out infinite alternate}
 </style>
 </head>
 <body>
-<div id="app" class="big"><h1>⏳</h1></div>
+<div id="stage"><div class="big"><h1>⏳</h1></div></div>
+<div class="tools"><button id="bSnd" title="Signal">🔔</button><button id="bTh" title="Tungi / kunduzgi rejim">☀️</button><button id="bFs" title="To'liq ekran">⛶</button></div>
+<div class="snd" id="sndHint" hidden>🔔 Signal ovozi uchun ekranga bir marta bosing</div>
 <script src="../fb/firebase-app-compat.js"></script>
 <script src="../fb/firebase-database-compat.js"></script>
 <script src="../fb/config.js"></script>
@@ -44,47 +70,102 @@
 <script src="sp.js"></script>
 <script>
 (function () {
-  const esc = SP.esc, SID = CLS.P.get("s") || "", app = document.getElementById("app");
-  let sess = null, les = null, lastKey = "";
+  const esc = SP.esc, SID = CLS.P.get("s") || "", stage = document.getElementById("stage"), html = document.documentElement;
+  let sess = null, les = null, lastKey = "", lastSig = null;
+  const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const nm = p => sess.ppl && sess.ppl[p] ? SP.short(sess.ppl[p].n) : "?";
   const icon = p => ({ pc: "💻", phone: "📱", none: "🙋" })[(sess.ppl[p] || {}).dev] || "📱";
-  function big(h) { app.className = "big"; app.innerHTML = h; lastKey = ""; }
+
+  // --- tugmalar: tema, signal, to'liq ekran ---
+  const bTh = document.getElementById("bTh"), bSnd = document.getElementById("bSnd"), hint = document.getElementById("sndHint");
+  const thIcon = () => { bTh.textContent = html.dataset.th === "light" ? "🌙" : "☀️"; };
+  thIcon();
+  bTh.onclick = e => { e.stopPropagation(); html.dataset.th = html.dataset.th === "light" ? "dark" : "light"; ls("sp_screen_th", html.dataset.th); thIcon(); };
+  let sound = ls("sp_screen_snd") !== "0", unlocked = false;
+  const sndIcon = () => { bSnd.textContent = sound ? "🔔" : "🔕"; hint.hidden = !sound || unlocked; };
+  bSnd.onclick = e => { e.stopPropagation(); sound = !sound; ls("sp_screen_snd", sound ? "1" : "0"); if (sound) { unlock(); SP.ding(); } sndIcon(); };
+  document.getElementById("bFs").onclick = e => { e.stopPropagation(); if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {}); };
+  function unlock() { const a = SP.audio(); unlocked = !!a && a.state === "running"; sndIcon(); }
+  document.addEventListener("pointerdown", unlock);
+  hint.onclick = unlock;
+  setTimeout(() => { const a = SP.audio(); unlocked = !!a && a.state === "running"; sndIcon(); }, 300);
+
+  function big(h) { stage.innerHTML = `<div class="big">${h}</div>`; lastKey = ""; }
+
+  // juftliklarni markaz atrofida ellips bo'ylab joylash
+  function layout(n) {
+    const W = innerWidth, H = innerHeight, cw = Math.min(600, W * 0.34), ch = Math.min(400, H * 0.4);
+    const fs = n <= 6 ? 1.08 : n <= 8 ? 1 : n <= 10 ? 0.92 : 0.84;
+    const rx = W * 0.5 - 175 * fs - 24, ry = H * 0.5 - 70 * fs - 44;
+    const pos = [];
+    const off = n % 2 === 0 ? Math.PI / n : 0; // juft bo'lsa tepada ikkita yonma-yon
+    for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + off + i * 2 * Math.PI / n; pos.push([W / 2 + rx * Math.cos(a), H / 2 + ry * Math.sin(a) + 14]); }
+    return { cw, ch, fs, pos };
+  }
+  // ramka: tepa o'rtasidan soat yo'nalishida boshlanadigan yumaloq to'rtburchak yo'li
+  function ringPath(w, h, r) {
+    return `M${w / 2} 0 H${w - r} A${r} ${r} 0 0 1 ${w} ${r} V${h - r} A${r} ${r} 0 0 1 ${w - r} ${h} H${r} A${r} ${r} 0 0 1 0 ${h - r} V${r} A${r} ${r} 0 0 1 ${r} 0 Z`;
+  }
+
   function draw() {
     if (!sess) { big(`<h1>Dars topilmadi</h1>`); return; }
     if (sess.state === "closed") { big(`<h1>🎉 Speaking darsi yakunlandi</h1><div class="muted">Rahmat!</div>`); return; }
     const cur = sess.cur, plan = sess.plan || [], step = cur && plan[cur.i];
     const ppl = Object.keys(sess.ppl || {}).filter(p => !(sess.gone || {})[p]);
-    if (!step) { big(`<div class="muted">${esc(les ? les.title : "")}</div><h1>🗣️ Speaking aylanma</h1><div style="font-size:1.4rem">Kirganlar: <b>${ppl.length}</b></div><div class="muted" style="max-width:900px">${ppl.map(p => esc(nm(p)) + " " + icon(p)).join(" · ")}</div><div class="muted">Kabinetdagi sinf havolasi orqali kiring. Ustoz boshlashini kuting.</div>`); return; }
+    if (!step) {
+      const k = "pre|" + ppl.join(",");
+      if (k !== lastKey) { big(`<div class="muted">${esc(les ? les.title : "")}</div><h1>🗣️ Speaking aylanma</h1><div style="font-size:1.4rem">Kirganlar: <b>${ppl.length}</b></div><div class="chips">${ppl.map((p, i) => `<span style="animation-delay:-${i * 0.7}s">${esc(nm(p))} ${icon(p)}</span>`).join("")}</div><div class="muted">Kabinetdagi sinf havolasi orqali kiring. Ustoz boshlashini kuting.</div>`); lastKey = k; }
+      return;
+    }
     const round = (sess.rounds || {})[step.r] || { g: [] }, ck = SP.clock(cur, step, CLS.now());
-    const key = cur.i + "|" + JSON.stringify(round.g) + "|" + ppl.length + "|" + (ck.wait > 0) + (ck.over ? 1 : 0);
+    const gs = (round.g || []).filter(Boolean);
+    let phase = ck.wait > 0 ? "w" : ck.over ? "o" : step.b === "p2" ? SP.p2phase(step, ck.el).k : "run";
+    // signal: qadam yoki bosqich o'zgarganda bitta "ding"
+    const sig = cur.i + ":" + phase;
+    if (lastSig !== null && sig !== lastSig && sound) SP.ding();
+    lastSig = sig;
+
+    const key = cur.i + "|" + JSON.stringify(gs) + "|" + ppl.length + "|" + phase + "|" + innerWidth + "x" + innerHeight;
     if (key !== lastKey) {
-      lastKey = key; app.className = "wrap";
-      const inG = new Set([].concat(...round.g.filter(Boolean)));
+      lastKey = key;
+      const L = layout(gs.length || 1);
+      const inG = new Set([].concat(...gs));
       const waiting = ppl.filter(p => !inG.has(p));
-      const groups = round.g.map((g, i) => {
-        if (!g) return "";
-        const R = SP.roles(g, step.h);
-        return `<div class="g"><div class="n">${i + 1}-juftlik</div>${g.map(p => `<div class="m">${esc(nm(p))} ${icon(p)}<span class="r ${p === R.c ? "c" : p === R.e ? "e" : "o"}">${p === R.c ? "🎤 javob beradi" : p === R.e ? "so'raydi" : "kuzatadi"}</span></div>`).join("")}</div>`;
+      const groups = gs.map((g, i) => {
+        const R = SP.roles(g, step.h), ord = [R.c, R.e].concat(R.o);
+        const rows = ord.map(p => { const r = p === R.c ? "c" : p === R.e ? "e" : "o"; return `<div class="m ${r}">${esc(nm(p))} <span>${icon(p)}</span><span class="r">${r === "c" ? "🎤 javob beradi" : r === "e" ? "❓ so'raydi" : "👀 kuzatadi"}</span></div>`; }).join("");
+        const [x, y] = L.pos[i];
+        return `<div class="slot" style="left:${x}px;top:${y}px"><div class="pr" style="--fs:${L.fs}rem;--d:${5 + (i * 1.3) % 3}s;--dl:-${(i * 1.7) % 5}s"><div class="n">${i + 1}-juftlik</div>${rows}</div></div>`;
       }).join("");
       let ins;
-      if (ck.wait > 0) ins = "📍 Juftliklar yangilandi. 💻 noutbukli o'quvchilar joyida qoladi, 📱 telefonlilar sherigining yoniga boradi.";
-      else if (ck.over) { const nx = plan[cur.i + 1]; ins = !nx ? "🎉 Mashq yakunlandi." : nx.r === step.r ? "🔄 Rollarni almashtiring." : "⏭ Ustoz keyingi raundni boshlaydi."; }
+      if (phase === "w") ins = "📍 Juftliklar yangilandi. 💻 noutbukli o'quvchilar joyida qoladi, 📱 telefonlilar sherigining yoniga boradi.";
+      else if (phase === "o") { const nx = plan[cur.i + 1]; ins = !nx ? "🎉 Mashq yakunlandi." : nx.r === step.r ? "🔄 Rollarni almashtiring." : "⏭ Ustoz keyingi raundni boshlaydi."; }
       else if (step.b === "p1") ins = "Part 1: 2–4 gap. Javob → sabab yoki misol → shaxsiy detal.";
-      else if (step.b === "p3") ins = "Part 3 (AREA): Answer → Reason → Example → Alternative.";
-      else ins = "1 daqiqa tayyorlanish (qog'ozga 5–7 kalit so'z), keyin 2 daqiqa gapirish.";
-      app.innerHTML = `<div class="left"><div class="ttl">${esc(les ? les.title : "")}</div><div><div class="blk">${SP.BN[step.b]}${step.b === "p2" && step.att ? " · " + step.cd + "-karta" : " · " + step.br + "-raund"}</div>${step.b === "p2" && step.att ? `<div class="att">${SP.ATT[step.att]}</div>` : ""}<div class="muted" style="margin-top:4px">${step.h === 0 ? "1-yarim" : "2-yarim: rollar almashdi"}</div></div>
-        <div class="ph" id="ph"></div><div class="timer" id="tm"></div><div class="ins">${ins}</div></div>
-        <div class="right"><div class="grid">${groups}</div>${waiting.length ? `<div class="wait">⏳ Keyingi raundda qo'shiladi: ${waiting.map(p => esc(nm(p))).join(", ")}</div>` : ""}</div>`;
+      else if (step.b === "p3") ins = "AREA: Answer → Reason → Example → Alternative";
+      else ins = phase === "prep" ? "Qog'ozga 5–7 kalit so'z yozing. Keyin 2 daqiqa gapirasiz." : "Kartadagi barcha bandlarni yoritib, 2 daqiqa gapiring.";
+      // qadamlar chizig'i (raund oralarida bo'shliq)
+      let st = "";
+      plan.forEach((s, j) => { if (j && s.b !== plan[j - 1].b) st += "<b></b>"; st += `<i class="${j < cur.i ? "d" : j === cur.i ? "a" : ""}"></i>`; });
+      const W = L.cw + 28, Hh = L.ch + 28;
+      stage.innerHTML = `<div class="top">${esc(les ? les.title : "")} · ${ppl.length} o'quvchi<div class="steps">${st}</div></div>
+        <div class="core" id="core" style="--cw:${L.cw}px;--ch:${L.ch}px">
+          <svg viewBox="-6 -6 ${W + 12} ${Hh + 12}"><path class="trk" d="${ringPath(W, Hh, 52)}"/><path class="rng" id="rng" pathLength="1000" stroke-dasharray="1000" d="${ringPath(W, Hh, 52)}"/></svg>
+          <div class="blk">${SP.BN[step.b]} · ${step.br}-raund</div><div class="sub">${step.h === 0 ? "1-yarim" : "2-yarim: rollar almashdi"}</div>
+          <div class="tm" id="tm"></div><div class="ph" id="ph"></div><div class="ins">${ins}</div></div>
+        ${groups}${waiting.length ? `<div class="wait">⏳ Keyingi raundda qo'shiladi: ${waiting.map(p => esc(nm(p))).join(", ")}</div>` : ""}`;
     }
-    const tm = document.getElementById("tm"), ph = document.getElementById("ph");
+    const tm = document.getElementById("tm"), ph = document.getElementById("ph"), core = document.getElementById("core"), rng = document.getElementById("rng");
     if (!tm) return;
-    if (cur.pz) { ph.textContent = "⏸ Pauza"; }
-    if (ck.wait > 0) { ph.textContent = "Joyingizga o'ting"; tm.textContent = SP.fmt(ck.wait); tm.classList.remove("low"); return; }
-    if (ck.over) { ph.textContent = "⏱ Vaqt tugadi"; tm.textContent = "0:00"; tm.classList.add("low"); return; }
-    let left = ck.left;
-    if (step.b === "p2") { const p = SP.p2phase(step, ck.el); left = p.left; if (!cur.pz) ph.textContent = p.n; }
-    else if (!cur.pz) ph.textContent = step.h === 0 ? "Gapirish" : "Gapirish";
-    tm.textContent = SP.fmt(left); tm.classList.toggle("low", left <= 10);
+    let left, total, label;
+    if (phase === "w") { left = ck.wait; total = 20; label = "📍 Joyingizga o'ting"; }
+    else if (phase === "o") { left = 0; total = 1; label = "⏱ Vaqt tugadi"; }
+    else if (step.b === "p2") { const p = SP.p2phase(step, ck.el); left = p.left; total = p.k === "prep" ? step.prep : p.k === "talk" ? step.talk : Math.max(1, step.fu); label = p.k === "prep" ? "⏳ " + p.n : "🎤 " + p.n; }
+    else { left = ck.left; total = step.dur; label = "🎤 Gapirish"; }
+    if (cur.pz) label = "⏸ Pauza";
+    tm.textContent = SP.fmt(left); ph.textContent = label;
+    core.classList.toggle("low", phase !== "w" && left <= 10);
+    const frac = Math.max(0, Math.min(1, left / total));
+    rng.style.strokeDashoffset = String(1000 * (1 - frac));
   }
   if (!SID) { big("<h1>Havola noto'g'ri</h1>"); return; }
   CLS.db.ref("sessions/" + SID).on("value", async s => {
@@ -92,6 +173,7 @@
     if (sess && !les) try { les = await SP.lesson(sess.test); } catch (e) {}
     lastKey = ""; draw();
   });
+  addEventListener("resize", () => { lastKey = ""; draw(); });
   setInterval(draw, 250);
   try { navigator.wakeLock && navigator.wakeLock.request("screen").catch(() => {}); } catch (e) {}
 })();
