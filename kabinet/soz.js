@@ -256,7 +256,7 @@
     if (!code) return tts(text, slow);
     try {
       VA.onerror = () => tts(text, slow);
-      VA.muted = false; VA.src = "soz/au/" + code + ".mp3"; VA.playbackRate = slow ? .75 : 1;
+      VA.muted = false; VA.src = "soz/au/" + code + ".mp3?v=2"; VA.playbackRate = slow ? .75 : 1;
       try { VA.preservesPitch = true; VA.webkitPreservesPitch = true; } catch (e) {}
       const p = VA.play(); if (p) p.catch(() => tts(text, slow));
     } catch (e) { tts(text, slow); }
