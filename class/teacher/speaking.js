@@ -324,7 +324,7 @@
   }
   // ---------- natijalar ----------
   // 25.11: natijalarni Part bo'yicha ko'rish (spPart: all | p1 | p2 | p3)
-  let spPart = "all", lastViewArgs = null;
+  let spPart = "all", lastViewArgs = null, statsCtx = null;
   function stats(S, LV, L) {
     const plan = S.plan || [], tgt = {}, R = {}, P = {}, inP = b => spPart === "all" || spPart === b;
     ["p1", "p2", "p3"].forEach(b => { if (inP(b)) L[b].forEach(x => x.ch.forEach((c, j) => { if (c.t) tgt[x.id + ":" + j] = c.e; })); });
@@ -350,8 +350,17 @@
       const tv = Object.values(spPart === "all" ? (tr[pid] || {}) : {}), tavg = tv.length ? tv.reduce((s, x) => s + x, 0) / tv.length : null;
       let score = null;
       if (p.ans || p.t.length) score = (er == null ? 20 : (1 - er) * 40) + (t == null ? 15 : Math.max(0, 110 - t) / 110 * 30) + (1 - Math.min(1, p.tu.size / Math.max(3, nT / 3))) * 20 + Math.min(10, (p.pz + p.uz) / Math.max(1, nt) * 5) + (tavg == null ? 0 : (2 - tavg) * 15);
-      return { pid, n: S.ppl[pid].n, dev: S.ppl[pid].dev, gone: !!(S.gone || {})[pid], er, ans: Math.round(p.ans), turns: nt, t, tl: p.t, cov: p.cov.length ? p.cov.reduce((s, x) => s + x, 0) / p.cov.length : null, tu: p.tu.size, nT, pz: p.pz, uz: p.uz, tavg, score };
+      return { pid, n: S.ppl[pid].n, dev: S.ppl[pid].dev, gone: !!(S.gone || {})[pid], er, ans: Math.round(p.ans), ansRaw: p.ans, tavgV: tavg, turns: nt, t, tl: p.t, cov: p.cov.length ? p.cov.reduce((s, x) => s + x, 0) / p.cov.length : null, tu: p.tu.size, nT, pz: p.pz, uz: p.uz, tavg, score };
     }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+    // 25.11: faollik foizi (0-100) ASSESSMENT uchun: javoblar soni 30 + kengaytirish 30 + Part 2 vaqti 20 + target iboralar 20; ustoz bahosi bo'lsa 30% ulush
+    const maxAns = Math.max(1, ...rows.map(r => r.ansRaw || 0)), hasP2 = rows.some(r => r.t != null);
+    rows.forEach(r => {
+      const parts = [[30, Math.min(1, (r.ansRaw || 0) / (maxAns * .8))], [30, r.er == null ? 0 : r.er], [20, Math.min(1, r.tu / Math.max(3, nT / 3))]];
+      if (hasP2) parts.push([20, r.t == null ? 0 : Math.min(1, r.t / 120)]);
+      const W = parts.reduce((a, x) => a + x[0], 0); let f = parts.reduce((a, x) => a + x[0] * x[1], 0) / W * 100;
+      if (r.tavgV != null) f = f * .7 + (r.tavgV - 1) / 2 * 100 * .3;
+      r.fa = Math.round(Math.max(0, Math.min(100, f)));
+    });
     // 25.11: ishlatilmagan iboralar - Pre-Class jadvalidan tarjima, qayerdaligi va Band 8 javobidan misol bilan
     const nz = x => String(x || "").toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
     const tvBy = {}; (L.tv || []).forEach(t => { tvBy[nz(t.e)] = t; });
@@ -375,6 +384,10 @@
   }
   let unusedTxt = "";
   (function () { const st = document.createElement("style"); st.textContent = `
+    .sp-asm{margin-top:14px}
+    .sp-asm-box{position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+    .sp-asm-box.hide{display:none}
+    .sp-asm-in{background:var(--card,#fff);border-radius:18px;padding:16px 18px;width:min(760px,100%);max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
     .sp-parts{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
     .sp-unused{margin-top:16px;border:1px solid var(--border);border-radius:16px;padding:14px 16px;background:var(--card,#fff)}
     .sp-unused-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:6px}
@@ -393,20 +406,54 @@
     if (lastViewArgs && b.closest("#spView")) { const v = $("spViewStats"); if (v) v.innerHTML = statsHtml(stats(...lastViewArgs), null); }
     else if (sid && sess) draw();
   });
+  // 25.11: ASSESSMENT ga faollik foizini yozish (LC Panel course_scores, src "client")
+  document.addEventListener("click", async e => {
+    const btn = e.target && e.target.closest && e.target.closest("#spAsm, #spAsmGo"); if (!btn || !statsCtx) return;
+    // natija oynasi qayta chiziladigan panel ichida emas, alohida oynada (jonli darsda yo'qolib qolmasin)
+    let box = $("spAsmBox");
+    if (!box) { box = document.createElement("div"); box.id = "spAsmBox"; box.className = "sp-asm-box"; document.body.appendChild(box); }
+    if (btn.id === "spAsm") box.innerHTML = `<div class="sp-asm-in"><div class="card-header"><h3 class="card-title">📤 ASSESSMENT ga yozish</h3><button class="btn btn-secondary btn-sm" id="spAsmX">✕</button></div><div id="spAsmOut"></div></div>`;
+    box.classList.remove("hide"); $("spAsmX").onclick = () => box.classList.add("hide");
+    const out = $("spAsmOut"), C = statsCtx, keep = spPart; spPart = "all";
+    const L = await SP.lesson(C.S.test), st = stats(C.S, C.LV, L); spPart = keep;
+    const k4 = {}; for (const k of Object.keys(C.LV || {})) k4[await SP.pid(k, C.sid)] = k;
+    const have = new Set(Object.values(k4));
+    for (const k of Object.keys(roster || {})) { if (have.has(k) || roster[k].group !== C.S.group) continue; const p = await SP.pid(k, C.sid); if (C.S.ppl && C.S.ppl[p] && !k4[p]) k4[p] = k; }
+    const scores = {}, list = []; st.rows.forEach(r => { const k = k4[r.pid]; if (k) { scores[k] = r.fa; list.push(r); } });
+    const d = new Date(C.S.created || Date.now()), date = String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + d.getFullYear();
+    const title = "Speaking " + String(C.S.test || "").toUpperCase() + " sinf faolligi out of 100";
+    const body = { admin: "course_scores", src: "client", scores: scores, title: title, date: date };
+    btn.disabled = true; out.innerHTML = `<div class="muted" style="margin-top:8px">${btn.id === "spAsm" ? "Tekshirilmoqda…" : "Yozilmoqda…"}</div>`;
+    try {
+      if (btn.id === "spAsm") {
+        const p = await TP().api(Object.assign({ dry: true }, body)); btn.disabled = false;
+        if (!p.ok) { out.innerHTML = `<div class="msg">⚠️ ${esc(p.error)}</div>`; return; }
+        out.innerHTML = `<div style="margin:10px 0 6px">Ustun: <b>${esc(title)}</b> · ${esc(date)} · ${p.col ? `mavjud <b>${esc(p.col)}</b> ustuniga` : "<b>yangi ustun</b> ochiladi"} · o'zgaradi: <b>${p.changes}</b></div>
+          <div class="muted" style="font-size:.8rem;margin-bottom:6px">Faollik = javoblar soni 30% + kengaytirish 30% + Part 2 vaqti 20% + target iboralar 20%; ustoz bahosi bo'lsa u 30% ulush oladi.</div>
+          ${p.miss.length ? `<div class="msg" style="margin:0 0 8px">⚠️ Course'da topilmadi: ${p.miss.map(esc).join(", ")}</div>` : ""}
+          <div class="tbl-wrap"><table><thead><tr><th>Guruh</th><th>O'quvchi</th><th>Hozir</th><th>Faollik</th></tr></thead><tbody>${p.rows.map(x => `<tr><td>${esc(x.group)}</td><td>${esc(x.name)}</td><td>${esc(x.old) || "—"}</td><td><b>${esc(x.value)}%</b></td></tr>`).join("")}</tbody></table></div>
+          <button class="btn btn-orange" id="spAsmGo" style="margin-top:10px" ${p.changes ? "" : "disabled"}>Course'ga yozish (${p.changes})</button>`;
+      } else {
+        const w = await TP().api(body);
+        out.innerHTML = w.ok ? `<div class="notice" style="margin-top:8px">✅ ${w.written} ta ball ${esc(w.col)} ustuniga yozildi.${w.miss && w.miss.length ? " Topilmadi: " + esc(w.miss.join(", ")) : ""}</div>` : `<div class="msg">⚠️ ${esc(w.error)}</div>`;
+      }
+    } catch (x) { btn.disabled = false; out.innerHTML = `<div class="msg">⚠️ ${esc(x.message)}</div>`; }
+  });
   document.addEventListener("click", e => { if (e.target && e.target.id === "spUnusedCopy") { const b = e.target; (navigator.clipboard ? navigator.clipboard.writeText("Ishlatilmagan iboralar:\n" + unusedTxt) : Promise.reject()).then(() => { b.textContent = "✓ Nusxa olindi"; setTimeout(() => { b.textContent = "📋 Nusxa olish"; }, 2000); }).catch(() => { b.textContent = "⚠️ Bo'lmadi"; }); } });
   function statsHtml(st, live) {
     const pct = v => v == null ? "—" : Math.round(v * 100) + "%";
     const weak = st.rows.filter(r => r.score != null).slice(0, 5);
     let h = `<div class="card"><div class="card-header"><h3 class="card-title">📊 Natijalar</h3><div class="sp-parts">${[["all", "Hammasi"], ["p1", "Part 1"], ["p2", "Part 2"], ["p3", "Part 3"]].map(([k, t]) => `<button class="btn btn-sm ${spPart === k ? "btn-primary" : "btn-secondary"}" data-sppart="${k}">${t}</button>`).join("")}</div><span class="muted" style="font-size:.8rem">O'quvchilar band qo'ymaydi: faqat "kengaytirdi / qisqa", ishlatilgan iboralar, Part 2 vaqti. ASSESSMENT'ga yozilmaydi.</span></div>`;
     if (weak.length) h += `<div class="notice" style="margin-bottom:12px"><span>🎯 <b>Tinglash kerak (hot seat):</b> ${weak.map(r => esc(r.n)).join(", ")}</span></div>`;
-    h += `<div class="tbl-wrap"><table><thead><tr><th>O'quvchi</th><th title="Part 1 va Part 3 javoblari">Javoblar</th><th title="Kengaytirilgan javoblar ulushi">Kengaytirdi</th><th>Part 2 vaqti</th><th title="Kartadagi bandlar qamrovi">Bandlar</th><th>Target iboralar</th><th title="Uzoq jim qoldi / o'zbekcha so'z">⏸ / 🇺🇿</th><th>Ustoz</th></tr></thead><tbody>`;
+    h += `<div class="tbl-wrap"><table><thead><tr><th>O'quvchi</th><th title="Part 1 va Part 3 javoblari">Javoblar</th><th title="Kengaytirilgan javoblar ulushi">Kengaytirdi</th><th>Part 2 vaqti</th><th title="Kartadagi bandlar qamrovi">Bandlar</th><th>Target iboralar</th><th title="Uzoq jim qoldi / o'zbekcha so'z">⏸ / 🇺🇿</th><th>Ustoz</th><th title="ASSESSMENT ga yoziladigan faollik foizi (faqat Hammasi ko'rinishida)">Faollik</th></tr></thead><tbody>`;
     st.rows.forEach(r => {
       const on = live ? (r.dev === "none" || isOn(live[p2k[r.pid]])) : true;
       h += `<tr${r.gone ? ' style="opacity:.5"' : ""}><td>${weak.includes(r) ? "🎯 " : ""}${esc(r.n)} <span class="muted">${({ pc: "💻", phone: "📱", none: "🙋" })[r.dev] || ""}${on ? "" : " · chiqqan"}</span></td><td>${r.ans}</td><td>${pct(r.er)}</td>
-        <td>${r.tl.length ? r.tl.map(x => `<span class="badge ${x.t < 90 ? "b-bad" : x.t < 110 ? "b-warn" : "b-ok"}" title="${x.att ? SP.ATT[x.att] : "Part 2"}">${SP.fmt(x.t)}</span>`).join(" ") : "—"}</td><td>${pct(r.cov)}</td><td>${r.tu} / ${r.nT}</td><td>${r.pz} / ${r.uz}</td><td>${r.tavg == null ? "—" : ["", "Zaif", "O'rta", "Yaxshi"][Math.round(r.tavg)]}</td></tr>`;
+        <td>${r.tl.length ? r.tl.map(x => `<span class="badge ${x.t < 90 ? "b-bad" : x.t < 110 ? "b-warn" : "b-ok"}" title="${x.att ? SP.ATT[x.att] : "Part 2"}">${SP.fmt(x.t)}</span>`).join(" ") : "—"}</td><td>${pct(r.cov)}</td><td>${r.tu} / ${r.nT}</td><td>${r.pz} / ${r.uz}</td><td>${r.tavg == null ? "—" : ["", "Zaif", "O'rta", "Yaxshi"][Math.round(r.tavg)]}</td><td>${spPart === "all" && r.fa != null ? `<b>${r.fa}%</b>` : "—"}</td></tr>`;
     });
     h += `</tbody></table></div>`;
     if (st.unused.length) h += unusedHtml(st.unused);
+    if (statsCtx && spPart === "all") h += `<div class="sp-asm"><button class="btn btn-secondary" id="spAsm">📤 ASSESSMENT ga yozish (faollik %)</button></div>`;
     if (st.biased.length) h += `<div class="muted" style="margin-top:6px;font-size:.8rem">Vazni kamaytirilgan baholovchilar (hammaga bir xil bosgan): ${st.biased.map(esc).join(", ")}</div>`;
     return h + `</div>`;
   }
@@ -463,7 +510,7 @@
     });
     h += `</div></div>`;
     h += hotSeat();
-    const st = stats(sess, live, les);
+    statsCtx = { S: sess, LV: live, sid: sid }; const st = stats(sess, live, les);
     h += statsHtml(st, live);
     $("spLive").innerHTML = h;
     bindLive();
@@ -536,7 +583,7 @@
     const [s, l] = await Promise.all([db.ref("sessions/" + id).get(), db.ref("live/" + id).get()]);
     const S = s.val(), LV = l.val() || {}; if (!S) return;
     const L = await SP.lesson(S.test);
-    view = id;
+    view = id; statsCtx = { S: S, LV: LV, sid: id };
     $("spView").innerHTML = `<div class="card"><div class="card-header"><h3 class="card-title">${esc(S.title)} · ${new Date(S.created).toLocaleDateString("uz")}</h3><button class="btn btn-secondary btn-sm" id="spViewX">Yopish</button></div><div class="muted">Qatnashganlar: ${Object.keys(S.ppl || {}).length} · Raundlar: ${Object.keys(S.rounds || {}).length}</div></div>` + `<div id="spViewStats">${statsHtml(stats(S, LV, L), null)}</div>`; lastViewArgs = [S, LV, L];
     $("spView").classList.remove("hide");
     $("spViewX").onclick = () => { view = null; $("spView").classList.add("hide"); };
