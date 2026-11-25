@@ -268,11 +268,25 @@
       if (gi >= 0) {
         round.g[gi] = round.g[gi].filter(x => x !== p);
         const left = round.g[gi];
-        if (left.length === 1) {   // yolg'iz qoldi: boshqa juftlikka uchinchi bo'lib qo'shiladi
+        const nn = (a, b) => devOf(a) === "none" && devOf(b) === "none";
+        const ti = left.length === 1 ? round.g.findIndex((g, i) => i !== gi && g && g.length > 2 && g.some(m => !nn(m, left[0]))) : -1;
+        if (ti >= 0) {   // 25.11: yolg'iz qoldi va uchlik bor - uchlikdagi kuzatuvchi unga sherik bo'ladi
+          const R = SP.roles(round.g[ti], st.h), o = R.o.find(m => !nn(m, left[0])) || R.o[0];
+          round.g[ti] = round.g[ti].filter(m => m !== o); round.g[gi].push(o);
+        } else if (left.length === 1) {   // yolg'iz qoldi: boshqa juftlikka uchinchi bo'lib qo'shiladi
           const x = left[0]; let bi = -1, bc = 1e9;
           round.g.forEach((g, i) => { if (i === gi || !g || g.length !== 2) return; const cc = g.reduce((s, m) => s + (devOf(m) === "none" && devOf(x) === "none" ? 1000 : 0) + (((sess.met || {})[x] || {})[m] || 0) * 10, 0) + Math.random(); if (cc < bc) { bc = cc; bi = i; } });
           if (bi >= 0) { round.g[bi].push(x); round.g.splice(gi, 1); if (st.b === "p2") round.card[x] = round.card[x] || pickCard(x, st, null); }
         }
+        // 25.11: ikkita uchlik bo'lib qolsa, ikkala kuzatuvchi o'zaro juftlik bo'ladi
+        for (;;) {
+          const tr = round.g.map((g, i) => g && g.length > 2 ? i : -1).filter(i => i >= 0);
+          if (tr.length < 2) break;
+          const o1 = SP.roles(round.g[tr[0]], st.h).o[0], o2 = SP.roles(round.g[tr[1]], st.h).o.find(m => !nn(m, o1));
+          if (!o2) break;
+          round.g[tr[0]] = round.g[tr[0]].filter(m => m !== o1); round.g[tr[1]] = round.g[tr[1]].filter(m => m !== o2); round.g.push([o1, o2]);
+        }
+        if (st.b === "p2") { round.card = round.card || {}; round.g.forEach(g => g && g.forEach(m => { round.card[m] = round.card[m] || pickCard(m, st, null); })); }
         if (st.b !== "p2") { round.q = {}; round.g.forEach((g, i) => { round.q[i] = { 0: qList(st.b, SP.roles(g, 0).c), 1: g.length > 1 ? qList(st.b, SP.roles(g, 1).c) : [] }; }); }
         up["rounds/" + st.r] = round;
       }
