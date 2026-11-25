@@ -302,13 +302,34 @@
   }
   function toast(t) { const el = $("tpToast"); if (!el) return; el.textContent = t; el.classList.add("on"); setTimeout(() => { el.classList.remove("on"); el.textContent = "✓ Bajarildi"; }, 4000); }
 
+  // 25.11: dars oxirida ekranga umumiy tahlil (ismlar faqat ijobiy "faollar" ro'yxatida)
+  function toggleSum() {
+    if (sess.sumOn) { db.ref("sessions/" + sid).update({ sumOn: null }); return; }
+    const keep = spPart; spPart = "all"; const st = stats(sess, live, les); spPart = keep;
+    const act = st.rows.filter(r => r.ans || r.tl.length);
+    const ans = act.reduce((a, r) => a + r.ans, 0), ext = act.reduce((a, r) => a + (r.er || 0) * r.ans, 0);
+    const ts = act.filter(r => r.t != null).map(r => r.t), p2t = ts.length ? Math.round(ts.reduce((a, x) => a + x, 0) / ts.length) : null;
+    const er = ans ? ext / ans : null, used = st.nT - st.unused.length;
+    const top = act.slice().sort((a, b) => ((b.er || 0) * b.ans + b.ans * .3 + b.tu * 2) - ((a.er || 0) * a.ans + a.ans * .3 + a.tu * 2)).slice(0, 3).map(r => SP.short(r.n));
+    const pz = act.reduce((a, r) => a + r.pz, 0), uz = act.reduce((a, r) => a + r.uz, 0), turns = Math.max(1, act.reduce((a, r) => a + r.turns, 0));
+    const tips = [];
+    if (er != null && er < .6) tips.push("Javobni kengaytiring: javob → sabab → misol (2–4 gap).");
+    if (p2t != null && p2t < 105) tips.push("Part 2 da 2 daqiqa to'liq gapiring: kartadagi har bandga 2–3 gap.");
+    if (used < st.nT * .5) tips.push("Prepdagi iboralarni ishlating: har javobda 1 ta, joyida.");
+    if (uz / turns > .5) tips.push("O'zbekcha so'z o'rniga oddiy inglizcha bilan tushuntiring.");
+    if (pz / turns > 1) tips.push("Uzoq pauza o'rniga: \"Well, let me think…\", \"That's an interesting question…\"");
+    if (!tips.length) tips.push("Zo'r! Keyingi darsda yangi iboralar va uzunroq javoblar bilan davom etamiz.");
+    const sum = { at: CLS.TS, n: act.length, ans: ans, er: er, p2t: p2t, used: used, nT: st.nT, top: top, tips: tips.slice(0, 3), unused: st.unused.map(t => ({ e: t.e, u: t.u || "", ex: t.ex || "", w: t.w || "" })) };
+    db.ref("sessions/" + sid).update({ sum: sum, sumOn: true });
+  }
   // ---------- natijalar ----------
+  // 25.11: natijalarni Part bo'yicha ko'rish (spPart: all | p1 | p2 | p3)
+  let spPart = "all", lastViewArgs = null;
   function stats(S, LV, L) {
-    const plan = S.plan || [], tgt = {}, R = {}, P = {};
-    ["p1", "p3"].forEach(b => L[b].forEach(x => x.ch.forEach((c, j) => { if (c.t) tgt[x.id + ":" + j] = c.e; })));
-    L.p2.forEach(x => x.ch.forEach((c, j) => { if (c.t) tgt[x.id + ":" + j] = c.e; }));
+    const plan = S.plan || [], tgt = {}, R = {}, P = {}, inP = b => spPart === "all" || spPart === b;
+    ["p1", "p2", "p3"].forEach(b => { if (inP(b)) L[b].forEach(x => x.ch.forEach((c, j) => { if (c.t) tgt[x.id + ":" + j] = c.e; })); });
     const recs = [];
-    for (const k in LV) for (const i in (LV[k].sp || {})) { const r = LV[k].sp[i]; if (r && r.c && plan[i]) recs.push({ i: +i, r: r, st: plan[i] }); }
+    for (const k in LV) for (const i in (LV[k].sp || {})) { const r = LV[k].sp[i]; if (r && r.c && plan[i] && inP(plan[i].b)) recs.push({ i: +i, r: r, st: plan[i] }); }
     // baholovchi xolisligi: hammaga doim "kengaytirdi" (yoki doim "qisqa") bosgan bo'lsa, vazni yarim
     recs.forEach(({ r }) => { const by = r.by || "?"; const a = Object.values(r.a || {}); R[by] = R[by] || { n: 0, y: 0 }; R[by].n += a.length; R[by].y += a.filter(x => x).length; });
     const w = by => { const x = R[by]; return x && x.n >= 8 && (x.y / x.n >= .95 || x.y / x.n <= .05) ? .5 : 1; };
@@ -326,18 +347,57 @@
     const rows = Object.keys(S.ppl || {}).map(pid => {
       const p = P[pid] || { ans: 0, ext: 0, turns: {}, t: [], cov: [], u: new Set(), tu: new Set(), pz: 0, uz: 0 };
       const er = p.ans ? p.ext / p.ans : null, nt = Object.keys(p.turns).length, t = p.t.length ? p.t.reduce((s, x) => s + x.t, 0) / p.t.length : null;
-      const tv = Object.values(tr[pid] || {}), tavg = tv.length ? tv.reduce((s, x) => s + x, 0) / tv.length : null;
+      const tv = Object.values(spPart === "all" ? (tr[pid] || {}) : {}), tavg = tv.length ? tv.reduce((s, x) => s + x, 0) / tv.length : null;
       let score = null;
       if (p.ans || p.t.length) score = (er == null ? 20 : (1 - er) * 40) + (t == null ? 15 : Math.max(0, 110 - t) / 110 * 30) + (1 - Math.min(1, p.tu.size / Math.max(3, nT / 3))) * 20 + Math.min(10, (p.pz + p.uz) / Math.max(1, nt) * 5) + (tavg == null ? 0 : (2 - tavg) * 15);
       return { pid, n: S.ppl[pid].n, dev: S.ppl[pid].dev, gone: !!(S.gone || {})[pid], er, ans: Math.round(p.ans), turns: nt, t, tl: p.t, cov: p.cov.length ? p.cov.reduce((s, x) => s + x, 0) / p.cov.length : null, tu: p.tu.size, nT, pz: p.pz, uz: p.uz, tavg, score };
     }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
-    const unused = [...new Set(Object.values(tgt))].filter(e => !used.has(e));
+    // 25.11: ishlatilmagan iboralar - Pre-Class jadvalidan tarjima, qayerdaligi va Band 8 javobidan misol bilan
+    const nz = x => String(x || "").toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
+    const tvBy = {}; (L.tv || []).forEach(t => { tvBy[nz(t.e)] = t; });
+    const chU = {}; ["p1", "p2", "p3"].forEach(b => L[b].forEach(x => x.ch.forEach(c => { if (c.t) chU[nz(c.e)] = chU[nz(c.e)] || { e: c.e, u: c.u, w: b.toUpperCase() + " " + (x.topic || x.short || "") }; })));
+    const unused = [...new Set(Object.values(tgt))].filter(e => !used.has(e)).map(e => tvBy[nz(e)] || chU[nz(e)] || { e: e });
     return { rows, unused, nT, biased: Object.keys(R).filter(by => w(by) < 1).map(by => (S.ppl || {})[by] ? S.ppl[by].n : "?") };
   }
+  function unusedHtml(list) {
+    const hl = (ex, e) => { const t = esc(ex); const w = esc(e).split(" ")[0].slice(0, 5); const re = new RegExp("(" + esc(e).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "i"); return re.test(t) ? t.replace(re, "<mark>$1</mark>") : t.replace(new RegExp("\\b(" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[\\w'-]*(?:\\s[\\w'-]+){0," + Math.max(0, e.split(" ").length - 1) + "})", "i"), "<mark>$1</mark>"); };
+    const part = t => (/^P([123])/.exec(t.w || "") || [])[1] || "?";
+    const groups = { 1: [], 2: [], 3: [], "?": [] }; list.forEach(t => groups[part(t)].push(t));
+    const name = { 1: "Part 1", 2: "Part 2", 3: "Part 3", "?": "Boshqa" };
+    let h = `<div class="sp-unused"><div class="sp-unused-h"><b>💎 Hech kim ishlatmagan iboralar (${list.length})</b><span class="muted">Darsni shu iboralar bilan yakunlash yoki keyingi darsda takrorlash uchun</span><button class="btn btn-secondary btn-sm" id="spUnusedCopy">📋 Nusxa olish</button></div>`;
+    ["1", "2", "3", "?"].forEach(k => {
+      if (!groups[k].length) return;
+      h += `<div class="sp-unused-part">${name[k]}</div><div class="sp-unused-grid">` + groups[k].map(t => `<div class="sp-vc"><div class="sp-vc-e">${esc(t.e)}</div>${t.u ? `<div class="sp-vc-u">${esc(t.u)}</div>` : ""}${t.ex ? `<div class="sp-vc-ex">“${hl(t.ex, t.e)}”</div>` : ""}${t.w ? `<div class="sp-vc-w">📍 ${esc(t.w)}</div>` : ""}</div>`).join("") + `</div>`;
+    });
+    h += `</div>`;
+    unusedTxt = list.map((t, i) => `${i + 1}. ${t.e}${t.u ? " — " + t.u : ""}${t.ex ? "\n   Misol: " + t.ex : ""}`).join("\n");
+    return h;
+  }
+  let unusedTxt = "";
+  (function () { const st = document.createElement("style"); st.textContent = `
+    .sp-parts{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+    .sp-unused{margin-top:16px;border:1px solid var(--border);border-radius:16px;padding:14px 16px;background:var(--card,#fff)}
+    .sp-unused-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:6px}
+    .sp-unused-h .muted{font-size:.8rem;flex:1;min-width:200px}
+    .sp-unused-part{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 0 6px}
+    .sp-unused-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+    .sp-vc{border:1px solid var(--border);border-left:4px solid var(--primary,#EA580C);border-radius:12px;padding:10px 12px;background:var(--bg,#fafafa)}
+    .sp-vc-e{font-weight:800;font-size:1.02rem}
+    .sp-vc-u{color:var(--muted);font-size:.86rem;margin-top:1px}
+    .sp-vc-ex{font-style:italic;font-size:.86rem;margin-top:6px;line-height:1.4}
+    .sp-vc-ex mark{background:rgba(234,88,12,.16);color:inherit;font-weight:700;font-style:normal;border-radius:4px;padding:0 2px}
+    .sp-vc-w{font-size:.72rem;color:var(--muted);margin-top:6px}`; document.head.appendChild(st); })();
+  document.addEventListener("click", e => {
+    const b = e.target && e.target.closest && e.target.closest("[data-sppart]"); if (!b) return;
+    spPart = b.dataset.sppart;
+    if (lastViewArgs && b.closest("#spView")) { const v = $("spViewStats"); if (v) v.innerHTML = statsHtml(stats(...lastViewArgs), null); }
+    else if (sid && sess) draw();
+  });
+  document.addEventListener("click", e => { if (e.target && e.target.id === "spUnusedCopy") { const b = e.target; (navigator.clipboard ? navigator.clipboard.writeText("Ishlatilmagan iboralar:\n" + unusedTxt) : Promise.reject()).then(() => { b.textContent = "✓ Nusxa olindi"; setTimeout(() => { b.textContent = "📋 Nusxa olish"; }, 2000); }).catch(() => { b.textContent = "⚠️ Bo'lmadi"; }); } });
   function statsHtml(st, live) {
     const pct = v => v == null ? "—" : Math.round(v * 100) + "%";
     const weak = st.rows.filter(r => r.score != null).slice(0, 5);
-    let h = `<div class="card"><div class="card-header"><h3 class="card-title">📊 Natijalar</h3><span class="muted" style="font-size:.8rem">O'quvchilar band qo'ymaydi: faqat "kengaytirdi / qisqa", ishlatilgan iboralar, Part 2 vaqti. ASSESSMENT'ga yozilmaydi.</span></div>`;
+    let h = `<div class="card"><div class="card-header"><h3 class="card-title">📊 Natijalar</h3><div class="sp-parts">${[["all", "Hammasi"], ["p1", "Part 1"], ["p2", "Part 2"], ["p3", "Part 3"]].map(([k, t]) => `<button class="btn btn-sm ${spPart === k ? "btn-primary" : "btn-secondary"}" data-sppart="${k}">${t}</button>`).join("")}</div><span class="muted" style="font-size:.8rem">O'quvchilar band qo'ymaydi: faqat "kengaytirdi / qisqa", ishlatilgan iboralar, Part 2 vaqti. ASSESSMENT'ga yozilmaydi.</span></div>`;
     if (weak.length) h += `<div class="notice" style="margin-bottom:12px"><span>🎯 <b>Tinglash kerak (hot seat):</b> ${weak.map(r => esc(r.n)).join(", ")}</span></div>`;
     h += `<div class="tbl-wrap"><table><thead><tr><th>O'quvchi</th><th title="Part 1 va Part 3 javoblari">Javoblar</th><th title="Kengaytirilgan javoblar ulushi">Kengaytirdi</th><th>Part 2 vaqti</th><th title="Kartadagi bandlar qamrovi">Bandlar</th><th>Target iboralar</th><th title="Uzoq jim qoldi / o'zbekcha so'z">⏸ / 🇺🇿</th><th>Ustoz</th></tr></thead><tbody>`;
     st.rows.forEach(r => {
@@ -346,7 +406,7 @@
         <td>${r.tl.length ? r.tl.map(x => `<span class="badge ${x.t < 90 ? "b-bad" : x.t < 110 ? "b-warn" : "b-ok"}" title="${x.att ? SP.ATT[x.att] : "Part 2"}">${SP.fmt(x.t)}</span>`).join(" ") : "—"}</td><td>${pct(r.cov)}</td><td>${r.tu} / ${r.nT}</td><td>${r.pz} / ${r.uz}</td><td>${r.tavg == null ? "—" : ["", "Zaif", "O'rta", "Yaxshi"][Math.round(r.tavg)]}</td></tr>`;
     });
     h += `</tbody></table></div>`;
-    if (st.unused.length) h += `<div style="margin-top:12px"><b>Hech kim ishlatmagan target iboralar (${st.unused.length}):</b> <span class="muted">${st.unused.map(esc).join(" · ")}</span></div>`;
+    if (st.unused.length) h += unusedHtml(st.unused);
     if (st.biased.length) h += `<div class="muted" style="margin-top:6px;font-size:.8rem">Vazni kamaytirilgan baholovchilar (hammaga bir xil bosgan): ${st.biased.map(esc).join(", ")}</div>`;
     return h + `</div>`;
   }
@@ -357,7 +417,7 @@
     const cur = sess.cur || { i: -1 }, plan = sess.plan, step = plan[cur.i], now = CLS.now(), ck = SP.clock(cur, step, now);
     // avtomatik: rollar almashinuvi (va xohlasa yangi raund)
     if (step && ck.over && !cur.pz && ck.el > step.dur + 2) { const nx = plan[cur.i + 1]; if (nx && ((nx.r === step.r && auto) || (nx.r !== step.r && autoR))) go(cur.i + 1); }
-    const key = JSON.stringify([sess.cur, sess.rounds && step && sess.rounds[step.r], sess.ppl, sess.gone, sess.tr, Object.keys(live).map(k => [k, isOn(live[k]), live[k].sp && Object.keys(live[k].sp).length, JSON.stringify(live[k].sp || {}).length]), hs, auto, autoR, ck && ck.over, ck && ck.wait > 0]);
+    const key = JSON.stringify([sess.cur, sess.rounds && step && sess.rounds[step.r], sess.ppl, sess.gone, sess.tr, Object.keys(live).map(k => [k, isOn(live[k]), live[k].sp && Object.keys(live[k].sp).length, JSON.stringify(live[k].sp || {}).length]), hs, auto, autoR, ck && ck.over, ck && ck.wait > 0, spPart, sess.sumOn]);
     if (key === lastDraw) { tickTimer(step, ck); return; }
     lastDraw = key;
     const round = step && (sess.rounds || {})[step.r], ppl = sess.ppl || {}, gone = sess.gone || {};
@@ -369,6 +429,7 @@
         <button class="btn btn-primary" id="spNext">${!step ? "▶ Boshlash (juftlash)" : !nx ? "✓ Oxirgi qadam" : newRound ? "⏭ Keyingi raund (yangi juftlik)" : "🔄 Rollarni almashtirish"}</button>
         ${step ? `<button class="btn btn-secondary" id="spPause">${cur.pz ? "▶ Davom" : "⏸ Pauza"}</button><button class="btn btn-secondary" id="spRe">↺ Qadamni qayta</button><button class="btn btn-secondary" id="spRep">🔀 Qayta juftlash</button>` : ""}
         <button class="btn btn-secondary" id="spScr">🖥 Ekranni ochish</button>
+        ${step ? `<button class="btn ${sess.sumOn ? "btn-primary" : "btn-secondary"}" id="spSum">${sess.sumOn ? "✕ Tahlilni ekrandan olish" : "📊 Yakuniy tahlil (ekranga)"}</button>` : ""}
         <label class="muted" style="font-size:.82rem;display:flex;gap:6px;align-items:center"><input type="checkbox" id="spAuto"${auto ? " checked" : ""}> Rollar avtomatik almashsin</label>
         <label class="muted" style="font-size:.82rem;display:flex;gap:6px;align-items:center"><input type="checkbox" id="spAutoR"${autoR ? " checked" : ""}> Raundlar ham avtomatik</label>
         <span style="flex:1"></span><button class="btn btn-secondary btn-sm" id="spClose">Darsni yopish</button>
@@ -425,6 +486,7 @@
     $("spAuto").onchange = e => { auto = e.target.checked; lastDraw = ""; };
     $("spAutoR").onchange = e => { autoR = e.target.checked; lastDraw = ""; };
     $("spClose").onclick = closeLesson;
+    if ($("spSum")) $("spSum").onclick = toggleSum;
     document.querySelectorAll("#spLive [data-tr]").forEach(b => b.onclick = () => { const p = b.dataset.tr, v = +b.dataset.v, ref = db.ref(`sessions/${sid}/tr/${p}/s${cur.i}`); ref.set(((sess.tr || {})[p] || {})["s" + cur.i] === v ? null : v); });
     document.querySelectorAll("#spLive [data-add]").forEach(b => b.onclick = () => addNow(b.dataset.add));
     document.querySelectorAll("#spLive [data-gone]").forEach(b => b.onclick = () => { if (confirm(nm(b.dataset.gone) + " darsdan chiqib ketdimi?")) markGone(b.dataset.gone); });
@@ -475,7 +537,7 @@
     const S = s.val(), LV = l.val() || {}; if (!S) return;
     const L = await SP.lesson(S.test);
     view = id;
-    $("spView").innerHTML = `<div class="card"><div class="card-header"><h3 class="card-title">${esc(S.title)} · ${new Date(S.created).toLocaleDateString("uz")}</h3><button class="btn btn-secondary btn-sm" id="spViewX">Yopish</button></div><div class="muted">Qatnashganlar: ${Object.keys(S.ppl || {}).length} · Raundlar: ${Object.keys(S.rounds || {}).length}</div></div>` + statsHtml(stats(S, LV, L), null);
+    $("spView").innerHTML = `<div class="card"><div class="card-header"><h3 class="card-title">${esc(S.title)} · ${new Date(S.created).toLocaleDateString("uz")}</h3><button class="btn btn-secondary btn-sm" id="spViewX">Yopish</button></div><div class="muted">Qatnashganlar: ${Object.keys(S.ppl || {}).length} · Raundlar: ${Object.keys(S.rounds || {}).length}</div></div>` + `<div id="spViewStats">${statsHtml(stats(S, LV, L), null)}</div>`; lastViewArgs = [S, LV, L];
     $("spView").classList.remove("hide");
     $("spViewX").onclick = () => { view = null; $("spView").classList.add("hide"); };
     $("spView").scrollIntoView({ behavior: "smooth", block: "start" });
