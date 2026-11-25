@@ -302,6 +302,26 @@
   }
   function toast(t) { const el = $("tpToast"); if (!el) return; el.textContent = t; el.classList.add("on"); setTimeout(() => { el.classList.remove("on"); el.textContent = "✓ Bajarildi"; }, 4000); }
 
+  // 25.11: dars oxirida ekranga umumiy tahlil (ismlar faqat ijobiy "faollar" ro'yxatida)
+  function toggleSum() {
+    if (sess.sumOn) { db.ref("sessions/" + sid).update({ sumOn: null }); return; }
+    const keep = spPart; spPart = "all"; const st = stats(sess, live, les); spPart = keep;
+    const act = st.rows.filter(r => r.ans || r.tl.length);
+    const ans = act.reduce((a, r) => a + r.ans, 0), ext = act.reduce((a, r) => a + (r.er || 0) * r.ans, 0);
+    const ts = act.filter(r => r.t != null).map(r => r.t), p2t = ts.length ? Math.round(ts.reduce((a, x) => a + x, 0) / ts.length) : null;
+    const er = ans ? ext / ans : null, used = st.nT - st.unused.length;
+    const top = act.slice().sort((a, b) => ((b.er || 0) * b.ans + b.ans * .3 + b.tu * 2) - ((a.er || 0) * a.ans + a.ans * .3 + a.tu * 2)).slice(0, 3).map(r => SP.short(r.n));
+    const pz = act.reduce((a, r) => a + r.pz, 0), uz = act.reduce((a, r) => a + r.uz, 0), turns = Math.max(1, act.reduce((a, r) => a + r.turns, 0));
+    const tips = [];
+    if (er != null && er < .6) tips.push("Javobni kengaytiring: javob → sabab → misol (2–4 gap).");
+    if (p2t != null && p2t < 105) tips.push("Part 2 da 2 daqiqa to'liq gapiring: kartadagi har bandga 2–3 gap.");
+    if (used < st.nT * .5) tips.push("Prepdagi iboralarni ishlating: har javobda 1 ta, joyida.");
+    if (uz / turns > .5) tips.push("O'zbekcha so'z o'rniga oddiy inglizcha bilan tushuntiring.");
+    if (pz / turns > 1) tips.push("Uzoq pauza o'rniga: \"Well, let me think…\", \"That's an interesting question…\"");
+    if (!tips.length) tips.push("Zo'r! Keyingi darsda yangi iboralar va uzunroq javoblar bilan davom etamiz.");
+    const sum = { at: CLS.TS, n: act.length, ans: ans, er: er, p2t: p2t, used: used, nT: st.nT, top: top, tips: tips.slice(0, 3), unused: st.unused.map(t => ({ e: t.e, u: t.u || "", ex: t.ex || "", w: t.w || "" })) };
+    db.ref("sessions/" + sid).update({ sum: sum, sumOn: true });
+  }
   // ---------- natijalar ----------
   // 25.11: natijalarni Part bo'yicha ko'rish (spPart: all | p1 | p2 | p3)
   let spPart = "all", lastViewArgs = null;
@@ -397,7 +417,7 @@
     const cur = sess.cur || { i: -1 }, plan = sess.plan, step = plan[cur.i], now = CLS.now(), ck = SP.clock(cur, step, now);
     // avtomatik: rollar almashinuvi (va xohlasa yangi raund)
     if (step && ck.over && !cur.pz && ck.el > step.dur + 2) { const nx = plan[cur.i + 1]; if (nx && ((nx.r === step.r && auto) || (nx.r !== step.r && autoR))) go(cur.i + 1); }
-    const key = JSON.stringify([sess.cur, sess.rounds && step && sess.rounds[step.r], sess.ppl, sess.gone, sess.tr, Object.keys(live).map(k => [k, isOn(live[k]), live[k].sp && Object.keys(live[k].sp).length, JSON.stringify(live[k].sp || {}).length]), hs, auto, autoR, ck && ck.over, ck && ck.wait > 0, spPart]);
+    const key = JSON.stringify([sess.cur, sess.rounds && step && sess.rounds[step.r], sess.ppl, sess.gone, sess.tr, Object.keys(live).map(k => [k, isOn(live[k]), live[k].sp && Object.keys(live[k].sp).length, JSON.stringify(live[k].sp || {}).length]), hs, auto, autoR, ck && ck.over, ck && ck.wait > 0, spPart, sess.sumOn]);
     if (key === lastDraw) { tickTimer(step, ck); return; }
     lastDraw = key;
     const round = step && (sess.rounds || {})[step.r], ppl = sess.ppl || {}, gone = sess.gone || {};
@@ -409,6 +429,7 @@
         <button class="btn btn-primary" id="spNext">${!step ? "▶ Boshlash (juftlash)" : !nx ? "✓ Oxirgi qadam" : newRound ? "⏭ Keyingi raund (yangi juftlik)" : "🔄 Rollarni almashtirish"}</button>
         ${step ? `<button class="btn btn-secondary" id="spPause">${cur.pz ? "▶ Davom" : "⏸ Pauza"}</button><button class="btn btn-secondary" id="spRe">↺ Qadamni qayta</button><button class="btn btn-secondary" id="spRep">🔀 Qayta juftlash</button>` : ""}
         <button class="btn btn-secondary" id="spScr">🖥 Ekranni ochish</button>
+        ${step ? `<button class="btn ${sess.sumOn ? "btn-primary" : "btn-secondary"}" id="spSum">${sess.sumOn ? "✕ Tahlilni ekrandan olish" : "📊 Yakuniy tahlil (ekranga)"}</button>` : ""}
         <label class="muted" style="font-size:.82rem;display:flex;gap:6px;align-items:center"><input type="checkbox" id="spAuto"${auto ? " checked" : ""}> Rollar avtomatik almashsin</label>
         <label class="muted" style="font-size:.82rem;display:flex;gap:6px;align-items:center"><input type="checkbox" id="spAutoR"${autoR ? " checked" : ""}> Raundlar ham avtomatik</label>
         <span style="flex:1"></span><button class="btn btn-secondary btn-sm" id="spClose">Darsni yopish</button>
@@ -465,6 +486,7 @@
     $("spAuto").onchange = e => { auto = e.target.checked; lastDraw = ""; };
     $("spAutoR").onchange = e => { autoR = e.target.checked; lastDraw = ""; };
     $("spClose").onclick = closeLesson;
+    if ($("spSum")) $("spSum").onclick = toggleSum;
     document.querySelectorAll("#spLive [data-tr]").forEach(b => b.onclick = () => { const p = b.dataset.tr, v = +b.dataset.v, ref = db.ref(`sessions/${sid}/tr/${p}/s${cur.i}`); ref.set(((sess.tr || {})[p] || {})["s" + cur.i] === v ? null : v); });
     document.querySelectorAll("#spLive [data-add]").forEach(b => b.onclick = () => addNow(b.dataset.add));
     document.querySelectorAll("#spLive [data-gone]").forEach(b => b.onclick = () => { if (confirm(nm(b.dataset.gone) + " darsdan chiqib ketdimi?")) markGone(b.dataset.gone); });

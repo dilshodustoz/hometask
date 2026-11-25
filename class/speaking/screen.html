@@ -46,6 +46,27 @@
   @media (prefers-reduced-motion:reduce){.pr{animation:none}}
   html.still .pr{animation:none}
   .wait{position:absolute;bottom:20px;right:28px;color:var(--muted);font-weight:600;max-width:40vw;text-align:right}
+  /* 25.11: dars yakuni tahlili */
+  .sum{position:absolute;inset:0;padding:30px 40px 26px;display:grid;grid-template-rows:auto auto 1fr;gap:22px}
+  .sum-h{display:flex;align-items:baseline;gap:18px}
+  .sum-h h1{margin:0;font-size:2.4rem}
+  .sum-h .muted{font-size:1.1rem}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px 22px;box-shadow:var(--shadow);animation:float 7s ease-in-out infinite alternate}
+  .tile b{display:block;font:700 2.8rem/1.05 'JetBrains Mono',monospace;color:var(--accent)}
+  .tile span{color:var(--muted);font-weight:700;font-size:1rem}
+  .sum-body{display:grid;grid-template-columns:minmax(300px,32%) 1fr;gap:22px;min-height:0}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px 22px;box-shadow:var(--shadow);min-height:0;overflow:hidden}
+  .panel h3{margin:0 0 10px;font-size:1.2rem}
+  .toplist li{font-size:1.45rem;font-weight:800;margin:8px 0;list-style:none}
+  .toplist{padding:0;margin:0 0 22px}
+  .tips{margin:0;padding-left:20px}.tips li{margin:8px 0;font-weight:600;font-size:1.08rem}
+  .vgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .vc{border:1px solid var(--line);border-left:5px solid var(--cand);border-radius:14px;padding:10px 14px;background:var(--bg2)}
+  .vc .e{font-weight:800;font-size:1.15rem}.vc .u{color:var(--muted);font-size:.92rem}
+  .vc .x{font-style:italic;font-size:.95rem;margin-top:5px;line-height:1.35}
+  .vc mark{background:var(--candBg);color:var(--cand);font-weight:800;font-style:normal;border-radius:4px;padding:0 3px}
+  .more{color:var(--muted);font-weight:700;margin-top:10px}
   /* tugmalar */
   .tools{position:fixed;top:14px;right:16px;display:flex;gap:8px;z-index:5;opacity:.35;transition:opacity .2s}
   .tools:hover{opacity:1}
@@ -107,8 +128,34 @@
     return `M${w / 2} 0 H${w - r} A${r} ${r} 0 0 1 ${w} ${r} V${h - r} A${r} ${r} 0 0 1 ${w - r} ${h} H${r} A${r} ${r} 0 0 1 0 ${h - r} V${r} A${r} ${r} 0 0 1 ${r} 0 Z`;
   }
 
+  function hl(ex, e) {
+    const t = esc(ex), q = esc(e), i = t.toLowerCase().indexOf(q.toLowerCase());
+    if (i >= 0) return t.slice(0, i) + "<mark>" + t.slice(i, i + q.length) + "</mark>" + t.slice(i + q.length);
+    const w = q.split(" ")[0].slice(0, 5).toLowerCase(), j = t.toLowerCase().indexOf(w);
+    if (j < 0) return t; let k = j; for (let n = 0; n < q.split(" ").length; n++) { const sp = t.indexOf(" ", k + 1); k = sp < 0 ? t.length : sp; }
+    return t.slice(0, j) + "<mark>" + t.slice(j, k).replace(/[.,!?;:]+$/, "") + "</mark>" + t.slice(j, k).match(/[.,!?;:]*$/)[0] + t.slice(k);
+  }
+  function drawSum() {
+    const S = sess.sum, k = "sum|" + S.at + "|" + innerWidth + "x" + innerHeight;
+    if (k === lastKey) return; lastKey = k;
+    const pc = v => v == null ? "—" : Math.round(v * 100) + "%";
+    const maxV = innerHeight < 900 ? 4 : 8, un = S.unused || [];
+    stage.innerHTML = `<div class="sum">
+      <div class="sum-h"><h1>🎉 Dars yakuni</h1><span class="muted">${esc(les ? les.title : "")} · ${S.n} o'quvchi</span></div>
+      <div class="tiles">
+        <div class="tile" style="animation-delay:-1s"><b>${S.ans}</b><span>💬 javob berildi (Part 1 + 3)</span></div>
+        <div class="tile" style="animation-delay:-3s"><b>${pc(S.er)}</b><span>📈 kengaytirilgan javoblar</span></div>
+        <div class="tile" style="animation-delay:-5s"><b>${S.p2t == null ? "—" : SP.fmt(S.p2t)}</b><span>⏱ Part 2 o'rtacha (maqsad 2:00)</span></div>
+        <div class="tile" style="animation-delay:-2s"><b>${S.used}/${S.nT}</b><span>💎 target ibora ishlatildi</span></div>
+      </div>
+      <div class="sum-body">
+        <div class="panel">${(S.top || []).length ? `<h3>🏆 Eng faol ishtirokchilar</h3><ul class="toplist">${S.top.map((n, i) => `<li>${["🥇", "🥈", "🥉"][i]} ${esc(n)}</li>`).join("")}</ul>` : ""}<h3>🎯 Keyingi safar uchun</h3><ul class="tips">${(S.tips || []).map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
+        <div class="panel"><h3>💎 Bu iboralarni hali hech kim ishlatmadi${un.length ? ` (${un.length})` : ""}</h3>${un.length ? `<div class="vgrid">${un.slice(0, maxV).map(t => `<div class="vc"><div class="e">${esc(t.e)}</div>${t.u ? `<div class="u">${esc(t.u)}</div>` : ""}${t.ex ? `<div class="x">“${hl(t.ex, t.e)}”</div>` : ""}</div>`).join("")}</div>${un.length > maxV ? `<div class="more">+ yana ${un.length - maxV} ta ibora: ${un.slice(maxV).map(t => esc(t.e)).join(" · ")}</div>` : ""}` : `<div style="font-size:1.3rem;font-weight:700">🎉 Hamma target iboralar ishlatildi!</div>`}</div>
+      </div></div>`;
+  }
   function draw() {
     if (!sess) { big(`<h1>Dars topilmadi</h1>`); return; }
+    if (sess.sumOn && sess.sum) { drawSum(); return; }
     if (sess.state === "closed") { big(`<h1>🎉 Speaking darsi yakunlandi</h1><div class="muted">Rahmat!</div>`); return; }
     const cur = sess.cur, plan = sess.plan || [], step = cur && plan[cur.i];
     const ppl = Object.keys(sess.ppl || {}).filter(p => !(sess.gone || {})[p]);
