@@ -230,7 +230,7 @@
     return r(n ? ["gapType", "gapType", "listenGap", "listen", "typeUz"] : ["typeUz", "listen"]);
   }
 
-  // ---------- ovoz: oldindan yozilgan audio (soz/au/*.m4a), effektlar (soz/fx/*.mp3); bo'lmasa telefon ovozi ----------
+  // ---------- ovoz: oldindan yozilgan audio (soz/au/*.mp3), effektlar (soz/fx/*.mp3); bo'lmasa telefon ovozi ----------
   let VOICE = null;
   function voice() {
     if (VOICE || !window.speechSynthesis) return VOICE;
@@ -256,7 +256,7 @@
     if (!code) return tts(text, slow);
     try {
       VA.onerror = () => tts(text, slow);
-      VA.muted = false; VA.src = "soz/au/" + code + ".m4a"; VA.playbackRate = slow ? .75 : 1;
+      VA.muted = false; VA.src = "soz/au/" + code + ".mp3"; VA.playbackRate = slow ? .75 : 1;
       try { VA.preservesPitch = true; VA.webkitPreservesPitch = true; } catch (e) {}
       const p = VA.play(); if (p) p.catch(() => tts(text, slow));
     } catch (e) { tts(text, slow); }
