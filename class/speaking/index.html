@@ -245,8 +245,20 @@
     for (const k in sp0) if (sp0[k] && sp0[k].c) REC[k] = sp0[k];
     for (const k in REC) { REC[k].a = REC[k].a || {}; REC[k].u = REC[k].u || {}; REC[k].cv = REC[k].cv || {}; try { const loc = JSON.parse(localStorage.getItem("sp_" + SID + "_" + k) || "null"); if (loc && loc.c === REC[k].c && Object.keys(loc.a).length + Object.keys(loc.u).length >= Object.keys(REC[k].a).length + Object.keys(REC[k].u).length) REC[k] = loc; } catch (e) {} }
     if (!l.joined) L.child("joined").set(CLS.TS).catch(() => {});
+    // 25.11: har 15 s "shu yerdaman" signali (ustoz 60 s signal bo'lmasagina chiqqan deb hisoblaydi) + uzilganda ogohlantirish
+    let conn = false;
+    const netBar = document.createElement("div");
+    netBar.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:50;background:#B45309;color:#fff;text-align:center;font-weight:700;padding:8px 12px;font-size:.95rem;display:none";
+    netBar.textContent = "📶 Internet uzildi, ulanmoqda… Sahifani yangilamang.";
+    document.body.appendChild(netBar);
+    let netT = null;
+    setInterval(() => { if (conn) L.update({ seen: CLS.TS, online: true }).catch(() => {}); }, 15000);
     CLS.db.ref(".info/connected").on("value", c => {
-      if (!c.val()) return;
+      conn = !!c.val();
+      clearTimeout(netT);
+      if (!conn) { netT = setTimeout(() => { netBar.style.display = "block"; }, 3000); return; }
+      netBar.style.display = "none";
+      if (!window.__spVis) { window.__spVis = 1; document.addEventListener("visibilitychange", () => { if (!document.hidden && conn) L.update({ seen: CLS.TS, online: true }).catch(() => {}); }); }
       L.child("online").onDisconnect().set(false);
       L.child("leftAt").onDisconnect().set(CLS.TS);
       L.update({ online: true, name: me.name, seen: CLS.TS, dev: DEV }).catch(() => {});
