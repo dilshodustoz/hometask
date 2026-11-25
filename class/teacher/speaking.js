@@ -114,9 +114,9 @@
         const v = live[k] || {};
         if (!k2p[k]) { k2p[k] = await SP.pid(k, sid); p2k[k2p[k]] = k; }
         const p = k2p[k], cur = (sess.ppl || {})[p];
-        if (v.online && (!cur || (v.dev && cur.dev !== v.dev && cur.dev !== "none")))
+        if (isOn(v) && (!cur || (v.dev && cur.dev !== v.dev && cur.dev !== "none")))
           up["ppl/" + p] = { n: (roster[k] || {}).name || v.name || "?", dev: v.dev || "phone" };
-        if (v.online && cur && cur.dev === "none" && v.dev) up["ppl/" + p + "/dev"] = v.dev;   // qurilmasiz deb belgilangan, keyin kirdi
+        if (isOn(v) && cur && cur.dev === "none" && v.dev) up["ppl/" + p + "/dev"] = v.dev;   // qurilmasiz deb belgilangan, keyin kirdi
         if (v.flag && v.flag.at && !((sess.flagDone || {})[k] >= v.flag.at)) { up["flagDone/" + k] = v.flag.at; goneLater.push(v.flag.p); }
       }
       if (Object.keys(up).length) await db.ref("sessions/" + sid).update(up);
@@ -126,9 +126,11 @@
   const goneLater = [];
 
   // ---------- juftlash ----------
+  // 25.11: o'quvchi "ichkarida" = ulangan YOKI oxirgi 60 s ichida signal (seen) yuborgan. Qisqa uzilish/yangilash chiqarib yubormaydi.
+  const isOn = v => !!v && (v.online === true || (typeof v.seen === "number" && CLS.now() - v.seen < 60000));
   function present() {
     const ppl = sess.ppl || {}, gone = sess.gone || {};
-    return Object.keys(ppl).filter(p => !gone[p] && (ppl[p].dev === "none" || (live[p2k[p]] || {}).online));
+    return Object.keys(ppl).filter(p => !gone[p] && (ppl[p].dev === "none" || isOn(live[p2k[p]])));
   }
   function pairUp(people) {
     const met = sess.met || {}, trio = sess.trio || {};
@@ -222,15 +224,40 @@
   async function addNow(p) {
     const c = sess.cur, st = c && sess.plan[c.i]; if (!st) return;
     const round = JSON.parse(JSON.stringify(sess.rounds[st.r])), up = {};
+    round.g = round.g || []; round.card = round.card || {};
     if ((sess.gone || {})[p]) up["gone/" + p] = null;
+    const metC = (a, b) => (((sess.met || {})[a] || {})[b] || 0) * 10 + (devOf(a) === "none" && devOf(b) === "none" ? 1000 : 0) + (devOf(a) === "pc" && devOf(b) === "pc" ? 30 : 0);
+    const inG = new Set([].concat(...round.g.filter(Boolean)));
+    const waiting = present().filter(x => x !== p && !inG.has(x));
+    const touched = [];
     let gi = round.g.findIndex(g => g && g.length === 1);
-    if (gi < 0) { let bc = 1e9; round.g.forEach((g, i) => { if (!g) return; const c2 = g.length * 100 + g.reduce((s, m) => s + (((sess.met || {})[p] || {})[m] || 0) * 10 + (devOf(m) === "none" && devOf(p) === "none" ? 1000 : 0), 0); if (c2 < bc) { bc = c2; gi = i; } }); }
-    if (gi < 0) return;
-    const was = round.g[gi].length;
-    round.g[gi].push(p);
-    if (st.b === "p2") round.card = Object.assign(round.card || {}, { [p]: pickCard(p, st, null) });
-    else if (was === 1) round.q[gi] = { 0: qList(st.b, SP.roles(round.g[gi], 0).c), 1: qList(st.b, SP.roles(round.g[gi], 1).c) };
-    up["rounds/" + st.r] = round; metUpd([round.g[gi]], up);
+    if (gi >= 0) { round.g[gi].push(p); touched.push(gi); }
+    else if (waiting.length && waiting.some(x => metC(p, x) < 1000)) {
+      // 25.11: kutayotgan boshqa o'quvchi bor - ikkalasi alohida juftlik bo'ladi
+      const mate = waiting.slice().sort((a, b) => metC(p, a) - metC(p, b))[0];
+      round.g.push([p, mate]); touched.push(round.g.length - 1);
+    } else {
+      const ti = round.g.findIndex(g => g && g.length > 2 && g.some(m => metC(p, m) < 1000));
+      if (ti >= 0) {
+        // uchlikdagi hozirgi kuzatuvchi yangi kelgan bilan juftlik bo'ladi
+        const R = SP.roles(round.g[ti], st.h), o = R.o.find(m => metC(p, m) < 1000) || R.o[0];
+        round.g[ti] = round.g[ti].filter(m => m !== o); round.g.push([p, o]); touched.push(ti, round.g.length - 1);
+      } else {
+        let bc = 1e9; gi = -1;
+        round.g.forEach((g, i) => { if (!g) return; const c2 = g.length * 100 + g.reduce((s2, m) => s2 + metC(p, m), 0); if (c2 < bc) { bc = c2; gi = i; } });
+        if (gi < 0) return;
+        // oxirgi bo'lib emas: keyingi yarimda yangi kelgan javob beradi
+        const g = round.g[gi], pos = Math.min(g.length, (st.h + 1) % (g.length + 1));
+        g.splice(pos, 0, p); touched.push(gi);
+      }
+    }
+    round.q = round.q || {};
+    touched.forEach(i => {
+      const g = round.g[i];
+      if (st.b === "p2") g.forEach(m => { if (!round.card[m]) round.card[m] = pickCard(m, st, null); });
+      else round.q[i] = { 0: qList(st.b, SP.roles(g, 0).c), 1: g.length > 1 ? qList(st.b, SP.roles(g, 1).c) : [] };
+    });
+    up["rounds/" + st.r] = round; metUpd(touched.map(i => round.g[i]), up);
     await db.ref("sessions/" + sid).update(up);
   }
   async function markGone(p, fromFlag) {
@@ -300,7 +327,7 @@
     if (weak.length) h += `<div class="notice" style="margin-bottom:12px"><span>🎯 <b>Tinglash kerak (hot seat):</b> ${weak.map(r => esc(r.n)).join(", ")}</span></div>`;
     h += `<div class="tbl-wrap"><table><thead><tr><th>O'quvchi</th><th title="Part 1 va Part 3 javoblari">Javoblar</th><th title="Kengaytirilgan javoblar ulushi">Kengaytirdi</th><th>Part 2 vaqti</th><th title="Kartadagi bandlar qamrovi">Bandlar</th><th>Target iboralar</th><th title="Uzoq jim qoldi / o'zbekcha so'z">⏸ / 🇺🇿</th><th>Ustoz</th></tr></thead><tbody>`;
     st.rows.forEach(r => {
-      const on = live ? (r.dev === "none" || (live[p2k[r.pid]] || {}).online) : true;
+      const on = live ? (r.dev === "none" || isOn(live[p2k[r.pid]])) : true;
       h += `<tr${r.gone ? ' style="opacity:.5"' : ""}><td>${weak.includes(r) ? "🎯 " : ""}${esc(r.n)} <span class="muted">${({ pc: "💻", phone: "📱", none: "🙋" })[r.dev] || ""}${on ? "" : " · chiqqan"}</span></td><td>${r.ans}</td><td>${pct(r.er)}</td>
         <td>${r.tl.length ? r.tl.map(x => `<span class="badge ${x.t < 90 ? "b-bad" : x.t < 110 ? "b-warn" : "b-ok"}" title="${x.att ? SP.ATT[x.att] : "Part 2"}">${SP.fmt(x.t)}</span>`).join(" ") : "—"}</td><td>${pct(r.cov)}</td><td>${r.tu} / ${r.nT}</td><td>${r.pz} / ${r.uz}</td><td>${r.tavg == null ? "—" : ["", "Zaif", "O'rta", "Yaxshi"][Math.round(r.tavg)]}</td></tr>`;
     });
@@ -316,7 +343,7 @@
     const cur = sess.cur || { i: -1 }, plan = sess.plan, step = plan[cur.i], now = CLS.now(), ck = SP.clock(cur, step, now);
     // avtomatik: rollar almashinuvi (va xohlasa yangi raund)
     if (step && ck.over && !cur.pz && ck.el > step.dur + 2) { const nx = plan[cur.i + 1]; if (nx && ((nx.r === step.r && auto) || (nx.r !== step.r && autoR))) go(cur.i + 1); }
-    const key = JSON.stringify([sess.cur, sess.rounds && step && sess.rounds[step.r], sess.ppl, sess.gone, sess.tr, Object.keys(live).map(k => [k, live[k].online, live[k].sp && Object.keys(live[k].sp).length, JSON.stringify(live[k].sp || {}).length]), hs, auto, autoR, ck && ck.over, ck && ck.wait > 0]);
+    const key = JSON.stringify([sess.cur, sess.rounds && step && sess.rounds[step.r], sess.ppl, sess.gone, sess.tr, Object.keys(live).map(k => [k, isOn(live[k]), live[k].sp && Object.keys(live[k].sp).length, JSON.stringify(live[k].sp || {}).length]), hs, auto, autoR, ck && ck.over, ck && ck.wait > 0]);
     if (key === lastDraw) { tickTimer(step, ck); return; }
     lastDraw = key;
     const round = step && (sess.rounds || {})[step.r], ppl = sess.ppl || {}, gone = sess.gone || {};
@@ -351,7 +378,7 @@
     const gk = Object.keys(roster || {}).filter(k => roster[k].group === sess.group).sort((a, b) => String(roster[a].name).localeCompare(roster[b].name));
     h += `<div class="card"><div class="card-header"><h3 class="card-title">🙋 Ishtirokchilar</h3><span class="muted" style="font-size:.8rem">Kulrang = kirmagan. Qurilmasi yo'q o'quvchini "🙋 Qurilmasiz" qiling: u doim qurilmasi bor o'quvchi bilan juftlanadi.</span></div><div style="display:flex;flex-wrap:wrap;gap:8px">`;
     gk.forEach(k => {
-      const p = k2p[k], pp = p && ppl[p], on = pp && (pp.dev === "none" || (live[k] || {}).online), g = p && gone[p], wait = on && !g && step && !inG.has(p);
+      const p = k2p[k], pp = p && ppl[p], on = pp && (pp.dev === "none" || isOn(live[k])), g = p && gone[p], wait = on && !g && step && !inG.has(p);
       h += `<div style="border:1px solid var(--border);border-radius:10px;padding:6px 10px;display:flex;gap:6px;align-items:center;${on && !g ? "" : "opacity:.55"}"><span>${esc(roster[k].name)}</span>${pp ? `<span>${icon(p)}</span>` : ""}
         ${g ? `<span class="badge b-mut">chiqib ketgan</span><button class="btn btn-secondary btn-sm" data-add="${p}">Qaytarish</button>` : ""}
         ${wait ? `<span class="badge b-warn">kutmoqda</span><button class="btn btn-secondary btn-sm" data-add="${p}">Hozir qo'shish</button>` : ""}
