@@ -131,6 +131,26 @@ window.CLASS_TESTS = [
 "title": "Cambridge 18 Test 4 · Reading"
 },
 {
+"key": "ms21",
+"skill": "reading",
+"title": "Mock Set 21 · Reading"
+},
+{
+"key": "ms22",
+"skill": "reading",
+"title": "Mock Set 22 · Reading"
+},
+{
+"key": "ms23",
+"skill": "reading",
+"title": "Mock Set 23 · Reading"
+},
+{
+"key": "ms24",
+"skill": "reading",
+"title": "Mock Set 24 · Reading"
+},
+{
 "key": "c14t1",
 "skill": "listening",
 "title": "Cambridge 14 Test 1 · Listening",
@@ -348,6 +368,50 @@ window.CLASS_TESTS = [
 436.12,
 418.09,
 497.42
+]
+},
+{
+"key": "ms21",
+"skill": "listening",
+"title": "Mock Set 21 · Listening",
+"durs": [
+352.8,
+474.87,
+515.18,
+370.51
+]
+},
+{
+"key": "ms22",
+"skill": "listening",
+"title": "Mock Set 22 · Listening",
+"durs": [
+420.55,
+478.36,
+429.89,
+406.13
+]
+},
+{
+"key": "ms23",
+"skill": "listening",
+"title": "Mock Set 23 · Listening",
+"durs": [
+340.61,
+454.57,
+510.8,
+360.33
+]
+},
+{
+"key": "ms24",
+"skill": "listening",
+"title": "Mock Set 24 · Listening",
+"durs": [
+344.45,
+426.4,
+452.23,
+364.72
 ]
 }
 ];
