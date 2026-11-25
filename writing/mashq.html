@@ -56,7 +56,7 @@
   .foot{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 16px;display:flex;gap:10px;align-items:center;justify-content:flex-end;z-index:20}
   .foot .st{flex:1;color:var(--muted);font-size:.85rem}
   .hide{display:none!important}
-  #modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+  #modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:70;padding:16px}
   #modal .box{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:20px}
   #modal h3{margin:0 0 8px}#modal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
   @media (max-width:560px){.opt{flex:1 1 100%}}
@@ -68,6 +68,7 @@
 <div class="foot hide" id="foot"><div class="st" id="fst"></div><button class="btn" id="btnGo">Topshirish</button></div>
 <div id="modal" class="hide"><div class="box"><h3 id="mt"></h3><div id="mb"></div><div class="acts" id="ma"></div></div></div>
 <script src="config.js"></script>
+<script src="mashq_oyin.js?v=1"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id), P = new URLSearchParams(location.search);
@@ -88,7 +89,7 @@
   function order(n, seed) { const a = [...Array(n).keys()]; let h = 0; for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0; for (let i = n - 1; i > 0; i--) { h = (h * 1103515245 + 12345) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   setInterval(() => { if (!document.hidden) active++; }, 1000);
   document.addEventListener("visibilitychange", () => { if (document.hidden && R && (R.phase === "new" || R.phase === "retry")) leaves++; });
-  document.addEventListener("paste", e => { if (e.target && e.target.tagName === "TEXTAREA") { e.preventDefault(); pastes++; save(); modal("Nusxa qo'yish ishlamaydi", "Gapni o'zingiz yozing."); } });
+  document.addEventListener("paste", e => { if (e.target && (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT")) { e.preventDefault(); pastes++; save(); modal("Nusxa qo'yish ishlamaydi", "Gapni o'zingiz yozing."); } });
 
   function save() { if (R && (R.phase === "new" || R.phase === "retry")) lsSet({ phase: R.phase, ans: ans, pastes: pastes, leaves: leaves }); progress(); }
   function progress() {
@@ -188,6 +189,7 @@
     $("score").className = "pill" + (ph === "done" ? " ok" : "");
     $("score").textContent = ph === "done" ? R.pct + "%" : graded ? "✅ " + R.g.ok + "/" + R.g.n : "—";
     if (ph === "new" && R.closed) $("main").insertAdjacentHTML("afterbegin", `<div class="banner re">⛔ Topshirish muddati (${esc(R.deadline)}) o'tib ketgan.</div>`);
+    if (oyinOn()) { $("main").insertAdjacentHTML("afterbegin", `<button class="btn" id="btnOyin" style="width:100%;margin-bottom:14px;padding:13px">🎮 O'yin ko'rinishida davom ettirish</button>`); $("btnOyin").onclick = oyin; }
     progress();
   }
   function submit() {
@@ -198,17 +200,28 @@
       ["B", "C", "D"].forEach(k => M[k].forEach((_, i) => { if (ans[k][i] === "" || ans[k][i] == null) miss.push(k + (i + 1)); }));
     } else wrongIdx().forEach(i => { const v = (ans.A[i] || "").trim(); if (!v || v === ((R.a1.A || [])[i] || "")) miss.push("A" + (i + 1)); });
     const go = () => {
-      busy = true; $("btnGo").disabled = true; $("btnGo").textContent = "Yuborilmoqda…";
-      const body = { skill: "writing", mq: ph === "retry" ? 2 : 1, t: TID, k: KEY, A: M.A.map((x, i) => ans.A[i] != null ? ans.A[i] : (ph === "retry" ? (R.a1.A || [])[i] : x.s)), B: ans.B, C: ans.C, D: ans.D, minutes: Math.ceil(active / 60), pastes: pastes, leaves: leaves };
-      post(body).then(r => {
-        busy = false; $("btnGo").disabled = false;
-        if (!r.ok) { modal("Yuborilmadi", esc(r.error || "Xato")); render(); return; }
-        try { localStorage.removeItem(LS); } catch (e) {}
-        load(r.g ? `B, C, D natijasi: <b>${r.g.ok} / ${r.g.n}</b>. To'g'ri javoblar endi ko'rinadi.<br>A bo'limni ustoz tekshiradi.` : "2-urinish yuborildi. Ustoz tekshiradi.");
-      }).catch(() => { busy = false; $("btnGo").disabled = false; render(); modal("Internet xatosi", "Javoblaringiz saqlangan. Qayta urinib ko'ring."); });
+      $("btnGo").disabled = true; $("btnGo").textContent = "Yuborilmoqda…";
+      send(ph, null, err => { $("btnGo").disabled = false; render(); modal(err ? "Yuborilmadi" : "Internet xatosi", err ? esc(err) : "Javoblaringiz saqlangan. Qayta urinib ko'ring."); });
     };
     modal(ph === "retry" ? "2-urinishni yuboramizmi?" : "Topshiramizmi?", (miss.length ? `⚠️ Javobsiz yoki o'zgartirilmagan: ${miss.join(", ")}.<br>` : "") + "Yuborgandan keyin o'zgartirib bo'lmaydi.", [["Ha, yuboraman", go], ["Davom etaman", null, true]]);
   }
+  // Yuborish (ro'yxat va o'yin ko'rinishi uchun umumiy). onOk(r), onErr(xabar|null)
+  function send(ph, onOk, onErr) {
+    if (busy) return; busy = true;
+    const M = R.me;
+    const body = { skill: "writing", mq: ph === "retry" ? 2 : 1, t: TID, k: KEY, A: M.A.map((x, i) => ans.A[i] != null ? ans.A[i] : (ph === "retry" ? (R.a1.A || [])[i] : x.s)), B: ans.B, C: ans.C, D: ans.D, minutes: Math.ceil(active / 60), pastes: pastes, leaves: leaves };
+    post(body).then(r => {
+      busy = false; $("btnGo").disabled = false;
+      if (!r.ok) { onErr && onErr(r.error || "Xato"); return; }
+      try { localStorage.removeItem(LS); } catch (e) {}
+      onOk && onOk(r);
+      load(r.g ? `B, C, D natijasi: <b>${r.g.ok} / ${r.g.n}</b>. To'g'ri javoblar endi ko'rinadi.<br>A bo'limni ustoz tekshiradi.` : "2-urinish yuborildi. Ustoz tekshiradi.");
+    }).catch(() => { busy = false; onErr && onErr(null); });
+  }
+  // 🎮 O'yin ko'rinishi: Test guruhi (R.oyin) yoki ?oyin=1 bilan ochilgan qurilma; ?oyin=0 o'chiradi
+  try { if (P.get("oyin") === "1") localStorage.setItem("mq_oyin", "1"); if (P.get("oyin") === "0") localStorage.removeItem("mq_oyin"); } catch (e) {}
+  const oyinOn = () => { let v = null; try { v = localStorage.getItem("mq_oyin"); } catch (e) {} return !!window.MQ_OYIN && (R.oyin || v === "1") && ((R.phase === "new" && !R.closed) || R.phase === "retry"); };
+  function oyin() { window.MQ_OYIN({ R: R, ans: ans, KEY: KEY, TID: TID, order: order, save: save, send: send, exit: () => render() }); }
   $("btnGo").onclick = submit;
   function load(msg) {
     api({ action: "hello", skill: "writing", k: KEY, t: TID }).then(r => {
@@ -219,6 +232,7 @@
       if (st && st.phase === r.phase) { ans = Object.assign(ans, st.ans || {}); pastes = st.pastes || 0; leaves = st.leaves || 0; }
       document.title = r.title + " · Mening mashqim";
       render();
+      if (oyinOn() && !msg) oyin();
       if (msg) modal("Yuborildi ✅", msg);
     }).catch(() => { $("who").textContent = "⛔ Internet xatosi"; $("main").innerHTML = `<div class="banner re">Sahifani yangilang.</div>`; });
   }
