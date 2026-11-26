@@ -361,7 +361,7 @@
   }
   const urgent = iso => { const ms = new Date(iso) - new Date(); return ms > 0 && ms < 24 * 3600000; };   // 24 soatdan kam: qizil
   const dt = iso => { if (!iso) return ""; const d = new Date(iso); return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5); };
-  const skOf = x => x.mq ? ["🧩", "Mening mashqim"] : x.skill === "speaking" ? (x.prep ? ["📝", "Speaking preparation"] : ["🎙", "Speaking mock"]) : SK[x.skill] || ["📄", x.skill];
+  const skOf = x => x.mq ? ["🎯", "Personal Drill"] : x.skill === "speaking" ? (x.prep ? ["📝", "Speaking preparation"] : ["🎙", "Speaking mock"]) : SK[x.skill] || ["📄", x.skill];
   function state(x) {
     if (x.mq && x.phase === "retry") return ["urg", "🔁 2-urinish ochiq"];
     if (x.mq && (x.phase === "wait1" || x.phase === "wait2")) return ["part", "⏳ Ustoz tekshirmoqda"];
