@@ -1,7 +1,7 @@
-// 🎮 Mening mashqim: o'yin ko'rinishi (So'zlar uslubida, bitta-bitta karta). 2026-11-25
-// mashq.html chaqiradi: window.MQ_OYIN(ctx). Serverga ketadigan javob o'zgarmaydi (A, B, C, D massivlari).
-// B/C/D: element.h bo'lsa (LC Panel shifrlangan kalit) javob darhol tekshiriladi, bo'lmasa oxirida.
-// A: xato so'zni topish -> o'sha joyda to'g'rilash (yoki butun gapni yozish). A'ni ustoz (kechki tekshiruv) baholaydi.
+// 🎮 Mening mashqim v3: Duolingo uslubidagi o'yin (2026-11-26). Faqat me.v === 3 mashqlar uchun.
+// To'g'ri javob bermaguncha keyingi kartaga o'tilmaydi; 3 xatoda yordam (hint); adashgan karta 4 kartadan keyin yana chiqadi.
+// A: xato so'zni topish -> to'g'risini tanlash -> keyinroq o'zi yozish. Hammasi darhol, shifrlangan kalit (h, ah) bilan tekshiriladi: AI va 2-urinish yo'q.
+// Natija: ans.st = {v:3, n, first, pct, miss} (ball = birinchi urinishda to'g'ri kartalar foizi).
 (function () {
   "use strict";
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -94,264 +94,306 @@
   .og-toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font-weight:700;font-size:.9rem;z-index:61;animation:ogIn .2s}
   @media (prefers-reduced-motion: reduce){.og-card,.og-big,.og-o.bad,.og-ch.miss{animation:none}}
   `;
+  const CSS3 = `
+  .og-o.no{border-color:var(--bad);background:var(--badbg);opacity:.55;text-decoration:line-through;animation:ogSh .3s}
+  .og-ed .og-slot{display:inline-block;min-width:4ch;border-bottom:3px solid var(--primary);color:var(--primary);font-weight:800;text-align:center;line-height:1.3;padding:0 4px}
+  .og-ed .og-slot.done{border-bottom-color:var(--ok);color:var(--ok)}
+  .og-ed .og-slot.cur{background:rgba(232,89,12,.12);border-radius:6px 6px 0 0}
+  .og-ed input.no{border-bottom-color:var(--bad);color:var(--bad);background:var(--badbg);animation:ogSh .3s}
+  .og-ed input.ok{border-bottom-color:var(--ok);color:var(--ok);background:var(--okbg)}
+  .og-hint{background:rgba(250,204,21,.16);border:2px dashed #EAB308;border-radius:14px;padding:10px 12px;margin:0 0 12px;font-size:.95rem}
+  .og-hint b{color:#A16207}html[data-theme="dark"] .og-hint b{color:#FDE047}
+  .og-miss{display:flex;gap:5px;justify-content:center;margin:2px 0 10px}.og-miss i{width:9px;height:9px;border-radius:50%;background:var(--line)}.og-miss i.on{background:var(--bad)}
+  .og-tops{text-align:left;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 14px;font-size:.92rem}
+  .og-tops div{display:flex;justify-content:space-between;gap:8px;padding:3px 0}.og-tops span{color:var(--muted)}
+  `;
 
   window.MQ_OYIN = function (ctx) {
-    // ctx: {R, ans, KEY, TID, save(), send(ph, onOk, onErr), exit(), order(n, seed)}
-    const R = ctx.R, M = R.me, ans = ctx.ans, ph = R.phase;
-    if (!document.getElementById("ogCss")) { const st = document.createElement("style"); st.id = "ogCss"; st.textContent = CSS; document.head.appendChild(st); }
+    // ctx: {R, ans, KEY, TID, save(), send(ph, onOk, onErr, extra), exit(), order(n, seed)}
+    const R = ctx.R, M = R.me, ans = ctx.ans;
+    for (const [id, css] of [["ogCss", CSS], ["ogCss3", CSS3]]) if (!document.getElementById(id)) { const st = document.createElement("style"); st.id = id; st.textContent = css; document.head.appendChild(st); }
     try { const t = localStorage.getItem("kab_theme"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); else if (!document.documentElement.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.setAttribute("data-theme", "dark"); } catch (e) {}
     let root = document.getElementById("og");
     if (!root) { root = document.createElement("div"); root.id = "og"; document.body.appendChild(root); }
     root.className = ""; document.documentElement.classList.add("og-lock");
-    root.innerHTML = `<div class="og-hd"><button class="og-x" id="ogX" title="Ro'yxat ko'rinishi">✕</button><div class="og-pb"><i id="ogPb"></i></div><div class="og-cb" id="ogCb"></div></div><div class="og-body" id="ogB"></div><div class="og-ft" id="ogF"></div>`;
+    root.innerHTML = `<div class="og-hd"><button class="og-x" id="ogX" title="Chiqish">✕</button><div class="og-pb"><i id="ogPb"></i></div><div class="og-cb" id="ogCb"></div></div><div class="og-body" id="ogB"></div><div class="og-ft" id="ogF"></div>`;
     const $ = id => document.getElementById(id), B = $("ogB"), F = $("ogF");
     $("ogX").onclick = close;
     function close() { root.className = "hide"; root.innerHTML = ""; document.documentElement.classList.remove("og-lock"); ctx.exit(); }
 
-    ans.og = ans.og || {};                 // o'yin holati: xp, A tahrirlar, mashq natijalari
-    const G = ans.og; G.xp = G.xp || 0; G.ae = G.ae || {}; G.full = G.full || {}; G.combo = G.combo || 0; G.best = G.best || 0; G.find = G.find || {};
-    const instant = ["B", "C", "D"].every(k => (M[k] || []).every(x => x.h));
-    const keyOf = (k, i) => { const x = M[k][i]; if (!x.h) return null; for (let j = 0; j < x.o.length; j++) if (H(ctx.TID + "|" + ctx.KEY + "|" + k + i + "|" + j) === x.h) return j; return null; };
-    const has = (k, i) => ans[k][i] !== "" && ans[k][i] != null;
-    const aDone = i => { const v = (ans.A[i] || "").trim(); return !!v && v !== M.A[i].s; };
-    const wrongA = () => (R.f1 || []).map((x, i) => x && !x.ok ? i : -1).filter(i => i >= 0);
+    // ---------- yordamchilar ----------
+    const norm = (s, cs) => { s = String(s || "").replace(/[’‘`]/g, "'").replace(/\s+/g, " ").trim().replace(/[.!?]+$/, ""); return cs ? s : s.toLowerCase(); };
+    const seed = tail => ctx.TID + "|" + ctx.KEY + "|" + tail;
+    const okIdx = (k, i, j) => H(seed(k + i + "|" + j)) === M[k][i].h;
+    const keyOf = (k, i) => { for (let j = 0; j < M[k][i].o.length; j++) if (okIdx(k, i, j)) return j; return -1; };
+    const okText = (tag, txt, ah, cs) => ah.indexOf(H(seed(tag + "|" + norm(txt, cs)))) >= 0;
+    const spOk = (i, n, txt) => { const s = M.A[i].sp[n]; return okText("A" + i + "." + n, txt, s.ah, s.cs); };
+    const spAns = (i, n) => { const s = M.A[i].sp[n]; return s.o.find(o => spOk(i, n, o)) || ""; };
+    const cWord = i => M.C[i].o[keyOf("C", i)] || "";
+    const shuf = (a, sd) => ctx.order(a.length, sd).map(j => a[j]);
     const ruleOf = t => (M.rules || []).filter(r => r.type === t)[0];
-
-    // ---------- qadamlar ----------
-    let Q = [];
-    if (ph === "retry") wrongA().forEach(i => Q.push({ t: "R", i }));
-    else {
-      (M.B || []).forEach((_, i) => Q.push({ t: "B", i }));
-      (M.A || []).forEach((_, i) => Q.push({ t: "A", i }));
-      (M.C || []).forEach((_, i) => Q.push({ t: "C", i }));
-      (M.D || []).forEach((_, i) => Q.push({ t: "D", i }));
+    const praise = () => ["Barakalla!", "Zo'r!", "To'g'ri!", "Ajoyib!", "Mana bu boshqa gap!"][Math.floor(Math.random() * 5)];
+    const dots = m => `<div class="og-miss">${[0, 1, 2].map(n => `<i class="${m > n ? "on" : ""}"></i>`).join("")}</div>`;
+    function compose(i, vals) {
+      const x = M.A[i]; let out = "", pos = 0;
+      x.sp.forEach((s, n) => { out += x.s.slice(pos, s.st); const v = (vals[n] || "").trim(); out += s.t === "ins" ? (v ? v + " " : "") : v; pos = s.st + s.ln; });
+      return (out + x.s.slice(pos)).replace(/\s+/g, " ").replace(/\s+([,.;:!?])/g, "$1").trim();
     }
-    const TOT = Q.length;
-    const doneStep = s => s.t === "A" ? aDone(s.i) : s.t === "R" ? isRetryDone(s.i) : has(s.t, s.i);
-    function isRetryDone(i) { const v = (ans.A[i] || "").trim(); return !!v && v !== ((R.a1.A || [])[i] || "").trim(); }
-    const doneN = () => Q.filter(doneStep).length;
-    let review = [], inReview = false, shownTip = {}, cur = null;
+
+    // ---------- holat ----------
+    ans.og3 = ans.og3 || {};
+    const G = ans.og3; G.xp = G.xp || 0; G.combo = G.combo || 0; G.best = G.best || 0; G.first = G.first || {}; G.miss = G.miss || {}; G.done = G.done || {}; G.extra = G.extra || [];
+    // navbat: B (qoida kartasi bilan) -> A (topish+tanlash, 3 kartadan keyin yozish) -> C (tanlash, keyin yozish) -> D
+    let Q = [];
+    (M.B || []).forEach((_, i) => Q.push("B" + i));
+    const nA = (M.A || []).length, lagA = [];
+    for (let i = 0; i < nA; i++) { Q.push("Af" + i); lagA.push("At" + i); if (i >= 1) Q.push(lagA.shift()); }
+    Q.push(...lagA);
+    const nC = (M.C || []).length, lagC = [];
+    for (let i = 0; i < nC; i++) { Q.push("Cm" + i); lagC.push("Ct" + i); if (i >= 1) Q.push(lagC.shift()); }
+    Q.push(...lagC);
+    (M.D || []).forEach((_, i) => Q.push("D" + i));
+    const BASE = Q.length;
+    Q.push(...G.extra);   // qayta chiqadigan kartalar (qayta yuklanganda ham)
+    let pos = 0, shownTip = {};
+    const doneN = () => Object.keys(G.done).length;
     function prog() {
-      $("ogPb").style.width = Math.round(100 * doneN() / Math.max(1, TOT)) + "%";
+      const tot = BASE + G.extra.length;
+      $("ogPb").style.width = Math.round(100 * Math.min(1, doneN() / Math.max(1, tot))) + "%";
       $("ogCb").textContent = (G.combo >= 2 ? "🔥" + G.combo + " " : "") + "⭐" + G.xp;
     }
-    function foot(html) { F.className = "og-ft"; F.innerHTML = html; }
-    function toast(t) { const d = document.createElement("div"); d.className = "og-toast"; d.textContent = t; root.appendChild(d); setTimeout(() => d.remove(), 1600); }
+    function toast(t) { const d = document.createElement("div"); d.className = "og-toast"; d.textContent = t; root.appendChild(d); setTimeout(() => d.remove(), 1700); }
+    // karta yakuni: birinchi urinishda to'g'ri bo'lmasa, 4 kartadan keyin yana chiqadi (to'g'ri yechilmaguncha, ko'pi bilan 3 marta)
+    function resolve(id, miss) {
+      const rep = id.indexOf("~") > 0, base = id.split("~")[0];
+      if (!rep && !(base in G.first)) G.first[base] = !miss;
+      G.miss[base] = (G.miss[base] || 0) + miss;
+      if (miss) {
+        G.combo = 0;
+        const n = (id.split("~")[1] | 0) + 1;
+        if (n <= 3) { const nid = base + "~" + n; G.extra.push(nid); Q.splice(Math.min(Q.length, pos + 4), 0, nid); }
+      } else { G.combo++; G.best = Math.max(G.best, G.combo); G.xp += rep ? 5 : 10 + (G.combo >= 5 ? 5 : 0); }
+      G.done[id] = 1; ctx.save(); prog();
+    }
+    function okFoot(id, miss, extraHtml) {
+      fx(miss ? "tap" : "ok");
+      F.className = "og-ft ok";
+      F.innerHTML = `<div class="og-fb"><div class="og-fh">✅ ${miss ? "To'g'ri, endi o'tdingiz" : praise()}${!miss && G.combo >= 3 ? " 🔥" + G.combo : ""}</div>${extraHtml || ""}${miss ? `<div class="og-fn">Bu savol keyinroq yana chiqadi.</div>` : ""}</div><button class="og-btn" id="ogN">Davom etish</button>`;
+      $("ogN").onclick = () => { fx("tap"); pos++; next(); };
+    }
+    function badFoot(msg) { fx("bad"); F.className = "og-ft bad"; F.innerHTML = `<div class="og-fb"><div class="og-fh">❌ ${msg || "Xato. Yana urinib ko'ring."}</div></div>`; }
 
-    // ---------- boshlash ekrani ----------
+    // ---------- boshlash ----------
     function hero() {
-      const secs = ph === "retry"
-        ? [["🔁", "2-urinish", wrongA().length + " ta gapni izohga qarab qayta to'g'rilaysiz", wrongA().filter(isRetryDone).length, wrongA().length]]
-        : [["🧠", "Qoida bo'yicha", "Avval qoida, keyin variant tanlaysiz", (M.B || []).filter((_, i) => has("B", i)).length, (M.B || []).length],
-           ["✍️", "Xatoni toping va to'g'rilang", "O'z essaylaringizdagi xatolar", (M.A || []).filter((_, i) => aDone(i)).length, (M.A || []).length],
-           ["🔤", "O'zingiz adashgan so'zlar", "To'g'ri yozilishini tanlang", (M.C || []).filter((_, i) => has("C", i)).length, (M.C || []).length],
-           ["📖", "Reading: sinonim", "Matndagi ma'nodoshini toping", (M.D || []).filter((_, i) => has("D", i)).length, (M.D || []).length]].filter(s => s[4]);
-      const started = doneN() > 0;
-      B.innerHTML = `<div class="og-card og-hero"><div class="og-big">${ph === "retry" ? "🔁" : "🎯"}</div><h2>${esc(R.name)}</h2>
-        <p>${ph === "retry" ? "A bo'lim tekshirildi. ❌ belgili gaplarni yana bir bor to'g'rilang." : "Bu mashq sizning o'z xatolaringizdan tuzilgan. Fokus: <b>" + esc((M.focus || []).join(", ") || "grammatika") + "</b>"}</p>
-        <div class="og-secs">${secs.map(s => `<div class="og-sec"><i>${s[0]}</i><div><b>${s[1]}</b><span>${s[2]}</span></div><em class="${s[3] === s[4] ? "ok" : ""}">${s[3]}/${s[4]}</em></div>`).join("")}</div>
-        ${R.deadline ? `<p style="font-size:.85rem">⏰ Muddat: <b>${esc(R.deadline)}</b>${R.closed ? " · <span style='color:var(--bad)'>o'tib ketgan</span>" : ""}</p>` : ""}
-        <button class="og-link mu" id="ogList">📋 Oddiy ro'yxat ko'rinishida ochish</button></div>`;
-      foot(`<button class="og-btn or" id="ogGo"${R.closed && ph !== "retry" ? " disabled" : ""}>${started ? "Davom ettirish" : "Boshlash"}</button>`);
-      $("ogList").onclick = close;
+      const started = doneN() > 0, cnt = k => (M[k] || []).length;
+      B.innerHTML = `<div class="og-card og-hero"><div class="og-big">🎯</div><h2>${esc(R.name)}</h2>
+        <p>Bu mashq sizning o'z xatolaringizdan tuzilgan. Fokus: <b>${esc((M.focus || []).join(", ") || "grammatika")}</b></p>
+        <div class="og-secs">
+          ${cnt("B") ? `<div class="og-sec"><i>🧠</i><div><b>Qoida bo'yicha</b><span>Qoida, keyin variant</span></div><em>${cnt("B")}</em></div>` : ""}
+          ${nA ? `<div class="og-sec"><i>✍️</i><div><b>Xatoni toping, tanlang, yozing</b><span>O'z essaylaringizdagi xatolar</span></div><em>${nA}</em></div>` : ""}
+          ${nC ? `<div class="og-sec"><i>🔤</i><div><b>O'z so'zlaringiz</b><span>Tanlang, keyin o'zingiz yozing</span></div><em>${nC}</em></div>` : ""}
+          ${cnt("D") ? `<div class="og-sec"><i>📖</i><div><b>Reading: sinonim</b><span>Ma'nodoshini toping</span></div><em>${cnt("D")}</em></div>` : ""}
+        </div>
+        <div class="og-hint" style="text-align:left">🕹 <b>Qoida:</b> to'g'ri javob bermaguncha keyingisiga o'tolmaysiz. 3 marta adashsangiz yordam (hint) chiqadi. Adashgan savollaringiz keyinroq yana chiqadi.</div>
+        ${R.deadline ? `<p style="font-size:.85rem">⏰ Muddat: <b>${esc(R.deadline)}</b>${R.closed ? " · <span style='color:var(--bad)'>o'tib ketgan</span>" : ""}</p>` : ""}</div>`;
+      F.className = "og-ft"; F.innerHTML = `<button class="og-btn or" id="ogGo"${R.closed ? " disabled" : ""}>${started ? "Davom ettirish" : "Boshlash"}</button>`;
       $("ogGo").onclick = () => { fx("tap"); next(); };
       prog();
     }
-
-    // ---------- navbat ----------
     function next() {
-      if (!inReview) {
-        const s = Q.find(x => !doneStep(x));
-        if (s) return show(s);
-        if (instant && review.length) { inReview = true; toast("🔁 Xatolarni yana bir bor ko'ramiz"); }
-      }
-      if (inReview && review.length) return show(review.shift(), true);
-      finish();
+      while (pos < Q.length && G.done[Q[pos]]) pos++;
+      if (pos >= Q.length) return finish();
+      const id = Q[pos], base = id.split("~")[0], rep = id.indexOf("~") > 0;
+      B.scrollTop = 0; prog();
+      const m = base.match(/^(B|D|Af|At|Cm|Ct)(\d+)$/), k = m[1], i = +m[2];
+      if (k === "B" && !rep && !shownTip[M.B[i].type] && ruleOf(M.B[i].type)) { shownTip[M.B[i].type] = 1; return tip(id, i); }
+      if (k === "Af" && i === 0 && !G.aIntro) return aIntro(id);
+      if (k === "B" || k === "D" || k === "Cm") return mc(id, k === "Cm" ? "C" : k, i, rep);
+      if (k === "Af") return rep ? choose(id, i, rep) : find(id, i);
+      if (k === "At") return typeA(id, i, rep);
+      if (k === "Ct") return typeC(id, i, rep);
     }
-    function show(s, rev) {
-      cur = s; prog(); B.scrollTop = 0;
-      if (s.t === "B" && !rev && !shownTip[M.B[s.i].type] && ruleOf(M.B[s.i].type)) { shownTip[M.B[s.i].type] = 1; return tip(s); }
-      if (s.t === "A" && s.i === 0 && !G.aIntro) return aIntro(s);
-      if (s.t === "A") return cardA(s.i);
-      if (s.t === "R") return cardR(s.i);
-      return cardMC(s.t, s.i, rev);
+    function tip(id, i) {
+      const r = ruleOf(M.B[i].type);
+      B.innerHTML = `<div class="og-card"><span class="og-tag">💡 Qoida</span><div class="og-q">${esc(r.type)}</div><div class="og-rule">${esc(r.rule)}</div><p class="og-sub" style="margin-top:4px">O'qib chiqing: keyingi savollar shu haqida.</p></div>`;
+      F.className = "og-ft"; F.innerHTML = `<button class="og-btn" id="ogN">Tushundim</button>`;
+      $("ogN").onclick = () => { fx("tap"); mc(id, "B", i, false); };
     }
-    function tip(s) {
-      const r = ruleOf(M.B[s.i].type);
-      B.innerHTML = `<div class="og-card"><span class="og-tag">💡 Maslahat</span><div class="og-q">${esc(r.type)}</div><div class="og-rule">${esc(r.rule)}</div><p class="og-sub" style="margin-top:4px">Qoidani o'qib chiqing, keyingi savollar shu haqida.</p></div>`;
-      foot(`<button class="og-btn" id="ogN">Tushundim</button>`);
-      $("ogN").onclick = () => { fx("tap"); cardMC("B", s.i); };
-    }
-    function aIntro(s) {
-      B.innerHTML = `<div class="og-card og-hero"><div class="og-big">🕵️</div><h2>Xatoni toping!</h2><p>Endi sizning essaylaringizdagi xatolarga o'xshash gaplar.<br><b>1.</b> Xato so'zni bosing. <b>2.</b> O'sha joyda to'g'risini yozing.<br>Bu qismni ustoz tekshiradi.</p></div>`;
-      foot(`<button class="og-btn or" id="ogN">Boshladik</button>`);
-      $("ogN").onclick = () => { G.aIntro = 1; ctx.save(); fx("tap"); cardA(s.i); };
+    function aIntro(id) {
+      B.innerHTML = `<div class="og-card og-hero"><div class="og-big">🕵️</div><h2>Endi o'z xatolaringiz</h2><p>Har bir gapda siz essaylaringizda qilgan xato bor.<br><b>1.</b> Xato so'zni toping. <b>2.</b> To'g'risini tanlang.<br><b>3.</b> Bir ozdan keyin o'sha gapni o'zingiz to'g'rilab yozasiz.</p></div>`;
+      F.className = "og-ft"; F.innerHTML = `<button class="og-btn or" id="ogN">Boshladik</button>`;
+      $("ogN").onclick = () => { G.aIntro = 1; ctx.save(); fx("tap"); next(); };
     }
 
-    // ---------- B / C / D: variant tanlash ----------
-    function cardMC(k, i, rev) {
-      const x = M[k][i], ord = ctx.order(x.o.length, ctx.KEY + k + i);
+    // ---------- B / C / D: variant tanlash (to'g'ri topmaguncha) ----------
+    function mc(id, k, i, rep) {
+      const x = M[k][i], ord = ctx.order(x.o.length, ctx.KEY + k + i + (rep ? id : ""));
       const lab = { B: ["🧠 Qoida", "To'g'ri variantni tanlang"], C: ["🔤 O'z so'zingiz", "Qaysi biri to'g'ri yozilgan?"], D: ["📖 Reading sinonim", "Matnda shu ma'no boshqa so'z bilan berilgan. Qaysi biri?"] }[k];
       const q = k === "D" ? `<div class="og-q" style="font-size:1.5rem;text-align:center;margin:10px 0 18px">${esc(x.q)} = ?</div>` : `<div class="og-ex">${esc(x.q).replace(/_{2,}/, '<span class="og-gap">?</span>')}</div>`;
-      B.innerHTML = `<div class="og-card"><span class="og-tag">${lab[0]}</span>${x.type && k === "B" ? `<span class="og-tag or">${esc(x.type)}</span>` : ""}${rev ? `<span class="og-tag or">🔁 Takror</span>` : ""}
-        <div class="og-sub" style="margin:0 0 10px">${lab[1]}</div>${q}
-        <div class="og-opts">${ord.map((j, n) => `<button class="og-o" data-j="${j}"><kbd>${n + 1}</kbd><span>${esc(x.o[j])}</span></button>`).join("")}</div></div>`;
-      let val = null;
-      foot(`<button class="og-btn" id="ogK" disabled>Tekshirish</button>`);
-      B.querySelectorAll(".og-o").forEach(b => b.onclick = () => { B.querySelectorAll(".og-o").forEach(o => o.classList.remove("sel")); b.classList.add("sel"); val = +b.dataset.j; $("ogK").disabled = false; fx("tap"); });
-      $("ogK").onclick = () => {
-        if (val == null) return;
-        B.querySelectorAll(".og-o").forEach(o => o.disabled = true);
-        if (!rev) { ans[k][i] = val; }
-        const key = keyOf(k, i);
-        if (key == null) {   // kalit yo'q: javob saqlanadi, natija oxirida
-          G.xp += 5; ctx.save(); prog(); fx("tap");
-          return goNext();
-        }
-        const ok = val === key, kb = B.querySelector(`.og-o[data-j="${key}"]`), vb = B.querySelector(`.og-o[data-j="${val}"]`);
-        kb && kb.classList.add("ok"); if (!ok && vb) { vb.classList.remove("sel"); vb.classList.add("bad"); }
-        if (!rev) {
-          if (ok) { G.combo++; G.best = Math.max(G.best, G.combo); G.xp += 10 + (G.combo >= 5 ? 5 : 0); }
-          else { G.combo = 0; review.push({ t: k, i }); }
-        } else if (!ok) review.push({ t: k, i });
-        ctx.save(); prog(); fx(ok ? "ok" : "bad");
-        const r = k === "B" ? ruleOf(x.type) : null;
-        const praise = ["Barakalla!", "Zo'r!", "To'g'ri!", "Ajoyib!", "Mana bu boshqa gap!"][Math.floor(Math.random() * 5)];
-        F.className = "og-ft " + (ok ? "ok" : "bad");
-        F.innerHTML = `<div class="og-fb"><div class="og-fh">${ok ? "✅ " + praise + (G.combo >= 3 && !rev ? " 🔥" + G.combo : "") : "❌ Xato"}</div>
-          ${ok ? "" : `<div class="og-fa">To'g'ri javob: ${esc(x.o[key])}</div>`}
-          ${!ok && r ? `<div class="og-fn">💡 ${esc(r.rule)}</div>` : ""}${!ok && !rev ? `<div class="og-fn">Bu savol oxirida yana bir marta chiqadi (ballga ta'sir qilmaydi).</div>` : ""}</div>
-          <button class="og-btn" id="ogN">Davom etish</button>`;
-        $("ogN").onclick = goNext;
+      let miss = 0;
+      const draw = () => {
+        B.innerHTML = `<div class="og-card"><span class="og-tag">${lab[0]}</span>${x.type && k === "B" ? `<span class="og-tag or">${esc(x.type)}</span>` : ""}${rep ? `<span class="og-tag or">🔁 Takror</span>` : ""}
+          <div class="og-sub" style="margin:0 0 10px">${lab[1]}</div>${q}<div id="ogH"></div>
+          <div class="og-opts">${ord.map((j, n) => `<button class="og-o" data-j="${j}"><kbd>${n + 1}</kbd><span>${esc(x.o[j])}</span></button>`).join("")}</div></div>`;
+        F.className = "og-ft"; F.innerHTML = `<div class="og-fn" style="text-align:center">Variantni bosing</div>`;
+        B.querySelectorAll(".og-o").forEach(b => b.onclick = () => pick(b));
       };
+      const pick = b => {
+        const j = +b.dataset.j;
+        if (okIdx(k, i, j)) {
+          B.querySelectorAll(".og-o").forEach(o => o.disabled = true); b.classList.add("ok");
+          if (!rep) ans[k][i] = j;
+          resolve(id, miss);
+          return okFoot(id, miss, miss && k === "B" && ruleOf(x.type) ? `<div class="og-fn">💡 ${esc(ruleOf(x.type).rule)}</div>` : "");
+        }
+        miss++; b.disabled = true; b.classList.add("no");
+        badFoot(miss >= 3 ? "Xato. Yordamga qarang." : "Xato. Yana urinib ko'ring.");
+        if (miss >= 2 && k === "B" && ruleOf(x.type)) $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> ${esc(ruleOf(x.type).rule)}</div>`;
+        if (miss >= 2 && k !== "B") {   // ikkita noto'g'ri variantni olib tashlash
+          const left = [...B.querySelectorAll(".og-o:not(:disabled)")].filter(o => !okIdx(k, i, +o.dataset.j));
+          left.slice(0, Math.max(0, left.length - 1)).forEach(o => { o.disabled = true; o.style.opacity = ".3"; });
+          $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> ikkita variant qoldi.</div>`;
+        }
+      };
+      draw();
     }
-    function goNext() { fx("tap"); next(); }
 
-    // ---------- A: xatoni topish va to'g'rilash ----------
-    function spans(x) {
-      let pos = 0; const out = [];
-      (x.hl || []).slice().sort((p, q) => p[0] - q[0]).forEach(([st, ln, t]) => { if (st < pos) return; out.push({ st, ln, t }); pos = st + ln; });
-      return out;
-    }
-    function cardA(i) {
-      const x = M.A[i], sp = spans(x), xs = sp.filter(s => s.t !== "ins");
-      if (G.full[i] || !sp.length) return editA(i, true);
-      const F_ = G.find[i] || (G.find[i] = { hit: [], miss: 0 });
-      if (!xs.length || F_.hit.length >= xs.length || F_.miss >= 2) return editA(i);
+    // ---------- A1: xatoni topish ----------
+    function find(id, i) {
+      const x = M.A[i], xs = x.sp.map((s, n) => ({ s, n })).filter(o => o.s.t !== "ins");
+      if (!xs.length) return choose(id, i, false);
       const toks = []; x.s.replace(/\S+/g, (w, at) => { toks.push({ w, at, e: at + w.length }); return w; });
-      const spanOf = tk => xs.findIndex(s => tk.at < s.st + Math.max(1, s.ln) && tk.e > s.st);
-      B.innerHTML = `<div class="og-card"><span class="og-tag">✍️ A${i + 1} · Xatoni toping</span><span class="og-tag or">${esc(x.type)}</span>
+      const spanOf = tk => { const f = xs.find(o => tk.at < o.s.st + Math.max(1, o.s.ln) && tk.e > o.s.st); return f ? f.n : -1; };
+      const hit = []; let miss = 0;
+      B.innerHTML = `<div class="og-card"><span class="og-tag">✍️ ${i + 1}-gap · 1-qadam</span><span class="og-tag or">${esc(x.type)}</span>
         <div class="og-q">Xato so'zni bosing${xs.length > 1 ? ` <span style="color:var(--muted);font-size:.95rem">(${xs.length} ta joy)</span>` : ""}</div>
-        <div class="og-chips">${toks.map((t, n) => `<button class="og-ch${F_.hit.indexOf(spanOf(t)) >= 0 && spanOf(t) >= 0 ? " hit" : ""}" data-n="${n}">${esc(t.w)}</button>`).join("")}</div>
-        <p class="og-sub" id="ogHint" style="margin-top:2px">${F_.miss ? "Yana bir urinib ko'ring." : ""}</p></div>`;
-      foot(`<button class="og-btn alt" id="ogShow">🙈 Ko'rsatib qo'ying</button>`);
-      $("ogShow").onclick = () => { F_.miss = 2; ctx.save(); editA(i); };
+        <div class="og-chips">${toks.map((t, n) => `<button class="og-ch" data-n="${n}">${esc(t.w)}</button>`).join("")}</div><div id="ogH"></div></div>`;
+      F.className = "og-ft"; F.innerHTML = `<div class="og-fn" style="text-align:center">Xato bor so'zni bosing</div>`;
       B.querySelectorAll(".og-ch").forEach(b => b.onclick = () => {
         const si = spanOf(toks[+b.dataset.n]);
         if (si >= 0) {
-          if (F_.hit.indexOf(si) < 0) F_.hit.push(si);
-          B.querySelectorAll(".og-ch").forEach(c => { if (spanOf(toks[+c.dataset.n]) === si) c.classList.add("hit"); });
-          fx("ok"); ctx.save();
-          if (F_.hit.length >= xs.length) { if (!F_.miss) G.xp += 5; ctx.save(); prog(); setTimeout(() => editA(i), 450); }
+          if (hit.indexOf(si) < 0) hit.push(si);
+          B.querySelectorAll(".og-ch").forEach(c => { if (spanOf(toks[+c.dataset.n]) === si) { c.classList.add("hit"); c.disabled = true; } });
+          fx("ok");
+          if (hit.length >= xs.length) { G.findMiss = G.findMiss || {}; G.findMiss[i] = miss; ctx.save(); setTimeout(() => choose(id, i, false, miss), 500); }
         } else {
-          F_.miss++; b.classList.remove("miss"); void b.offsetWidth; b.classList.add("miss"); fx("bad"); ctx.save();
-          if (F_.miss >= 2) {
-            B.querySelectorAll(".og-ch").forEach(c => { c.disabled = true; if (spanOf(toks[+c.dataset.n]) >= 0) c.classList.add("show"); });
-            $("ogHint").textContent = "Xato joy qizil chiziq bilan ko'rsatildi.";
-            setTimeout(() => editA(i), 1100);
-          } else $("ogHint").textContent = "Bu so'z to'g'ri. Yana bir urinib ko'ring.";
+          miss++; b.classList.remove("miss"); void b.offsetWidth; b.classList.add("miss"); badFoot("Bu so'z to'g'ri. Boshqasini toping.");
+          if (miss >= 3) {
+            B.querySelectorAll(".og-ch").forEach(c => { if (spanOf(toks[+c.dataset.n]) >= 0 && !c.disabled) c.classList.add("show"); });
+            $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> xato joy qizil to'lqin chiziq bilan belgilandi. Endi o'sha so'zni bosing.</div>`;
+          }
         }
       });
     }
-    function compose(x, sp, vals) {
-      let out = "", pos = 0;
-      sp.forEach((s, n) => {
-        out += x.s.slice(pos, s.st);
-        const v = (vals[n] == null ? (s.t === "ins" ? "" : x.s.substr(s.st, s.ln)) : vals[n]).trim();
-        out += s.t === "ins" ? (v ? v + " " : "") : v;
-        pos = s.st + s.ln;
-      });
-      out += x.s.slice(pos);
-      return out.replace(/\s+/g, " ").replace(/\s+([,.;:!?])/g, "$1").trim();
-    }
-    function editA(i, full) {
-      const x = M.A[i], sp = spans(x);
-      const vals = G.ae[i] || (G.ae[i] = sp.map(s => s.t === "ins" ? "" : x.s.substr(s.st, s.ln)));
-      let body;
-      if (full) {
-        body = `<div class="og-orig">Asl gap: ${hlOrig(x, sp)}</div><textarea class="og-ta" id="ogTa" placeholder="To'g'ri gapni to'liq yozing…">${esc(ans.A[i] && G.full[i] ? ans.A[i] : compose(x, sp, vals))}</textarea>`;
-      } else {
-        let h = "", pos = 0;
-        sp.forEach((s, n) => {
-          h += esc(x.s.slice(pos, s.st));
-          const v = vals[n] || "", w = Math.max(3, (v || "").length + 1);
-          h += `<input data-n="${n}" class="${s.t === "ins" ? "ins" : ""}" value="${esc(v)}" placeholder="${s.t === "ins" ? "‸" : ""}" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:${w}ch">` + (s.t === "ins" ? " " : "");
-          pos = s.st + s.ln;
+    // ---------- A2: to'g'risini tanlash (har bir joy uchun) ----------
+    function choose(id, i, rep, missIn) {
+      const x = M.A[i]; let n = 0, miss = missIn || 0, spMiss = 0; const vals = [];
+      const draw = () => {
+        let h = "", p = 0;
+        x.sp.forEach((s, k) => {
+          h += esc(x.s.slice(p, s.st));
+          if (k < n) h += `<span class="og-slot done">${esc(vals[k])}</span>` + (s.t === "ins" ? " " : "");
+          else if (k === n) h += `<span class="og-slot cur">${s.t === "ins" ? "‸ ?" : "?"}</span>` + (s.t === "ins" ? " " : "");
+          else h += s.t === "ins" ? "" : `<s style="color:var(--bad)">${esc(x.s.substr(s.st, s.ln))}</s>`;
+          p = s.st + s.ln;
         });
-        h += esc(x.s.slice(pos));
-        body = `<div class="og-ed">${h}</div><div class="og-orig">Asl gap: ${hlOrig(x, sp)}</div>
-          <button class="og-link" id="ogFull">✏️ Gapni boshqacha tuzmoqchiman (butun gapni yozish)</button>`;
-      }
-      B.innerHTML = `<div class="og-card"><span class="og-tag">✍️ A${i + 1} · To'g'rilang</span><span class="og-tag or">${esc(x.type)}</span>
-        <div class="og-q">${full ? "Gapni to'g'ri holda yozing" : "Belgilangan joyda to'g'risini yozing"}</div>${sp.some(s => s.t === "ins") && !full ? `<p class="og-sub">Punktir katak = bu yerda so'z tushib qolgan.</p>` : ""}${body}</div>`;
-      foot(`<div class="og-two"><button class="og-btn alt" id="ogL">Keyinroq</button><button class="og-btn" id="ogK">Saqlash</button></div>`);
-      const inputs = B.querySelectorAll(".og-ed input");
-      inputs.forEach(inp => inp.oninput = () => { vals[+inp.dataset.n] = inp.value; inp.style.width = Math.max(3, inp.value.length + 1) + "ch"; ctx.save(); });
-      if (inputs[0]) setTimeout(() => { try { inputs[0].focus(); inputs[0].setSelectionRange(0, inputs[0].value.length); } catch (e) {} }, 60);
-      if ($("ogTa")) { const ta = $("ogTa"); ta.oninput = () => ctx.save(); setTimeout(() => ta.focus(), 60); }
-      if ($("ogFull")) $("ogFull").onclick = () => { G.full[i] = 1; ans.A[i] = compose(x, sp, vals); ctx.save(); editA(i, true); };
-      $("ogL").onclick = () => { fx("tap"); const s = Q.splice(Q.findIndex(q => q.t === "A" && q.i === i), 1)[0]; Q.push(s); next(); };
-      $("ogK").onclick = () => {
-        const v = full ? $("ogTa").value.replace(/\s+/g, " ").trim() : compose(x, sp, vals);
-        if (!v || v === x.s) { fx("bad"); toast("Gap o'zgarmadi. Xato joyni to'g'rilang."); return; }
-        ans.A[i] = v; G.xp += 5; ctx.save(); prog(); fx("ok");
-        F.className = "og-ft inf";
-        F.innerHTML = `<div class="og-fb"><div class="og-fh">✍️ Saqlandi</div><div class="og-fa">${esc(v)}</div><div class="og-fn">Bu gapni ustoz tekshiradi. Natija kabinetga keladi.</div></div><button class="og-btn" id="ogN">Davom etish</button>`;
-        $("ogN").onclick = goNext;
+        h += esc(x.s.slice(p));
+        const s = x.sp[n], orig = s.t === "ins" ? "bu yerda so'z tushib qolgan" : `"${x.s.substr(s.st, s.ln)}" o'rniga`;
+        B.innerHTML = `<div class="og-card"><span class="og-tag">✍️ ${i + 1}-gap · ${rep ? "🔁 Takror" : "2-qadam"}</span><span class="og-tag or">${esc(x.type)}</span>
+          <div class="og-q">To'g'risini tanlang <span style="color:var(--muted);font-size:.9rem;font-weight:600">(${esc(orig)})</span></div>
+          <div class="og-ed">${h}</div><div id="ogH">${spMiss >= 2 && x.izoh ? `<div class="og-hint">💡 <b>Yordam:</b> ${esc(x.izoh)}</div>` : ""}</div>
+          <div class="og-opts">${shuf(s.o, ctx.KEY + id + n).map((o, m) => `<button class="og-o" data-v="${esc(o)}"><kbd>${m + 1}</kbd><span>${esc(o)}</span></button>`).join("")}</div></div>`;
+        F.className = "og-ft"; F.innerHTML = `<div class="og-fn" style="text-align:center">${x.sp.length > 1 ? `${n + 1}-joy (${x.sp.length} tadan)` : "Variantni bosing"}</div>`;
+        B.querySelectorAll(".og-o").forEach(b => b.onclick = () => {
+          const v = b.dataset.v;
+          if (spOk(i, n, v)) { vals[n] = v; n++; spMiss = 0; fx("ok"); if (n >= x.sp.length) return done(); return setTimeout(draw, 350); }
+          miss++; spMiss++; b.disabled = true; b.classList.add("no"); badFoot();
+          if (spMiss >= 2 && x.izoh) $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> ${esc(x.izoh)}</div>`;
+        });
       };
+      const done = () => {
+        B.querySelectorAll(".og-o").forEach(o => o.disabled = true);
+        const full = compose(i, vals);
+        resolve(id, miss);
+        okFoot(id, miss, `<div class="og-fa">${esc(full)}</div>${rep ? "" : `<div class="og-fn">✍️ Bir ozdan keyin bu gapni o'zingiz yozasiz.</div>`}`);
+      };
+      draw();
     }
-    function hlOrig(x, sp) {
-      let h = "", pos = 0;
-      sp.forEach(s => { h += esc(x.s.slice(pos, s.st)); h += s.t === "ins" ? '<b style="color:var(--bad)">‸</b>' : "<s>" + esc(x.s.substr(s.st, s.ln)) + "</s>"; pos = s.st + s.ln; });
-      return h + esc(x.s.slice(pos));
+    // ---------- A3: o'zi yozadi ----------
+    function typeA(id, i, rep) {
+      const x = M.A[i]; let miss = 0; const vals = x.sp.map(() => "");
+      let h = "", p = 0;
+      x.sp.forEach((s, n) => {
+        h += esc(x.s.slice(p, s.st));
+        h += `<input data-n="${n}" class="${s.t === "ins" ? "ins" : ""}" placeholder="${s.t === "ins" ? "‸" : "?"}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:5ch">` + (s.t === "ins" ? " " : "");
+        p = s.st + s.ln;
+      });
+      h += esc(x.s.slice(p));
+      const orig = x.sp.map(s => s.t === "ins" ? "‸" : x.s.substr(s.st, s.ln));
+      B.innerHTML = `<div class="og-card"><span class="og-tag">✍️ ${i + 1}-gap · ${rep ? "🔁 Takror" : "3-qadam"}</span><span class="og-tag or">${esc(x.type)}</span>
+        <div class="og-q">Endi o'zingiz yozing</div><p class="og-sub">Xato edi: ${orig.map(o => `<s style="color:var(--bad)">${esc(o)}</s>`).join(", ")}</p>
+        <div class="og-ed">${h}</div><div id="ogH"></div></div>`;
+      F.className = "og-ft"; F.innerHTML = `<button class="og-btn" id="ogK" disabled>Tekshirish</button>`;
+      const inputs = [...B.querySelectorAll(".og-ed input")];
+      inputs.forEach(inp => inp.oninput = () => { vals[+inp.dataset.n] = inp.value; inp.classList.remove("no"); inp.style.width = Math.max(5, inp.value.length + 1) + "ch"; $("ogK").disabled = vals.some((v, n) => !v.trim() && x.sp[n].t !== "ins"); });
+      inputs.forEach(inp => inp.onkeydown = e => { if (e.key === "Enter" && !$("ogK").disabled) $("ogK").click(); });
+      setTimeout(() => { try { inputs[0].focus(); } catch (e) {} }, 60);
+      const check = () => {
+        const bad = x.sp.map((_, n) => !spOk(i, n, vals[n]));
+        if (!bad.some(Boolean)) {
+          inputs.forEach(inp => { inp.classList.add("ok"); inp.readOnly = true; });
+          if (!rep) ans.A[i] = compose(i, vals);
+          resolve(id, miss);
+          return okFoot(id, miss, `<div class="og-fa">${esc(compose(i, vals))}</div>`);
+        }
+        miss++;
+        inputs.forEach((inp, n) => { inp.classList.toggle("no", bad[n]); inp.classList.toggle("ok", !bad[n]); });
+        badFoot(miss >= 3 ? "Hali xato. Yordamga qarang." : "Qizil joy hali xato.");
+        F.insertAdjacentHTML("beforeend", `<button class="og-btn" id="ogK">Tekshirish</button>`); $("ogK").onclick = check;
+        if (miss >= 3) $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> ${x.sp.map((s, n) => bad[n] ? (s.hint || "") : "").filter(Boolean).map(esc).join(" · ")}${miss >= 5 ? `<br>To'g'ri javob: <b>${x.sp.map((_, n) => esc(spAns(i, n))).join(" / ")}</b>. Uni yozing.` : ""}</div>`;
+        else if (miss === 2 && x.izoh) $("ogH").innerHTML = `<div class="og-hint">💡 ${esc(x.izoh)}</div>`;
+      };
+      $("ogK").onclick = check;
+    }
+    // ---------- C2: so'zni o'zi yozadi ----------
+    function typeC(id, i, rep) {
+      const x = M.C[i], w = cWord(i); let miss = 0;
+      B.innerHTML = `<div class="og-card"><span class="og-tag">🔤 O'z so'zingiz · yozing</span>${rep ? `<span class="og-tag or">🔁 Takror</span>` : ""}
+        <div class="og-q">Bo'sh joyga so'zni to'g'ri yozing</div>
+        <div class="og-ex">${esc(x.q).replace(/_{2,}/, '<span class="og-gap">?</span>')}</div>
+        <input class="og-ta" id="ogIn" style="min-height:0" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="So'zni yozing…"><div id="ogH" style="margin-top:12px"></div></div>`;
+      F.className = "og-ft"; F.innerHTML = `<button class="og-btn" id="ogK" disabled>Tekshirish</button>`;
+      const inp = $("ogIn"); setTimeout(() => inp.focus(), 60);
+      inp.oninput = () => { $("ogK").disabled = !inp.value.trim(); };
+      inp.onkeydown = e => { if (e.key === "Enter" && inp.value.trim()) check(); };
+      const check = () => {
+        if (okText("C" + i, inp.value, x.ah || [], !!x.cs)) { inp.readOnly = true; resolve(id, miss); return okFoot(id, miss, `<div class="og-fa">${esc(w)}</div>`); }
+        miss++; badFoot(miss >= 3 ? "Hali xato. Yordamga qarang." : "Harflarni tekshiring.");
+        F.insertAdjacentHTML("beforeend", `<button class="og-btn" id="ogK">Tekshirish</button>`); $("ogK").onclick = check;
+        if (miss >= 3) $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> ${esc(w.slice(0, Math.ceil(w.length / 2)))}${"_".repeat(Math.floor(w.length / 2))} (${w.length} harf)${miss >= 5 ? `<br>To'g'ri yozilishi: <b>${esc(w)}</b>` : ""}</div>`;
+      };
+      $("ogK").onclick = check;
     }
 
-    // ---------- 2-urinish ----------
-    function cardR(i) {
-      const x = M.A[i], sp = spans(x), v1 = (R.a1.A || [])[i] || "", f = (R.f1 || [])[i] || {};
-      B.innerHTML = `<div class="og-card"><span class="og-tag">🔁 A${i + 1} · 2-urinish</span><span class="og-tag or">${esc(x.type)}</span>
-        <div class="og-orig">Asl gap: ${hlOrig(x, sp)}</div>
-        <div class="og-q" style="font-size:1rem">Siz yozgansiz:</div><div class="og-ex" style="font-size:1rem">${esc(v1)}</div>
-        ${f.iz ? `<div class="og-iz">💬 <b>Ustoz izohi:</b> ${esc(f.iz)}</div>` : ""}
-        <textarea class="og-ta" id="ogTa" placeholder="Izohga qarab qayta yozing…">${esc(ans.A[i] != null ? ans.A[i] : v1)}</textarea></div>`;
-      foot(`<button class="og-btn" id="ogK">Saqlash</button>`);
-      const ta = $("ogTa"); ta.oninput = () => { ans.A[i] = ta.value; ctx.save(); };
-      $("ogK").onclick = () => {
-        const v = ta.value.replace(/\s+/g, " ").trim();
-        if (!v || v === v1.trim()) { fx("bad"); toast("Gap o'zgarmadi. Izohga qarab to'g'rilang."); return; }
-        ans.A[i] = v; G.xp += 5; ctx.save(); prog(); fx("ok"); next();
-      };
-    }
-
-    // ---------- yakun va topshirish ----------
+    // ---------- yakun ----------
     function finish() {
       prog(); $("ogPb").style.width = "100%"; fx("end");
-      let okN = 0, n = 0;
-      if (instant && ph !== "retry") ["B", "C", "D"].forEach(k => (M[k] || []).forEach((_, i) => { n++; if (ans[k][i] === keyOf(k, i)) okN++; }));
-      const nA = ph === "retry" ? wrongA().length : (M.A || []).length;
-      B.innerHTML = `<div class="og-card og-hero"><div class="og-big">🏆</div><h2>${ph === "retry" ? "2-urinish tayyor!" : "Mashq tugadi!"}</h2><p>Endi topshiring, shunda natija ustozga boradi.</p>
+      const ids = Object.keys(G.first), ok = ids.filter(k => G.first[k]).length, pct = Math.round(100 * ok / Math.max(1, ids.length));
+      const hard = Object.keys(G.miss).filter(k => G.miss[k] > 0).sort((a, b) => G.miss[b] - G.miss[a]).slice(0, 4);
+      const nameOf = k => { const m = k.match(/^(B|D|Af|At|Cm|Ct)(\d+)$/); const i = +m[2]; return m[1] === "B" ? "Qoida: " + M.B[i].type : m[1][0] === "A" ? M.A[i].type + " (" + (i + 1) + "-gap)" : m[1][0] === "C" ? "So'z: " + cWord(i) : "Sinonim: " + M.D[i].q; };
+      ans.st = { v: 3, n: ids.length, first: ok, pct: pct, miss: G.miss };
+      ctx.save();
+      B.innerHTML = `<div class="og-card og-hero"><div class="og-big">🏆</div><h2>Mashq tugadi!</h2><p>Hammasini to'g'ri qilib chiqdingiz. Endi topshiring.</p>
         ${G.best >= 5 ? `<div class="og-stk">🔥 Eng uzun seriya: ${G.best} ta ketma-ket to'g'ri</div>` : ""}
-        <div class="og-res">${n ? `<div><b>${okN}/${n}</b><span>B·C·D to'g'ri</span></div>` : ""}<div><b>${nA}</b><span>gap ustozga</span></div><div><b>⭐${G.xp}</b><span>ball</span></div></div>
-        <button class="og-link mu" id="ogList">📋 Javoblarni ro'yxatda ko'rib chiqish</button></div>`;
-      foot(`<button class="og-btn or" id="ogS">📤 ${ph === "retry" ? "2-urinishni yuborish" : "Topshirish"}</button>`);
-      $("ogList").onclick = close;
+        <div class="og-res"><div><b>${pct}%</b><span>birinchi urinishda</span></div><div><b>${ok}/${ids.length}</b><span>darhol to'g'ri</span></div><div><b>⭐${G.xp}</b><span>ball</span></div></div>
+        ${hard.length ? `<div class="og-tops"><b>Ko'proq ishlash kerak:</b>${hard.map(k => `<div>${esc(nameOf(k))}<span>${G.miss[k]} xato</span></div>`).join("")}</div>` : ""}</div>`;
+      F.className = "og-ft"; F.innerHTML = `<button class="og-btn or" id="ogS">📤 Topshirish</button>`;
       $("ogS").onclick = () => {
         const b = $("ogS"); b.disabled = true; b.textContent = "Yuborilmoqda…";
-        ctx.send(ph, () => { root.className = "hide"; root.innerHTML = ""; document.documentElement.classList.remove("og-lock"); },
+        ctx.send("new", () => { root.className = "hide"; root.innerHTML = ""; document.documentElement.classList.remove("og-lock"); },
           err => { b.disabled = false; b.textContent = "📤 Qayta urinish"; toast(err || "Internet xatosi. Javoblar saqlangan."); });
       };
     }
-
     hero();
   };
 })();

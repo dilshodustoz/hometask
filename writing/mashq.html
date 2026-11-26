@@ -68,7 +68,7 @@
 <div class="foot hide" id="foot"><div class="st" id="fst"></div><button class="btn" id="btnGo">Topshirish</button></div>
 <div id="modal" class="hide"><div class="box"><h3 id="mt"></h3><div id="mb"></div><div class="acts" id="ma"></div></div></div>
 <script src="config.js"></script>
-<script src="mashq_oyin.js?v=1"></script>
+<script src="mashq_oyin.js?v=3"></script>
 <script>
 (function () {
   const $ = id => document.getElementById(id), P = new URLSearchParams(location.search);
@@ -210,17 +210,17 @@
     if (busy) return; busy = true;
     const M = R.me;
     const body = { skill: "writing", mq: ph === "retry" ? 2 : 1, t: TID, k: KEY, A: M.A.map((x, i) => ans.A[i] != null ? ans.A[i] : (ph === "retry" ? (R.a1.A || [])[i] : x.s)), B: ans.B, C: ans.C, D: ans.D, minutes: Math.ceil(active / 60), pastes: pastes, leaves: leaves };
+    if (ans.st) body.st = ans.st;
     post(body).then(r => {
       busy = false; $("btnGo").disabled = false;
       if (!r.ok) { onErr && onErr(r.error || "Xato"); return; }
       try { localStorage.removeItem(LS); } catch (e) {}
       onOk && onOk(r);
-      load(r.g ? `B, C, D natijasi: <b>${r.g.ok} / ${r.g.n}</b>. To'g'ri javoblar endi ko'rinadi.<br>A bo'limni ustoz tekshiradi.` : "2-urinish yuborildi. Ustoz tekshiradi.");
+      load(body.st ? `🏆 Mashq topshirildi. Birinchi urinishda to'g'ri: <b>${body.st.pct}%</b> (${body.st.first} / ${body.st.n}).` : r.g ? `B, C, D natijasi: <b>${r.g.ok} / ${r.g.n}</b>. To'g'ri javoblar endi ko'rinadi.<br>A bo'limni ustoz tekshiradi.` : "2-urinish yuborildi. Ustoz tekshiradi.");
     }).catch(() => { busy = false; onErr && onErr(null); });
   }
-  // 🎮 O'yin ko'rinishi: Test guruhi (R.oyin) yoki ?oyin=1 bilan ochilgan qurilma; ?oyin=0 o'chiradi
-  try { if (P.get("oyin") === "1") localStorage.setItem("mq_oyin", "1"); if (P.get("oyin") === "0") localStorage.removeItem("mq_oyin"); } catch (e) {}
-  const oyinOn = () => { let v = null; try { v = localStorage.getItem("mq_oyin"); } catch (e) {} return !!window.MQ_OYIN && (R.oyin || v === "1") && ((R.phase === "new" && !R.closed) || R.phase === "retry"); };
+  // 🎮 O'yin (v3 mashqlar, 2026-11-26): me.v === 3 bo'lsa mashq faqat o'yin ko'rinishida ishlanadi
+  const oyinOn = () => !!window.MQ_OYIN && R.me && R.me.v === 3 && R.phase === "new" && !R.closed;
   function oyin() { window.MQ_OYIN({ R: R, ans: ans, KEY: KEY, TID: TID, order: order, save: save, send: send, exit: () => render() }); }
   $("btnGo").onclick = submit;
   function load(msg) {
