@@ -971,7 +971,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   <section data-pane="hw" class="hide">
     <div class="card">
       <div class="card-header"><h3 class="card-title">Home task yuborish <small id="hwGroupName"></small></h3>
-        <div class="seg" id="hwSkill"><button data-s="listening" class="active">🎧 Listening</button><button data-s="reading">📖 Reading</button><button data-s="writing">✍️ Writing</button><button data-s="speaking">🎙 Speaking</button></div></div>
+        <div class="seg" id="hwSkill"><button data-s="listening" class="active">🎧 Listening</button><button data-s="reading">📖 Reading</button><button data-s="writing">✍️ Writing</button><button data-s="speaking">🎙 Speaking</button><button data-s="drill">🎯 Personal Drill</button></div></div>
       <div class="row">
         <label><span class="field-label" id="hwTestLbl">Test</span><select class="field" id="hwTest"></select></label>
         <label><span class="field-label">Muddat: sana</span><input class="field" id="hwDate" type="date"></label>
@@ -1395,13 +1395,15 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
 
   // ---------- Home task (uy vazifasi: Reading / Listening / Writing / Speaking) ----------
   let hwLog = null, hwCur = null, hwSk = "listening", wTasks = null, sTasks = null;
-  const HW_LK = { reading: "cls_hw_test", listening: "cls_hw_ltest", writing: "cls_hw_wtask", speaking: "cls_hw_stask" };
-  const HW_IC = { reading: "📖", listening: "🎧", writing: "✍️", speaking: "🎙" };
+  const HW_LK = { reading: "cls_hw_test", listening: "cls_hw_ltest", writing: "cls_hw_wtask", speaking: "cls_hw_stask", drill: "cls_hw_dtask" };
+  const HW_IC = { reading: "📖", listening: "🎧", writing: "✍️", speaking: "🎙", drill: "🎯" };
+  // 🎯 Personal Drill (27.11): o'quvchiga shaxsan tuzilgan mashqlar (writing_mm*.json). Serverda skill = "writing", sahifada alohida bo'lim.
+  const isMM = t => /^mm\d/.test(t || ""), hwReal = () => hwSk === "drill" ? "writing" : hwSk, hwName = k => k === "drill" ? "Personal Drill" : k[0].toUpperCase() + k.slice(1);
   const OY = ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"];
   const fmtAt = iso => { if (!iso) return "—"; const d = new Date(iso); return d.getDate() + "-" + OY[d.getMonth()] + ", " + d.toTimeString().slice(0, 5); };
   function hwFill() {
     const sel = $("hwTest"); sel.innerHTML = "";
-    $("hwTestLbl").textContent = hwSk === "writing" || hwSk === "speaking" ? "Vazifa" : "Test";
+    $("hwTestLbl").textContent = hwSk === "writing" || hwSk === "speaking" || hwSk === "drill" ? "Vazifa" : "Test";
     if (hwSk === "speaking") {
       const gP = document.createElement("optgroup"), gM = document.createElement("optgroup");
       gP.label = "📝 Speaking preparation (yozma workbook)"; gM.label = "🎙 Speaking mock (ovozli)";
@@ -1411,12 +1413,17 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       sel.add(new Option("➕ Yangi Speaking mock vazifasi…", "__new"));
       try { const v = localStorage.getItem(HW_LK.speaking); if (v && sTasks && sTasks.some(t => t.t === v)) sel.value = v; } catch (e) {}
       if (sTasks && !sTasks.length) sel.value = "__new";
+    } else if (hwSk === "drill") {
+      (wTasks || []).filter(t => isMM(t.t)).forEach(t => sel.add(new Option("🎯 " + t.title, t.t)));
+      if (!wTasks) sel.add(new Option("Yuklanmoqda…", ""));
+      else if (!sel.options.length) sel.add(new Option("Hali Personal Drill yo'q", ""));
+      try { const v = localStorage.getItem(HW_LK.drill); if (v && wTasks && wTasks.some(t => t.t === v)) sel.value = v; } catch (e) {}
     } else if (hwSk !== "writing") {
       const LK = hwSk === "listening" ? "cls_hw_ltest" : "cls_hw_test";
       window.CLASS_TESTS.filter(t => t.skill === hwSk).forEach(t => sel.add(new Option(t.title.replace(/ · (Reading|Listening)$/, ""), t.key)));
       try { const v = localStorage.getItem(LK); if (v && Array.from(sel.options).some(o => o.value === v)) sel.value = v; } catch (e) {}
     } else {
-      (wTasks || []).forEach(t => sel.add(new Option(t.title + " · " + (t.task || "Task 2"), t.t)));
+      (wTasks || []).filter(t => !isMM(t.t)).forEach(t => sel.add(new Option(t.title + " · " + (t.task || "Task 2"), t.t)));
       if (!wTasks) sel.add(new Option("Yuklanmoqda…", ""));
       sel.add(new Option("➕ Yangi vazifa…", "__new"));
       try { const v = localStorage.getItem("cls_hw_wtask"); if (v && wTasks && wTasks.some(t => t.t === v)) sel.value = v; } catch (e) {}
@@ -1480,14 +1487,14 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function wLoad(sel) {
     return api({ admin: "w_tasks" }).then(r => {
       if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
-      wTasks = r.tasks; if (hwSk === "writing") { hwFill(); if (sel) { $("hwTest").value = sel; $("hwNew").classList.add("hide"); } }
+      wTasks = r.tasks; if (hwReal() === "writing") { hwFill(); if (sel) { $("hwTest").value = sel; $("hwNew").classList.add("hide"); } }
     }).catch(e => { $("hwMsg").textContent = "⚠️ " + e.message; });
   }
   document.querySelectorAll("#hwSkill button").forEach(b => b.onclick = () => {
     hwSk = b.dataset.s;
     document.querySelectorAll("#hwSkill button").forEach(x => x.classList.toggle("active", x === b));
     $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = "";
-    hwFill(); if (hwSk === "writing" && !wTasks) wLoad(); if (hwSk === "speaking" && !sTasks) sLoad();
+    hwFill(); if (hwReal() === "writing" && !wTasks) wLoad(); if (hwSk === "speaking" && !sTasks) sLoad();
     hwShowList();
   });
   function sLoad(sel) {
@@ -1560,7 +1567,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   $("hwWhoNone").onclick = () => { hwPick = new Set(); hwWhoDraw(); $("hwPrevBox").classList.add("hide"); };
   function hwBody() {
     hwWhoTxt();
-    const b = { skill: hwSk, t: $("hwTest").value, chat: CLS.GROUPS[group].chat, date: $("hwDate").value, time: $("hwTime").value };
+    const b = { skill: hwReal(), t: $("hwTest").value, chat: CLS.GROUPS[group].chat, date: $("hwDate").value, time: $("hwTime").value };
     if (hwPick) b.keys = Array.from(hwPick);
     return b;
   }
@@ -1691,13 +1698,13 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     try { hwWhoTxt(); if (!$("hwWhoBox").classList.contains("hide")) hwWhoDraw(); } catch (e) {}
     if (!hwLog) return;
     const chat = String(CLS.GROUPS[group].chat);
-    const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat] && (hwLog[id].skill || "reading") === hwSk).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title, cls: hwLog[id].cls || "" }, hwLog[id].chats[chat]))
+    const rows = Object.keys(hwLog).filter(id => hwLog[id].chats[chat] && (hwLog[id].skill || "reading") === hwReal() && (hwReal() !== "writing" || isMM(hwLog[id].t) === (hwSk === "drill"))).map(id => Object.assign({ id: id, t: hwLog[id].t, skill: hwLog[id].skill || "reading", title: hwLog[id].title, cls: hwLog[id].cls || "" }, hwLog[id].chats[chat]))
       .sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${h.skill === "speaking" ? (/^prep/.test(h.t) ? "📝" : "🎙") : HW_IC[h.skill] || "📖"} ${h.cls ? `<span class="badge b-warn" title="Darsda ishlangan test: natija va error log">🏫 Darsda</span> ` : ""}${CLS.esc(h.title)}${h.skill === "speaking" ? ` <span class="muted">· ${/^prep/.test(h.t) ? "preparation" : "mock"}</span>` : ""}</td><td>${CLS.esc(h.deadline_text)}</td>
+    $("hwList").innerHTML = rows.length ? rows.map((h, i) => `<tr><td>${i + 1}</td><td>${h.skill === "speaking" ? (/^prep/.test(h.t) ? "📝" : "🎙") : h.skill === "writing" && isMM(h.t) ? "🎯" : HW_IC[h.skill] || "📖"} ${h.cls ? `<span class="badge b-warn" title="Darsda ishlangan test: natija va error log">🏫 Darsda</span> ` : ""}${CLS.esc(h.title)}${h.skill === "speaking" ? ` <span class="muted">· ${/^prep/.test(h.t) ? "preparation" : "mock"}</span>` : ""}</td><td>${CLS.esc(h.deadline_text)}</td>
       <td>${fmtAt(h.at)} · ${h.sent.length} ta${h.fail && h.fail.length ? ` <span class="badge b-bad">${h.fail.length} bormadi</span>` : ""}</td>
       <td id="hwc_${h.id}">—</td><td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" data-id="${h.id}">Kim topshirdi</button> ${h.cls ? "" : `<button class="btn btn-secondary btn-sm" data-del="${h.id}" title="Vazifani ro'yxatdan (va o'quvchi kabinetidan) o'chirish">🗑</button>`}</td></tr>`).join("")
-      : `<tr><td colspan="6" class="muted">Bu guruhga hali ${HW_IC[hwSk] || ""} ${hwSk[0].toUpperCase() + hwSk.slice(1)} uy vazifasi yuborilmagan.</td></tr>`;
-    $("hwListSk").textContent = "· " + (HW_IC[hwSk] || "") + " " + hwSk[0].toUpperCase() + hwSk.slice(1);
+      : `<tr><td colspan="6" class="muted">Bu guruhga hali ${HW_IC[hwSk] || ""} ${hwName(hwSk)} uy vazifasi yuborilmagan.</td></tr>`;
+    $("hwListSk").textContent = "· " + (HW_IC[hwSk] || "") + " " + hwName(hwSk);
     $("hwList").querySelectorAll("button[data-id]").forEach(b => b.onclick = () => hwStatus(b.dataset.id));
     $("hwList").querySelectorAll("button[data-del]").forEach(b => b.onclick = () => {
       const id = b.dataset.del, h = hwLog[id], gname = CLS.GROUPS[group].name;

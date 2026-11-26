@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mening mashqim · Dilshod ustoz</title>
+<title>Personal Drill · Dilshod ustoz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
 <style>
@@ -118,6 +118,17 @@
   function render() {
     const M = R.me, ph = R.phase, graded = !!R.g, out = [];
     $("who").textContent = R.name; $("ttl").textContent = R.title + (R.deadline ? " · muddat: " + R.deadline : "");
+    if (M.v === 3 && ph !== "new") {   // v3 (o'yin): natija = birinchi urinishda to'g'ri kartalar foizi
+      const q = (R.a1 && R.a1.st) || {}, miss = q.miss || {}, sec = { A: "✍️ Xatoni to'g'rilash", B: "📘 Qoida", C: "🔤 Imlo", D: "📖 Sinonim" };
+      const txt = (L, i) => { const x = ((M[L] || [])[i]) || {}; return L === "A" ? x.s : x.q; };
+      const ks = Object.keys(miss).filter(k => miss[k] > 0).sort((x, y) => miss[y] - miss[x]);
+      out.push(`<div class="banner ok">🏆 <b>Mashq topshirildi.</b> Birinchi urinishda to'g'ri: <b>${esc(q.pct != null ? q.pct : R.pct)}%</b>${q.n ? ` (${q.first} / ${q.n})` : ""}.</div>`);
+      if (ks.length) out.push(`<div class="sec"><h2>🔁 Ko'proq ishlash kerak</h2>${ks.map(k => { const L = k[0], i = parseInt(k.replace(/^\D+/, ""), 10); const t = txt(L, i); return t ? `<div class="orig">${sec[L] || ""} · ${esc(t)} <span class="muted">(${miss[k]} marta xato)</span></div>` : ""; }).join("")}</div>`);
+      else out.push(`<div class="sec"><h2>✨ Ajoyib!</h2><p class="hint">Hamma kartani birinchi urinishda to'g'ri bajardingiz.</p></div>`);
+      $("main").innerHTML = out.join(""); $("foot").classList.add("hide");
+      $("score").className = "pill ok"; $("score").textContent = (q.pct != null ? q.pct : R.pct) + "%";
+      return;
+    }
     if (ph === "new") {
       out.push(`<div class="intro"><b>${esc(R.name)}, bu mashq sizning o'z xatolaringizdan tuzilgan.</b> Oxirgi essaylaringizda eng ko'p takrorlangan xatolar: <b>${esc(M.focus.join(", ") || "grammatika")}</b>.<ol>
         <li><b>A.</b> Xatoni to'g'rilang: xato qismi qizil chiziq bilan belgilangan. To'g'ri variantini o'zingiz topib, gapni qayta yozing.</li>
@@ -230,7 +241,7 @@
       R = r; ans = { A: [], B: [], C: [], D: [] };
       const st = lsGet();
       if (st && st.phase === r.phase) { ans = Object.assign(ans, st.ans || {}); pastes = st.pastes || 0; leaves = st.leaves || 0; }
-      document.title = r.title + " · Mening mashqim";
+      document.title = r.title;
       render();
       if (oyinOn() && !msg) oyin();
       if (msg) modal("Yuborildi ✅", msg);
