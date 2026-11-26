@@ -171,7 +171,7 @@
       if (miss) {
         G.combo = 0;
         const n = (id.split("~")[1] | 0) + 1;
-        if (n <= 3) { const nid = base + "~" + n; G.extra.push(nid); Q.splice(Math.min(Q.length, pos + 4), 0, nid); }
+        if (n <= 6) { const nid = base + "~" + n; G.extra.push(nid); Q.splice(Math.min(Q.length, pos + 4), 0, nid); }
       } else { G.combo++; G.best = Math.max(G.best, G.combo); G.xp += rep ? 5 : 10 + (G.combo >= 5 ? 5 : 0); }
       G.done[id] = 1; ctx.save(); prog();
     }
@@ -194,7 +194,7 @@
           ${nC ? `<div class="og-sec"><i>🔤</i><div><b>O'z so'zlaringiz</b><span>Tanlang, keyin o'zingiz yozing</span></div><em>${nC}</em></div>` : ""}
           ${cnt("D") ? `<div class="og-sec"><i>📖</i><div><b>Reading: sinonim</b><span>Ma'nodoshini toping</span></div><em>${cnt("D")}</em></div>` : ""}
         </div>
-        <div class="og-hint" style="text-align:left">🕹 <b>Qoida:</b> to'g'ri javob bermaguncha keyingisiga o'tolmaysiz. 3 marta adashsangiz yordam (hint) chiqadi. Adashgan savollaringiz keyinroq yana chiqadi.</div>
+        <div class="og-hint" style="text-align:left">🕹 <b>Qoida:</b> xato javob bersangiz, savol bir necha kartadan keyin qaytadi va to'g'ri topmaguncha qaytaveradi. Yozish kartalarida to'g'ri yozmaguncha o'tolmaysiz, 3 xatodan keyin yordam chiqadi.</div>
         ${R.deadline ? `<p style="font-size:.85rem">⏰ Muddat: <b>${esc(R.deadline)}</b>${R.closed ? " · <span style='color:var(--bad)'>o'tib ketgan</span>" : ""}</p>` : ""}</div>`;
       F.className = "og-ft"; F.innerHTML = `<button class="og-btn or" id="ogGo"${R.closed ? " disabled" : ""}>${started ? "Davom ettirish" : "Boshlash"}</button>`;
       $("ogGo").onclick = () => { fx("tap"); next(); };
@@ -246,14 +246,14 @@
           resolve(id, miss);
           return okFoot(id, miss, miss && k === "B" && ruleOf(x.type) ? `<div class="og-fn">💡 ${esc(ruleOf(x.type).rule)}</div>` : "");
         }
-        miss++; b.disabled = true; b.classList.add("no");
-        badFoot(miss >= 3 ? "Xato. Yordamga qarang." : "Xato. Yana urinib ko'ring.");
-        if (miss >= 2 && k === "B" && ruleOf(x.type)) $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> ${esc(ruleOf(x.type).rule)}</div>`;
-        if (miss >= 2 && k !== "B") {   // ikkita noto'g'ri variantni olib tashlash
-          const left = [...B.querySelectorAll(".og-o:not(:disabled)")].filter(o => !okIdx(k, i, +o.dataset.j));
-          left.slice(0, Math.max(0, left.length - 1)).forEach(o => { o.disabled = true; o.style.opacity = ".3"; });
-          $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> ikkita variant qoldi.</div>`;
-        }
+        // xato: to'g'ri javob ko'rsatiladi, savol keyinroq aralashtirilgan variantlar bilan qaytadi (to'g'ri topmaguncha)
+        miss++; b.classList.add("bad");
+        B.querySelectorAll(".og-o").forEach(o => { o.disabled = true; if (okIdx(k, i, +o.dataset.j)) o.classList.add("ok"); });
+        resolve(id, miss);
+        const r = k === "B" ? ruleOf(x.type) : null;
+        fx("bad"); F.className = "og-ft bad";
+        F.innerHTML = `<div class="og-fb"><div class="og-fh">❌ Xato</div><div class="og-fa">To'g'ri javob: ${esc(x.o[keyOf(k, i)])}</div>${r ? `<div class="og-fn">💡 ${esc(r.rule)}</div>` : ""}<div class="og-fn">🔁 Bu savol bir necha kartadan keyin yana chiqadi: o'shanda to'g'ri topishingiz kerak.</div></div><button class="og-btn" id="ogN">Tushundim</button>`;
+        $("ogN").onclick = () => { fx("tap"); pos++; next(); };
       };
       draw();
     }
@@ -307,8 +307,12 @@
         B.querySelectorAll(".og-o").forEach(b => b.onclick = () => {
           const v = b.dataset.v;
           if (spOk(i, n, v)) { vals[n] = v; n++; spMiss = 0; fx("ok"); if (n >= x.sp.length) return done(); return setTimeout(draw, 350); }
-          miss++; spMiss++; b.disabled = true; b.classList.add("no"); badFoot();
-          if (spMiss >= 2 && x.izoh) $("ogH").innerHTML = `<div class="og-hint">💡 <b>Yordam:</b> ${esc(x.izoh)}</div>`;
+          miss++; b.classList.add("bad");
+          B.querySelectorAll(".og-o").forEach(o => { o.disabled = true; if (spOk(i, n, o.dataset.v)) o.classList.add("ok"); });
+          resolve(id, miss);
+          fx("bad"); F.className = "og-ft bad";
+          F.innerHTML = `<div class="og-fb"><div class="og-fh">❌ Xato</div><div class="og-fa">To'g'ri: ${esc(spAns(i, n))}</div>${x.izoh ? `<div class="og-fn">💡 ${esc(x.izoh)}</div>` : ""}<div class="og-fn">🔁 Bu gap bir necha kartadan keyin yana chiqadi.</div></div><button class="og-btn" id="ogN">Tushundim</button>`;
+          $("ogN").onclick = () => { fx("tap"); pos++; next(); };
         });
       };
       const done = () => {
