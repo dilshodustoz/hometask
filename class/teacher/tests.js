@@ -376,8 +376,8 @@ window.CLASS_TESTS = [
 "title": "Mock Set 21 · Listening",
 "durs": [
 352.8,
-474.87,
-515.18,
+387.62,
+402.4,
 370.51
 ]
 },
@@ -387,7 +387,7 @@ window.CLASS_TESTS = [
 "title": "Mock Set 22 · Listening",
 "durs": [
 420.55,
-478.36,
+451.62,
 429.89,
 406.13
 ]
@@ -398,8 +398,8 @@ window.CLASS_TESTS = [
 "title": "Mock Set 23 · Listening",
 "durs": [
 340.61,
-454.57,
-510.8,
+377.61,
+410.27,
 360.33
 ]
 },
