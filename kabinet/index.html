@@ -465,10 +465,14 @@
   function renderMat() {
     const M = D.mats || [];
     const sz = b => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round((b || 0) / 1024)) + " KB";
-    $("mat").innerHTML = M.length ? `<h3>Dars materiallari</h3>` + M.map(m => `<div class="card"><div class="row"><div class="ic">📄</div><div style="flex:1;min-width:0">
+    // 🎧 Auto Dictation (27.11): ixtiyoriy listening mashqi, alohida sahifa (dictation/). Ball va kartochka yo'q; natija ustozga boradi.
+    const dk = encodeURIComponent(D.k || ""), dcard = `<div class="card"><div class="row"><div class="ic">🎧</div><div style="flex:1;min-width:0">
+      <div class="tt">Auto Dictation · ixtiyoriy mashq</div><div class="mt">Audio subtitr bilan ketadi, bo'sh joyga eshitgan so'zingizni yozasiz. 5 xil usul, quloqchin bilan.</div></div></div>
+      <div class="act"><a class="btn" href="../dictation/?k=${dk}${TV ? "&tv=1" : ""}">🎧 Ochish</a></div></div>`;
+    $("mat").innerHTML = dcard + (M.length ? `<h3>Dars materiallari</h3>` + M.map(m => `<div class="card"><div class="row"><div class="ic">📄</div><div style="flex:1;min-width:0">
       <div class="tt">${esc(m.title)}</div><div class="mt">📨 ${dt(m.at)} · ${sz(m.size)}</div></div></div>
       <div class="act"><button class="btn" data-pdf="${esc(m.url)}" data-title="${esc(m.title)}">📄 Ochish</button></div></div>`).join("")
-      : `<div class="empty">Hozircha material yo'q. Ustoz dars prezentatsiyasini yuborganda shu yerda chiqadi.</div>`;
+      : `<div class="empty">Hozircha material yo'q. Ustoz dars prezentatsiyasini yuborganda shu yerda chiqadi.</div>`);
   }
   function render() { renderTasks(); renderNotes(); renderRes(); renderMat(); badge(); sozTab(); }
   function show(t) {
