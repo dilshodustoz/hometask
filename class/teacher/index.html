@@ -1264,9 +1264,25 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   let authKnown = false;
   const showLoginBtn = () => { $("authWait").classList.add("hide"); $("btnLogin").classList.remove("hide"); };
   setTimeout(() => { if (!authKnown) { showLoginBtn(); if (!$("loginMsg").textContent) $("loginMsg").textContent = "Internet sekin, kirish tekshirilmoqda… Kuting yoki qayta kiring."; } }, 20000);
+  // 27.11: qurilma eslab qolinadi — oldin kirilgan bo'lsa sahifa Firebase javobini kutmay darhol ochiladi
+  // (admin sozlamalari nusxasi localStorage'da). Firebase so'rovlari kirish tekshiruvi tugaguncha o'zi kutib turadi.
+  // Firebase "kirilmagan" desa — nusxa o'chiriladi va sahifa kirish oynasiga qaytadi.
+  const ADM_C = "cls_admin_c";
+  let started = false;
+  try {
+    const c = JSON.parse(localStorage.getItem(ADM_C) || "null");
+    if (c && c.admin && localStorage.getItem(AUTH_BK)) {
+      admin = c.admin; $("who").textContent = c.email || "";
+      $("login").classList.add("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.remove("hide"));
+      started = true;
+      setTimeout(() => { try { start(); } catch (e) { console.warn("tez ochilish:", e); } }, 0);   // skriptning qolgan qismi o'qilgach
+    }
+  } catch (e) { console.warn("tez ochilish:", e); }
   auth.onAuthStateChanged(u => {
     authKnown = true;
     if (!u) {
+      try { localStorage.removeItem(ADM_C); } catch (e) {}
+      if (started) { location.reload(); return; }
       showLoginBtn();
       let was = false; try { was = localStorage.getItem("cls_in") === "1"; } catch (e) {}
       if (was && !$("loginMsg").textContent) $("loginMsg").textContent = "Brauzer kirishni eslab qolmadi. iPhone'da sahifani Safari'da oching (Telegram yoki boshqa ilova ichidagi brauzerda emas) yoki Safari → Ulashish → \"Bosh ekranga qo'shish\".";
@@ -1276,9 +1292,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     let tries = 0;
     const loadAdmin = () => db.ref("admin").get().then(s => {
       admin = s.val() || {};
+      try { localStorage.setItem(ADM_C, JSON.stringify({ admin: admin, email: u.email })); } catch (e) {}
       $("loginMsg").textContent = "";
+      if (started) { drawSecret(); return; }   // sahifa nusxadan ochilgan: faqat yangi sozlamalarni olamiz
       $("login").classList.add("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.remove("hide"));
-      start();
+      started = true; start();
     }).catch(e => {
       // Faqat haqiqatan ruxsat yo'q bo'lsa chiqaramiz; internet uzilishi yoki sekin ulanishda qayta urinamiz
       if (/permission/i.test(String(e && (e.code || e.message)))) {
