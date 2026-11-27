@@ -398,7 +398,7 @@
   }
   // 🧩 Self Study (27.11): ixtiyoriy umumiy mashqlar; hozircha 🎧 Auto Dictation —, alohida sahifa (dictation/). Ball va kartochka yo'q; natija ustozga boradi.
   function dictCard() {
-    const DICT_ALL = false;   // false = faqat Test guruhi (D.test) ko'radi; hammaga ochish uchun true
+    const DICT_ALL = true;   // 27.11: hammaga ochildi (false = faqat Test guruhi)
     const dk = encodeURIComponent(D.k || ""), dcard = !(DICT_ALL || D.test) ? "" : `<h3>🧩 Self Study · ixtiyoriy</h3><div class="card"><div class="row"><div class="ic">🎧</div><div style="flex:1;min-width:0">
       <div class="tt">Auto Dictation</div><span class="chip ok">🎧 ixtiyoriy · ball yo'q</span><div class="mt">Audio subtitr bilan ketadi, bo'sh joyga eshitgan so'zingizni yozasiz. 5 xil usul, quloqchin bilan.</div></div></div>
       <div class="act"><a class="btn" href="../dictation/?k=${dk}${TV ? "&tv=1" : ""}">🎧 Ochish</a></div></div>`;
