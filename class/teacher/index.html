@@ -1006,6 +1006,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         <div class="row" style="margin-top:10px"><button class="btn btn-orange" id="sSave">Saqlash</button><span class="muted">Ovozli javoblar Drive'da saqlanadi, «Kim topshirdi» oynasida eshitiladi.</span></div>
       </div>
       <div style="margin-top:10px">
+        <div class="row hide" id="hwScopeRow" style="margin-bottom:6px"><span class="field-label" style="margin:0">Guruh:</span>
+          <div class="seg" id="hwScope"><button data-sc="both" type="button">👥 Ikkala guruh</button><button data-sc="one" type="button" id="hwScopeOne">Faqat shu guruh</button></div></div>
         <div class="row"><span class="field-label" style="margin:0">Kimga:</span> <b id="hwWhoTxt">guruhdagi hamma</b>
           <button class="btn btn-secondary btn-sm" id="hwWhoBtn" type="button">O'quvchilarni tanlash</button></div>
         <div class="hide" id="hwWhoBox" style="margin-top:8px">
@@ -1557,7 +1559,28 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     });
     hwWhoTxt();
   }
+  // 👥 Ikkala guruh (27.11): Morning + Afternoon ga bitta bosishda. Server o'zgarmagan: har guruhga alohida hw_send (ketma-ket).
+  // Test guruhida ko'rinmaydi. Tanlov eslab qolinadi (odatiy: ikkala guruh).
+  var hwBoth = true; try { hwBoth = localStorage.getItem("cls_hw_both") !== "0"; } catch (e) {}
+  const HW_BOTH = ["morning", "afternoon"];
+  function hwBothOn() { return hwBoth && HW_BOTH.indexOf(group) >= 0; }
+  function hwGrpKeys(g) { return Object.keys(roster).filter(k => roster[k].group === g); }
+  function hwScopeDraw() {
+    const real = HW_BOTH.indexOf(group) >= 0, on = hwBothOn();
+    $("hwScopeRow").classList.toggle("hide", !real);
+    $("hwScopeOne").textContent = "Faqat " + (CLS.GROUPS[group] || {}).name;
+    document.querySelectorAll("#hwScope button").forEach(b => b.classList.toggle("active", (b.dataset.sc === "both") === on));
+    $("hwWhoBtn").classList.toggle("hide", on);
+    if (on) $("hwWhoBox").classList.add("hide");
+  }
+  document.querySelectorAll("#hwScope button").forEach(b => b.onclick = () => {
+    hwBoth = b.dataset.sc === "both";
+    try { localStorage.setItem("cls_hw_both", hwBoth ? "1" : "0"); } catch (e) {}
+    $("hwPrevBox").classList.add("hide"); $("hwMsg").textContent = ""; hwWhoTxt();
+  });
   function hwWhoTxt() {
+    hwScopeDraw();
+    if (hwBothOn()) { $("hwWhoTxt").textContent = "ikkala guruhdagi hamma (" + HW_BOTH.map(g => CLS.GROUPS[g].name + " " + hwGrpKeys(g).length).join(" + ") + ")"; return; }
     if (hwPickGroup !== group) { hwPick = null; hwPickGroup = group; }
     const n = hwGroupKeys().length;
     $("hwWhoTxt").textContent = hwPick ? `${hwPick.size} ta tanlangan o'quvchi (${n} tadan)` + (hwPick.size && hwPick.size <= 5 ? ": " + Array.from(hwPick).map(k => roster[k].name).join(", ") : "") : `guruhdagi hamma (${n})`;
@@ -1568,9 +1591,11 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function hwBody() {
     hwWhoTxt();
     const b = { skill: hwReal(), t: $("hwTest").value, chat: CLS.GROUPS[group].chat, date: $("hwDate").value, time: $("hwTime").value };
-    if (hwPick) b.keys = Array.from(hwPick);
+    if (hwPick && !hwBothOn()) b.keys = Array.from(hwPick);
     return b;
   }
+  // Ikkala guruh yoqilgan bo'lsa: [{g, body}] har guruh uchun, aks holda bitta (joriy guruh)
+  function hwTargets(b) { return (hwBothOn() ? HW_BOTH : [group]).map(g => ({ g: g, b: Object.assign({}, b, { chat: CLS.GROUPS[g].chat }) })); }
   $("hwPreview").onclick = () => {
     const b = hwBody();
     if (!b.t || b.t === "__new") { $("hwMsg").textContent = "⚠️ Avval vazifani tanlang yoki saqlang"; return; }
@@ -1578,12 +1603,18 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     if (b.keys && !b.keys.length) { $("hwMsg").textContent = "⚠️ Kamida bitta o'quvchini tanlang"; return; }
     if (new Date(b.date + "T" + b.time + ":00+05:00").getTime() < CLS.now()) { $("hwMsg").textContent = "⚠️ Muddat o'tib ketgan vaqt"; return; }
     $("hwMsg").textContent = "Tayyorlanmoqda…"; $("hwPrevBox").classList.add("hide");
-    api(Object.assign({ admin: "hw_send", dry: true }, b)).then(r => {
-      if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
+    const T = hwTargets(b);
+    Promise.all(T.map(x => api(Object.assign({ admin: "hw_send", dry: true }, x.b)))).then(R => {
+      const bad = R.find(x => !x.ok); if (bad) { $("hwMsg").textContent = "⚠️ " + bad.error; return; }
+      const r = R[T.findIndex(x => x.g === group)] || R[0], N = R.reduce((s, x) => s + (x.n || 0), 0);
       $("hwMsg").textContent = "";
-      const was = ((hwLog || {})[b.skill + "_" + b.t] || { chats: {} }).chats[String(b.chat)];
-      $("hwPrevInfo").innerHTML = `<b>${CLS.esc(CLS.GROUPS[group].name)}</b> guruhidagi <b>${r.n}</b> ${b.keys ? "ta tanlangan " : ""}o'quvchiga boradi. Namuna (birinchi o'quvchi uchun):` +
-        (was ? `<br>⚠️ Bu test shu guruhga ${fmtAt(was.at)} da yuborilgan. Qayta yuborsangiz, muddat yangilanadi va xabar yana boradi.` : "");
+      const wasOf = c => ((hwLog || {})[b.skill + "_" + b.t] || { chats: {} }).chats[String(c)];
+      const was = T.map((x, i) => ({ g: x.g, w: wasOf(x.b.chat) })).filter(x => x.w);
+      $("hwPrevInfo").innerHTML = (T.length > 1
+        ? `<b>Ikkala guruhga</b> boradi: ${T.map((x, i) => `<b>${CLS.esc(CLS.GROUPS[x.g].name)}</b> ${R[i].n}`).join(" + ")} = <b>${N}</b> o'quvchi. Muddat ikkalasida bir xil. Namuna (birinchi o'quvchi uchun):`
+        : `<b>${CLS.esc(CLS.GROUPS[group].name)}</b> guruhidagi <b>${r.n}</b> ${b.keys ? "ta tanlangan " : ""}o'quvchiga boradi. Namuna (birinchi o'quvchi uchun):`) +
+        was.map(x => `<br>⚠️ Bu test ${T.length > 1 ? CLS.esc(CLS.GROUPS[x.g].name) + " guruhiga" : "shu guruhga"} ${fmtAt(x.w.at)} da yuborilgan. Qayta yuborsangiz, muddat yangilanadi va xabar yana boradi.`).join("");
+      r.n_cab = R.reduce((s, x) => s + (x.n_cab || 0), 0);
       $("hwPrevText").innerHTML = r.sample;
       $("hwPrevWhere").textContent = r.n_cab ? "· " + r.n_cab + " tasi kabinetga" : "";
       $("hwPrevBtn").textContent = r.btn || "Boshlash";
@@ -1593,7 +1624,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       } else {   // server hali eski: faqat xabar
         $("hwPrevBtn").removeAttribute("href"); $("hwPvWrap").parentNode.classList.add("hide");
       }
-      $("hwSend").textContent = `Yuborish (${r.n} o'quvchi)`;
+      $("hwSend").textContent = T.length > 1 ? `Ikkala guruhga yuborish (${N} o'quvchi)` : `Yuborish (${r.n} o'quvchi)`;
       $("hwPrevBox").classList.remove("hide"); hwPvSize();
     }).catch(e => { $("hwMsg").textContent = "⚠️ " + e.message; });
   };
@@ -1613,16 +1644,25 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   window.addEventListener("resize", () => { if (!$("hwPrevBox").classList.contains("hide")) hwPvSize(); });
   $("hwSend").onclick = () => {
     const b = hwBody(), btn = $("hwSend");
-    if (!confirm(b.keys ? `${b.keys.length} ta tanlangan o'quvchiga yuborilsinmi?` : `${CLS.GROUPS[group].name} guruhiga yuborilsinmi?`)) return;
+    const T = hwTargets(b), nm = g => CLS.GROUPS[g].name;
+    if (!confirm(T.length > 1 ? `Ikkala guruhga (${T.map(x => nm(x.g)).join(" + ")}) yuborilsinmi?` : b.keys ? `${b.keys.length} ta tanlangan o'quvchiga yuborilsinmi?` : `${nm(group)} guruhiga yuborilsinmi?`)) return;
     btn.disabled = true; $("hwMsg").textContent = "Yuborilmoqda… (bir necha soniya)";
-    api(Object.assign({ admin: "hw_send" }, b)).then(r => {
-      btn.disabled = false;
-      if (!r.ok) { $("hwMsg").textContent = "⚠️ " + r.error; return; }
-      $("hwPrevBox").classList.add("hide");
-      $("hwMsg").textContent = `✅ ${r.sent} ta o'quvchiga yuborildi. Muddat: ${r.deadline_text}.` +
-        (r.fail.length ? "\n⚠️ Bormadi: " + r.fail.map(f => f.name + " (" + f.error + ")").join(", ") : "");
+    const done = [];   // guruhlar ketma-ket: server bitta lock bilan ishlaydi
+    T.reduce((p, x) => p.then(() => {
+      if (T.length > 1) $("hwMsg").textContent = `Yuborilmoqda: ${nm(x.g)}… (${done.length + 1}/${T.length})`;
+      return api(Object.assign({ admin: "hw_send" }, x.b)).then(r => { if (!r.ok) throw new Error((T.length > 1 ? nm(x.g) + ": " : "") + r.error); done.push({ g: x.g, r: r }); });
+    }), Promise.resolve()).then(() => {
+      btn.disabled = false; $("hwPrevBox").classList.add("hide");
+      const sent = done.reduce((s, x) => s + x.r.sent, 0), fail = [].concat(...done.map(x => x.r.fail || []));
+      $("hwMsg").textContent = `✅ ${sent} ta o'quvchiga yuborildi` + (T.length > 1 ? " (" + done.map(x => nm(x.g) + " " + x.r.sent).join(" + ") + ")" : "") + `. Muddat: ${done[0].r.deadline_text}.` +
+        (fail.length ? "\n⚠️ Bormadi: " + fail.map(f => f.name + " (" + f.error + ")").join(", ") : "");
       hwLoad();
-    }).catch(e => { btn.disabled = false; $("hwMsg").textContent = "⚠️ " + e.message + "\nYuborish davom etgan bo'lishi mumkin: bir daqiqadan keyin \"Yangilash\" ni bosing."; });
+    }).catch(e => {
+      btn.disabled = false;
+      $("hwMsg").textContent = (done.length ? "✅ " + done.map(x => nm(x.g) + ": " + x.r.sent + " ta yuborildi").join(", ") + "\n" : "") + "⚠️ " + e.message +
+        "\nYuborish davom etgan bo'lishi mumkin: bir daqiqadan keyin \"Yangilash\" ni bosing." + (done.length ? " Qolgan guruhga qayta yuborsangiz, faqat o'sha guruhni tanlang." : "");
+      if (done.length) hwLoad();
+    });
   };
   let hwBusy = false;
   // ---------- Dars materiallari ----------
