@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex">
+<link rel="icon" href="../kabinet/favicon-32.png">
+<title>Auto Dictation</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+body{margin:0}
+/* Layout: one working column — controls strip, dark "subtitle stage" as the hero, results below. */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --ink:#13232a; --muted:#5b6e75; --line:#d3dde0;
+  --stage:#0f2228; --stage2:#16323a; --sub:#f3f6f4; --subdim:#7f979d;
+  --accent:#e39b2d; --accent-ink:#3a2300; --ok:#1f9d6b; --bad:#d6453d; --okbg:#e3f5ec; --badbg:#fbe7e5;
+  --chip:#e4ecee;
+  --f-sub:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-head:"Bricolage Grotesque", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1518; --surface:#122126; --ink:#e4eef0; --muted:#93a8ae; --line:#24393f;
+  --stage:#07161a; --stage2:#0f262c; --chip:#1b2f35; --okbg:#123326; --badbg:#3a1b19; --accent-ink:#2a1900; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1518; --surface:#122126; --ink:#e4eef0; --muted:#93a8ae; --line:#24393f;
+  --stage:#07161a; --stage2:#0f262c; --chip:#1b2f35; --okbg:#123326; --badbg:#3a1b19; --accent-ink:#2a1900; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-sub);font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-block:18px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--f-head);font-weight:700;font-size:1.6rem;margin:0;letter-spacing:-.01em}
+h2{font-family:var(--f-head);font-weight:700;font-size:1.15rem;margin:0}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px}
+.top p{margin:0;color:var(--muted)}
+.vtabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.vtab{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 10px;text-align:left;cursor:pointer;font:inherit;min-width:0}
+.vtab b{display:block;font-family:var(--f-head);font-size:.95rem}
+.vtab span{display:block;font-size:.78rem;color:var(--muted);line-height:1.3}
+.vtab[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.vtab:focus-visible,.btn:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:700px){.vtabs{grid-template-columns:repeat(2,1fr)}.vtab:last-child{grid-column:span 2}}
+.vdesc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.vdesc>div:first-child{max-width:75ch}
+.vdesc p{margin:0}
+.vdesc .how{color:var(--muted);font-size:.9rem}
+
+.pick{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+select{font:inherit;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);max-width:100%}
+.btn{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{padding:5px 9px;font-size:.85rem}
+/* stage */
+.stage{background:var(--stage);border-radius:16px;color:var(--sub);padding:18px 18px 14px;display:flex;flex-direction:column;gap:12px;min-height:320px;position:relative;overflow:hidden}
+.meta{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;color:var(--subdim);font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.bar{height:4px;background:var(--stage2);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.hist{display:flex;flex-direction:column;gap:4px;min-height:58px;justify-content:flex-end}
+.hist div{color:var(--subdim);font-size:1rem;line-height:1.35}
+.hist .okw{color:#7fd8ae}
+.line{font-size:1.65rem;line-height:1.6;text-align:center;min-height:5.2em;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0 .32em;padding:6px 0}
+@media (max-width:600px){.line{font-size:1.28rem}}
+.w{color:#8aa3a9;transition:color .12s}
+.w.said{color:var(--sub)}
+.w.okw{color:#7fd8ae;font-weight:700}
+.w.shown{color:var(--accent);font-weight:700}
+.bw{display:inline-flex;align-items:baseline}
+.blank{display:inline-flex;flex-direction:column;align-items:center;vertical-align:baseline;position:relative}
+.blank input{font:inherit;font-weight:700;color:var(--sub);background:var(--stage2);border:0;border-bottom:3px solid var(--accent);border-radius:6px 6px 2px 2px;padding:0 .25em;width:7ch;text-align:center;outline:none}
+.blank input:focus{box-shadow:0 0 0 2px rgba(227,155,45,.45)}
+.blank.now input{animation:pulse .5s ease-in-out 2}
+.blank.wrong input{border-bottom-color:var(--bad);animation:shake .35s}
+.blank.locked input{opacity:.7}
+.blank .q{position:absolute;top:-1.15em;font-size:.55em;color:var(--accent);font-family:var(--f-mono);letter-spacing:.04em}
+.blank .hint{font-family:var(--f-mono);font-size:.5em;color:var(--accent);letter-spacing:.18em;line-height:1.2;min-height:1.2em}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(227,155,45,.35)}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (prefers-reduced-motion:reduce){.blank.now input,.blank.wrong input{animation:none}}
+.fb{min-height:2.6em;text-align:center;font-size:.98rem;color:var(--sub)}
+.fb .diff{font-family:var(--f-mono);font-size:1.05rem;letter-spacing:.06em;display:inline-block;margin:2px 0}
+.fb .diff .k{color:#7fd8ae}.fb .diff .x{color:#ff8a80;text-decoration:underline wavy}.fb .diff .del{color:#ff8a80;text-decoration:line-through}.fb .diff .miss{color:var(--accent)}
+.fb .tip{display:block;color:var(--subdim);font-size:.9rem}
+.ctrl{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.ctrl .btn{background:var(--stage2);border-color:#28474f;color:var(--sub)}
+.ctrl .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chips .btn{background:var(--stage2);border-color:#28474f;color:var(--sub)}
+.chips .btn.sel-ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.chips .btn.sel-bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.pending{display:flex;flex-direction:column;gap:6px}
+.pcard{background:var(--stage2);border-radius:10px;padding:8px 10px;font-size:1.05rem;display:flex;flex-direction:column;gap:6px}
+.pcard .t{display:flex;flex-wrap:wrap;gap:0 .3em;align-items:baseline}
+.pcard .tl{height:3px;background:#28474f;border-radius:2px;overflow:hidden}.pcard .tl i{display:block;height:100%;background:var(--accent);width:100%}
+.splash{position:absolute;inset:0;background:var(--stage);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:20px}
+.splash p{margin:0;color:var(--subdim);max-width:46ch}
+.splash .big{font-family:var(--f-head);font-size:1.4rem;color:var(--sub)}
+.lvl{display:inline-flex;gap:3px;align-items:center}.lvl i{width:16px;height:6px;border-radius:2px;background:#28474f}.lvl i.on{background:var(--accent)}
+kbd{font-family:var(--f-mono);font-size:.78em;border:1px solid #2d4c54;border-radius:4px;padding:0 4px;color:var(--subdim)}
+/* results */
+.res{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.stat{background:var(--chip);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-family:var(--f-head);font-size:1.45rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.8rem;color:var(--muted)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td.m{font-family:var(--f-mono);font-size:.85rem}
+.tag{display:inline-block;padding:1px 7px;border-radius:20px;font-size:.75rem;background:var(--chip);color:var(--muted)}
+.tag.bad{background:var(--badbg);color:var(--bad)}.tag.ok{background:var(--okbg);color:var(--ok)}
+.note{color:var(--muted);font-size:.85rem;margin:0}
+.foot{color:var(--muted);font-size:.82rem}
+.tog{display:inline-flex;gap:6px;align-items:center;font-size:.9rem;color:var(--muted);cursor:pointer}
+.stage.hidetext .line .w:not(.said){visibility:hidden}
+.stage.hidetext .line .blank:not(.seen){visibility:hidden}
+.foot a{color:inherit}
+</style>
+</head><body>
+
+
+<div class="wrap">
+  <div class="top">
+    <h1>🎧 Auto Dictation</h1>
+    <p>Ixtiyoriy listening mashqi · quloqchin bilan ishlang · <a href="../kabinet/" style="color:inherit">← Kabinet</a></p>
+  </div>
+
+  <div class="vtabs" id="vtabs" role="group" aria-label="Versiya"></div>
+
+  <div class="vdesc">
+    <div><p id="vd1"></p><p class="how" id="vd2"></p></div>
+    <div class="pick">
+      <select id="part" aria-label="Audio"></select>
+      <select id="range" aria-label="Qism"></select>
+      <label class="tog" id="hideWrap"><input type="checkbox" id="hideTxt"> Matnni oldindan ko'rsatmaslik</label>
+      <button class="btn primary" id="start">▶ Boshlash</button>
+    </div>
+  </div>
+
+  <section class="stage" id="stage" aria-live="polite">
+    <div class="meta"><span id="m1">—</span><span id="m2"></span></div>
+    <div class="bar"><i id="prog"></i></div>
+    <div class="hist" id="hist"></div>
+    <div class="line" id="line"></div>
+    <div class="chips" id="chips" hidden></div>
+    <div class="pending" id="pending" hidden></div>
+    <div class="fb" id="fb"></div>
+    <div class="ctrl" id="ctrl">
+      <button class="btn primary" id="bCheck">✓ Tekshirish <kbd>Enter</kbd></button>
+      <button class="btn" id="bReplay" title="Shift+Enter">⟲ Gapni qayta</button>
+      <button class="btn" id="bBack">◀ 3 s oldindan</button>
+      <button class="btn" id="bWord">🔤 Faqat so'z</button>
+      <button class="btn" id="bSlow" aria-pressed="false">🐢 0.75×</button>
+      <button class="btn" id="bGive">Ko'rsat</button>
+      <button class="btn" id="bPause">⏸ To'xtat</button>
+      <button class="btn" id="bEnd">Yakunlash</button>
+    </div>
+    <div class="splash" id="splash">
+      <div class="big" id="spT">Audio yuklanmoqda…</div>
+      <p id="spP">Versiyani va audioni tanlang, so'ng “Boshlash”ni bosing. Quloqchin bilan ishlang.</p>
+    </div>
+  </section>
+
+  <section class="res" id="res" hidden></section>
+
+  <p class="foot">Audio: Mock Set 21–24. Bu ixtiyoriy mashq: ball va kartochka yo'q. Mashq tugagach natija ustozga ko'rinadi.</p>
+</div>
+
+<script>
+let DATA=[];
+const API="https://script.google.com/macros/s/AKfycbyG1ztRvvg2zdwdel1FhDjUytbhkZ0BGjITPkUAo_DNSddF23lbtlVMvbvex6CsG1ZGDw/exec";
+const QP=new URLSearchParams(location.search);
+let KEY=QP.get("k")||"";const TVIEW=QP.get("tv")==="1";
+try{if(KEY)localStorage.setItem("ad_k",KEY);else KEY=localStorage.getItem("ad_k")||"";}catch(e){}
+function sendLog(rec,el){
+  if(!KEY||TVIEW){if(el)el.textContent=TVIEW?"Ustoz ko'rinishi: natija yuborilmadi.":"Natija ustozga yuborilmadi: mashqni kabinetdagi tugma orqali oching.";return;}
+  const body=JSON.stringify({dict:"log",k:KEY,rec});let n=0;
+  const go=()=>fetch(API,{method:"POST",body,headers:{"Content-Type":"text/plain;charset=utf-8"},redirect:"follow"}).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||"xato");if(el)el.textContent="✓ Natija ustozga yuborildi.";})
+    .catch(e=>{if(++n<3)setTimeout(go,4000*n);else if(el)el.textContent="Natija yuborilmadi (internet). Keyinroq yana bir marta mashq qilsangiz yetarli.";});
+  go();}
+const VERS=[
+ {id:1,name:"V1 · Klassik",short:"1 so'z, to'xtaydi",
+  d1:"Gap subtitr bo'lib chiqadi, audio gapni to'liq o'qiydi va to'xtaydi. Bitta so'z o'rni bo'sh: eshitganingizni yozing.",
+  d2:"Xato bo'lsa audio so'zdan 2–3 soniya oldindan qayta eshittiriladi. 2-xatoda harflar soni, 3-xatoda birinchi harf, 5-xatoda javob ko'rsatiladi (baribir o'zingiz yozasiz)."},
+ {id:2,name:"V2 · IELTS kalit",short:"bashorat + javob so'zi",
+  d1:"Audio to'xtamasdan, oddiy subtitr bilan ketadi. Faqat IELTS javobi, raqam yoki ism bor gapda to'xtaydi. Avval bo'sh joyga qanday so'z kelishini taxmin qilasiz, keyin eshitib yozasiz.",
+  d2:"Xatoda harfma-harf tahlil chiqadi: qaysi harf xato, qaysi harf tushib qolgan. Ko'plik -s, bosh harf va raqam bo'yicha IELTS qoidasi ham ko'rsatiladi."},
+ {id:3,name:"V3 · Kuchsiz so'zlar",short:"a, of, to, 've, 'd…",
+  d1:"Har gapda 2–3 ta kichik so'z bo'sh qoladi: a, of, to, have, 'd, 'll, than, them. Bular nutqda yutilib ketadi va o'quvchilar ko'p o'tkazib yuboradi.",
+  d2:"Har xatodan keyin o'sha so'z qanday talaffuz qilinishi ko'rsatiladi, masalan could have → “kudəv”. Sekin (0.75×) eshitish shu versiya uchun asosiy yordam."},
+ {id:4,name:"V4 · Zinapoya",short:"so'zdan butun gapgacha",
+  d1:"Moslashuvchan versiya. 1 so'zdan boshlanadi. 3 marta birinchi urinishda to'g'ri yozsangiz daraja oshadi: 2 so'z, keyin 3–4 so'zli ibora, keyin gapning butun oxiri.",
+  d2:"Ibora qisman to'g'ri bo'lsa, to'g'ri so'zlar ochiladi va faqat xato so'zlar bo'sh qoladi. Ketma-ket 2 ta qiyin gapda daraja pasayadi."},
+ {id:5,name:"V5 · Imtihon oqimi",short:"audio to'xtamaydi",
+  d1:"Haqiqiy imtihondagidek audio umuman to'xtamaydi. Bo'sh joy chiqqanda yozib ulgurish kerak: keyingi bo'sh joygacha (kamida 7 soniya) vaqt bor. To'g'ri yoki xatoligi oxirida ko'rsatiladi.",
+  d2:"Oxirida har bir xato yonida ▶ tugmasi bor. “Xatolarni mashq qilish” xato qilingan gaplarni V1 usulida qayta beradi."}
+];
+const STOP=new Set("a an the and or but so if of to in on at for from by with as is are was were be been being am do does did have has had i you he she it we they me him her us them my your his its our their this that these those there here what which who whom whose when where why how not no yes very just also than then too can could will would shall should may might must about into over under up down out off again once all any some each few more most other such only own same well oh okay ok right really actually yeah like get got go going think thought know knew want need mean guess sure suppose thing things something anything quite much many lot good great nice fine look looks looking looked say said tell told make made take took come came give see saw kind sort maybe probably perhaps".split(" "));
+const FUNC={"a":["a","“a” juda qisqa /ə/ — oldingi so'zga yopishib ketadi."],"an":["an","“an” /ən/ — keyingi unli bilan qo'shilib eshitiladi: an hour → ə-nauə."],"the":["the","“the” undoshdan oldin /ðə/, unlidan oldin /ði/."],"of":["of","“of” kuchsiz shaklda /əv/ yoki hatto /ə/: a lot of → “ə-lotə”."],"to":["to","“to” /tə/: want to → “wonə”, going to → “gonə”."],"and":["and","“and” ko'pincha /ən/ yoki /n/ bo'lib qoladi."],"have":["have","modal fe'ldan keyin “have” /əv/: could have → “kudəv”."],"has":["has","“has” /əz/ — oldingi so'zga yopishadi: she has → “shiəz”."],"had":["had","“had” /əd/ yoki 'd bo'lib qoladi."],"been":["been","“been” /bin/ — qisqa, urg'usiz."],"was":["was","“was” /wəz/ — kuchsiz, tez aytiladi."],"were":["were","“were” /wə/ — deyarli eshitilmaydi."],"can":["can","“can” /kən/ kuchsiz; “can't” esa urg'uli /kɑːnt/ — farqni t emas, unli beradi."],"for":["for","“for” /fə/: for example → “fərigzampl”."],"from":["from","“from” /frəm/ — qisqa."],"at":["at","“at” /ət/ — t ko'pincha yutiladi."],"them":["them","“them” /ðəm/, tez nutqda 'em."],"than":["than","“than” /ðən/ — “then” bilan adashtirmang."],"some":["some","“some” /səm/ — urg'usiz."],"would":["would","“would” /wəd/ yoki 'd."],"could":["could","“could” /kəd/ — l aytilmaydi."],"should":["should","“should” /ʃəd/."],"will":["will","“will” ko'pincha 'll bo'lib qoladi."],"there":["there","“there” /ðə/ — there are → “ðərə”."],"that":["that","bog'lovchi “that” /ðət/ — kuchsiz."],"as":["as","“as” /əz/: as well as → “əzweləz”."],"are":["are","“are” /ə/ — they are → “ðeə”."],"is":["is","“is” 's bo'lib qisqaradi: it is → it's."],"in":["in","“in” qisqa, oldingi so'zga ulanadi: in a → “inə”."],"on":["on","“on” keyingi unli bilan ulanadi: on it → “onit”."],"with":["with","“with” /wɪð/ — th ko'pincha juda yumshoq."],"your":["your","“your” /jə/ — you're bilan bir xil eshitiladi."],"their":["their","“their” = “there” = “they're” — eshitishda bir xil, ma'noga qarang."]};
+const CONTR={"'d":"'d = would yoki had (I'd = I would / I had).","'ll":"'ll = will — qisqa /l/ bo'lib eshitiladi.","'ve":"'ve = have — /v/ tovushi juda yengil.","'re":"'re = are — they're, you're, we're.","n't":"n't — inkor; ko'pincha t yutiladi, unliga quloq soling.","'s":"'s = is / has / egalik — kontekstga qarang.","'m":"'m = am."};
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const clean=w=>w.toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9'£$.\-]/g,"").replace(/^[.\-']+|[.\-']+$/g,"");
+const NUMW=["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"];
+function canon(s){s=s.toLowerCase().replace(/[’‘`]/g,"'").replace(/\s+/g," ").trim().replace(/^[^a-z0-9£$]+|[^a-z0-9%]+$/g,"");
+  if(/^[a-z](-[a-z])+$/.test(s)) s=s.replace(/-/g,"");
+  const i=NUMW.indexOf(s); if(i>=0) s=String(i);
+  return s;}
+function lev(a,b){const m=a.length,n=b.length,d=[];for(let i=0;i<=m;i++){d[i]=[i];}for(let j=1;j<=n;j++)d[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]==b[j-1]?0:1));return d;}
+function diffHTML(typed,target){ // colour typed letters without revealing target
+  const a=typed.toLowerCase(),b=target.toLowerCase(),d=lev(a,b);let i=a.length,j=b.length,out=[];
+  while(i>0||j>0){
+    if(i>0&&j>0&&a[i-1]==b[j-1]&&d[i][j]==d[i-1][j-1]){out.unshift(`<span class="k">${esc(typed[i-1])}</span>`);i--;j--;}
+    else if(i>0&&j>0&&d[i][j]==d[i-1][j-1]+1){out.unshift(`<span class="x">${esc(typed[i-1])}</span>`);i--;j--;}
+    else if(i>0&&d[i][j]==d[i-1][j]+1){out.unshift(`<span class="del">${esc(typed[i-1])}</span>`);i--;}
+    else {out.unshift(`<span class="miss">^</span>`);j--;}
+  }
+  return out.join("");}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0)/4294967296;}
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");localStorage.setItem(k,JSON.stringify(v));}catch(e){return null}}
+
+/* ---------- word tagging ---------- */
+function prepPart(P){
+  P.chunks.forEach((c,ci)=>{
+    c.i=ci;
+    c.words=c.w.map((x,wi)=>{const raw=x[0];return {t:raw,p:x[1],s:x[2],e:x[3],q:x[4]||0,c:clean(raw),wi,
+      name:wi>0&&/^[A-Z][a-z]/.test(raw)&&!/[.?!]\s*$/.test(c.w[wi-1][1])&&raw!=="I",
+      num:/\d/.test(raw), spelled:/^[A-Za-z](-[A-Za-z])+$/.test(raw)}});
+    const last=c.words[c.words.length-1],nx=P.chunks[ci+1];
+    c.stopAt=nx? Math.max(last.e+0.05,Math.min(last.e+0.22,nx.w[0][2]+0.02)) : last.e+0.3;
+  });
+}
+
+
+function scoreContent(c,w){
+  if(w.q) return 100;
+  if(w.spelled) return 60;
+  if(w.c.length<2) return -1;
+  let s=-1;
+  if(w.num) s=28;
+  else if(w.name) s=30;
+  else if(w.c.length>=4&&!STOP.has(w.c)&&!w.c.includes("'")) s=10+Math.min(w.c.length,10);
+  if(s<0) return s;
+  s+= (w.wi/c.words.length)*10;
+  if(w.wi===0) s-=20;
+  s+= hash(w.c+c.i)*6;
+  return s;}
+const dup=(c,w)=>c.words.some(x=>x.wi!==w.wi&&x.c===w.c);
+function pickContent(c,exclude=[]){let best=null,bs=0;for(const w of c.words){if(exclude.includes(w.wi)||(!w.q&&dup(c,w)))continue;const s=scoreContent(c,w);if(s>bs){bs=s;best=w;}}return best;}
+function funcScore(c,w){
+  if(w.wi===0&&c.words.length>3) return -1;
+  const lc=w.c; let s=-1;
+  if(/'(d|ll|ve|re|s|m)$|n't$/.test(lc)&&lc.length>2) s=30;
+  else if(["of","to","a","an","have","has","had","been","would","could","will","were","was","than","them","their","there","some","should","can"].includes(lc)) s=22;
+  else if(["the","and","in","on","at","for","is","are","from","as","with","your","that"].includes(lc)) s=12;
+  if(s<0) return s;
+  return s+hash(lc+c.i)*8;}
+function pickFunc(c,n,exclude=[]){
+  const cand=c.words.filter(w=>!exclude.includes(w.wi)).map(w=>[funcScore(c,w),w]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]);
+  const out=[];for(const [s,w] of cand){if(out.length>=n)break;if(out.some(o=>Math.abs(o.wi-w.wi)<2)&&cand.length>n+1)continue;out.push(w);}
+  return out.sort((a,b)=>a.wi-b.wi);}
+function wordType(w){
+  if(w.num||/^\d/.test(w.c)) return "num";
+  if(w.spelled||w.name) return "name";
+  if(/[^s]s$/.test(w.c)&&w.c.length>3&&!/(ss|us|is|ous|ness)$/.test(w.c)) return "plural";
+  return "word";}
+const WT={num:"Raqam / son",name:"Ism, nom (bosh harf)",plural:"Ko'plikdagi ot (-s)",word:"Birlikdagi so'z"};
+
+/* ---------- blank plans per version ---------- */
+function planChunk(V,c,ctx){
+  // returns array of blank groups: {ids:[wi..], q}
+  const g=ids=>({ids,q:c.words[ids[0]].q,miss:0,done:false,shown:false,typed:[]});
+  if(V===1){const w=pickContent(c);return w?[g([w.wi])]:[];}
+  if(V===3){const n=c.words.length>=12?3:2;return pickFunc(c,n).map(w=>g([w.wi]));}
+  if(V===2||V===5){
+    const keys=c.words.filter(w=>w.q);
+    if(keys.length){const ids=keys.map(w=>w.wi);return [g(ids)];}
+    const sp=c.words.find(w=>(w.spelled||w.num&&w.c.length>=1)&&!dup(c,w));
+    if(sp) return [g([sp.wi])];
+    const nm=c.words.find(w=>w.name&&!STOP.has(w.c)&&w.c.length>2&&!dup(c,w));
+    if(nm&&hash(nm.c+c.i)<.6) return [g([nm.wi])];
+    if(V===5&&c.i%3===1){const w=pickContent(c);if(w)return [g([w.wi])];}
+    return [];}
+  if(V===4){
+    const L=ctx.level, w=pickContent(c);
+    if(!w) {const f=pickFunc(c,1);return f.length?[g([f[0].wi])]:[];}
+    if(L===1) return [g([w.wi])];
+    if(L===2){const f=pickFunc(c,1,[w.wi]);return [g([w.wi])].concat(f.map(x=>g([x.wi]))).sort((a,b)=>a.ids[0]-b.ids[0]);}
+    if(L===3){const n=c.words.length;let a=Math.max(0,Math.min(w.wi-1,n-4)),b=Math.min(n-1,a+3);if(n<4){a=0;b=n-1;}
+      return [g(range(a,b))];}
+    const n=c.words.length,a=n<=8?Math.min(1,n-1):n-7;return [g(range(a,n-1))];}
+  return [];}
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+
+/* ---------- audio ---------- */
+const audio=new Audio();audio.preload="auto";
+const blobs={};
+const CDN="https://cdn.jsdelivr.net/gh/dilshodustoz/hometask@af6bf0a4e7430c2e6edcdca700b9328b107f5709/audio/listening/";
+async function loadAudio(id){
+  if(blobs[id]) return blobs[id];
+  const [t,p]=id.split("_"),urls=[CDN+t+"/"+p+".m4a","../audio/listening/"+t+"/"+p+".m4a"];
+  let last;for(const u of urls){try{const r=await fetch(u);if(!r.ok)throw new Error("audio "+r.status);const b=URL.createObjectURL(await r.blob());blobs[id]=b;return b;}catch(e){last=e;}}
+  throw last;}
+let rate=1;
+
+/* ---------- state ---------- */
+let V=1,P=null,S=null,raf=0;
+function initUI(){
+  $("vtabs").innerHTML=VERS.map(v=>`<button class="vtab" data-v="${v.id}" aria-pressed="false"><b>${v.name}</b><span>${v.short}</span></button>`).join("");
+  $("vtabs").onclick=e=>{const b=e.target.closest(".vtab");if(!b)return;setV(+b.dataset.v);};
+  $("part").innerHTML=DATA.map((d,i)=>`<option value="${i}">${d.set} · ${d.title}</option>`).join("");
+  $("part").onchange=()=>{P=DATA[+$("part").value];fillRange();resetStage();};
+  $("range").onchange=resetStage;
+  $("start").onclick=start;
+  $("bCheck").onclick=check; $("bReplay").onclick=()=>replay("chunk"); $("bBack").onclick=()=>replay("back");
+  $("bWord").onclick=()=>replay("word"); $("bGive").onclick=give; $("bEnd").onclick=()=>finish();
+  $("bPause").onclick=togglePause;
+  $("bSlow").onclick=()=>{rate=rate===1?0.75:1;$("bSlow").setAttribute("aria-pressed",rate<1);$("bSlow").classList.toggle("primary",rate<1);audio.playbackRate=rate;};
+  document.addEventListener("keydown",e=>{
+    if(!S) return;
+    if(e.key==="Enter"&&e.shiftKey){e.preventDefault();replay("chunk");return;}
+    if(e.key==="Enter"&&e.target.tagName==="INPUT"){e.preventDefault();if(V===5&&!S.remed)lockCard(e.target);else check();}
+  });
+  $("hideTxt").checked=!!store("ad_hide");$("hideTxt").onchange=()=>{store("ad_hide",$("hideTxt").checked);applyHide();};
+  const sv=store("ad_v");setV(sv&&sv>=1&&sv<=5?sv:1);fillRange();
+}
+function applyHide(){const on=$("hideTxt").checked&&V!==2&&V!==5;$("stage").classList.toggle("hidetext",on);}
+function setV(v){V=v;store("ad_v",v);$("hideWrap").hidden=(v===2||v===5);applyHide();document.querySelectorAll(".vtab").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.v===v));
+  const d=VERS[v-1];$("vd1").textContent=d.d1;$("vd2").textContent=d.d2;resetStage();}
+function fillRange(){const n=P.chunks.length,step=15,o=[`<option value="0-${n-1}">Hammasi (${n} gap)</option>`];
+  for(let a=0;a<n;a+=step){const b=Math.min(n-1,a+step-1);o.push(`<option value="${a}-${b}">${a+1}–${b+1}-gaplar · ${fmt(P.chunks[a].s)}</option>`);}
+  $("range").innerHTML=o.join("");$("range").selectedIndex=1;}
+const fmt=t=>{t=Math.max(0,t);return Math.floor(t/60)+":"+String(Math.floor(t%60)).padStart(2,"0")};
+function resetStage(){stopLoop();audio.pause();S=null;$("res").hidden=true;$("splash").hidden=false;
+  $("spT").textContent=VERS[V-1].name;$("spP").textContent="“Boshlash”ni bosing. Quloqchin bilan ishlang. Klaviatura: Enter — tekshirish, Shift+Enter — gapni qayta eshitish.";
+  $("line").innerHTML="";$("hist").innerHTML="";$("fb").innerHTML="";$("pending").hidden=true;$("chips").hidden=true;setCtrl([]);}
+function setCtrl(on){["bCheck","bReplay","bBack","bWord","bSlow","bGive","bPause","bEnd"].forEach(id=>{$(id).hidden=!on.includes(id);});}
+
+async function start(){
+  $("spT").textContent="Audio yuklanmoqda…";$("spP").textContent="";$("splash").hidden=false;
+  try{audio.src=await loadAudio(P.id);}catch(e){$("spT").textContent="Audio yuklanmadi";$("spP").textContent="Internetni tekshirib, qayta urinib ko'ring.";return;}
+  audio.playbackRate=rate;
+  const [a,b]=$("range").value.split("-").map(Number);
+  S={V,part:P.id,from:a,to:b,cur:a,state:"idle",level:1,streak:0,hard:0,t0:Date.now(),plans:{},replays:0,log:[],pred:{ok:0,n:0},cards:[],remed:null,levelHist:[]};
+  $("splash").hidden=true;$("res").hidden=true;$("hist").innerHTML="";
+  try{$("stage").scrollIntoView({behavior:"smooth",block:"start"});}catch(e){}
+  if(V===5){$("pending").hidden=false;$("pending").innerHTML="";}
+  if(V===2&&stops(a)){S.cur=a;S.state="predict";render(a);enterPredict();return;}
+  playFrom(a,P.chunks[a].s);
+  if(V===5) addCard(a);
+}
+function plan(ci){if(!S.plans[ci]) S.plans[ci]=planChunk(S.remed?1:V,P.chunks[ci],{level:S.level});return S.plans[ci];}
+function stops(ci){ if(S.remed) return true; return plan(ci).length>0; }
+
+/* ---------- playback loop ---------- */
+let stopTime=null,playEnd=null,onStop=null;
+function stopLoop(){cancelAnimationFrame(raf);raf=0;}
+function playSeg(from,to,cb){audio.currentTime=Math.max(0,from);audio.playbackRate=rate;stopTime=to;onStop=cb;audio.play().catch(()=>{});loop();}
+function loop(){stopLoop();const tick=()=>{
+  const t=audio.currentTime;
+  if(S) highlight(t);
+  if(stopTime!=null&&t>=stopTime){audio.pause();stopTime=null;const cb=onStop;onStop=null;if(cb)cb();return;}
+  if(S&&S.state==="flow") flowTick(t);
+  raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);}
+
+function playFrom(ci,t){ // continuous mode across chunks
+  S.cur=ci;render(ci);S.state="flow";
+  setCtrl(V===5?["bPause","bEnd"]:["bPause","bEnd"]);
+  audio.currentTime=t;audio.playbackRate=rate;stopTime=null;audio.play().catch(()=>{});loop();}
+function flowTick(t){
+  const c=P.chunks[S.cur];
+  if(V===5&&!S.remed){ cardsTick(t); }
+  const needStop = !(V===5&&!S.remed) && stops(S.cur) && !allDone(S.cur);
+  if(needStop && t>=c.stopAt){audio.pause();S.state="answer";enterAnswer();return;}
+  const nx=P.chunks[S.cur+1];
+  if(S.remed){ if(t>=c.stopAt){ pushHist(S.cur); const ni=S.remed.list[++S.remed.k]; if(ni==null){finish();return;} S.cur=ni;render(ni);audio.currentTime=P.chunks[ni].s;} return; }
+  if(S.cur>=S.to || !nx){ if(t>=c.stopAt+0.4||audio.ended){ if(!(V===5)||t>=c.stopAt+7.5||audio.ended||S.cards.every(k=>k.locked)) { audio.pause(); finish(); } } return; }
+  if(t>=nx.s && !needStop){
+    pushHist(S.cur);
+    let ni=S.cur+1;
+    S.cur=ni;
+    if(V===2&&stops(ni)&&!S.plans[ni].predDone){audio.pause();S.state="predict";render(ni);enterPredict();return;}
+    render(ni);
+    if(V===5) addCard(ni);
+  }
+}
+const allDone=ci=>plan(ci).every(b=>b.done);
+
+/* ---------- rendering ---------- */
+function render(ci){
+  const c=P.chunks[ci],pl=(S.state==="flow"&&!stops(ci))?[]:plan(ci);
+  const map={};pl.forEach((b,bi)=>b.ids.forEach((id,k)=>map[id]={b,bi,first:k===0}));
+  let h="";
+  c.words.forEach(w=>{
+    const m=map[w.wi];
+    if(V===5&&!S.remed&&m){ if(m.first) h+=`<span class="w shown" data-s="${w.s}">_____</span>`; else return; return;}
+    if(m&&!m.b.done){ if(!m.first) return; h+=blankHTML(m.b,m.bi,c);}
+    else if(m&&m.b.done){h+=`<span class="w ${m.b.shown?"shown":"okw"}" data-s="${w.s}">${esc(w.t)}${esc(w.p.trim())}</span>`;}
+    else h+=`<span class="w" data-s="${w.s}">${esc(w.t)}${esc(w.p.trim())}</span>`;
+  });
+  $("line").innerHTML=h;
+  const done=S.remed?S.remed.k+1:ci-S.from+1,tot=S.remed?S.remed.list.length:S.to-S.from+1;
+  $("prog").style.width=Math.min(100,(done-1)/tot*100)+"%";
+  $("m1").textContent=`${S.remed?"Xatolar ustida ishlash · ":""}Gap ${done}/${tot} · ${fmt(c.s)}`;
+  const firsts=S.log.filter(l=>l.first).length,n=S.log.length;
+  $("m2").innerHTML=(V===4&&!S.remed?`Daraja <span class="lvl">${[1,2,3,4].map(i=>`<i class="${i<=S.level?"on":""}"></i>`).join("")}</span> · `:"")+(n?`1-urinishda: ${firsts}/${n}`:"");
+}
+function blankHTML(b,bi,c){
+  const words=b.ids.map(i=>c.words[i]),tgt=words.map(w=>w.t).join(" ");
+  const len=words.reduce((s,w)=>s+w.t.length,0)+b.ids.length-1;
+  const wch=b.ids.length>1?Math.min(28,Math.max(10,len+2)):7;
+  let hint="";
+  if(b.miss>=2&&b.ids.length===1){const t=words[0].t.replace(/[^A-Za-z0-9]/g,"");hint=t.split("").map((ch,i)=>b.miss>=3&&i===0?ch:"_").join("");}
+  if(b.ids.length>1) hint=`${b.ids.length} so'z`;
+  if(b.shown) hint="";
+  const q=b.q&&(V===2||S.remed)?`<span class="q">Q${b.q}</span>`:"";
+  return `<span class="bw"><span class="blank" data-b="${bi}">${q}<input id="in_${c.i}_${bi}" data-b="${bi}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" style="width:${wch}ch" placeholder="${b.shown?esc(tgt):""}" aria-label="Bo'sh joy"><span class="hint">${esc(hint)}</span></span>${esc((words[words.length-1].p||"").trim())}</span>`;}
+function highlight(t){document.querySelectorAll("#line .w").forEach(el=>{el.classList.toggle("said",+el.dataset.s<=t+0.02);});
+  const c=S&&P.chunks[S.cur];if(!c)return;
+  document.querySelectorAll("#line .blank").forEach(el=>{const b=plan(S.cur)[+el.dataset.b];if(!b)return;const w=c.words[b.ids[0]];el.classList.toggle("now",t>=w.s&&t<=w.e+0.6);if(t>=w.s-0.05||S.state!=="flow")el.classList.add("seen");});}
+function pushHist(ci){
+  const c=P.chunks[ci];const pl=S.plans[ci]||[];const ok=new Set();pl.forEach(b=>b.ids.forEach(i=>ok.add(i)));
+  const txt=c.words.map(w=>ok.has(w.wi)?`<span class="okw">${esc(w.t)}</span>${esc(w.p.trim())}`:esc(w.t+w.p.trim())).join(" ");
+  const h=$("hist");h.insertAdjacentHTML("beforeend",`<div>${txt}</div>`);while(h.children.length>2)h.firstChild.remove();}
+
+/* ---------- answer phase ---------- */
+function enterAnswer(){
+  render(S.cur);$("fb").innerHTML=V===4?`<span class="tip">Daraja ${S.level}: ${["","1 so'z","2 so'z","ibora (3–4 so'z)","gap oxiri"][S.level]}</span>`:"";
+  setCtrl(["bCheck","bReplay","bBack","bWord","bSlow","bGive","bEnd"]);
+  $("bGive").hidden=true; focusFirst(); }
+function focusFirst(){const i=document.querySelector("#line input:not([disabled])");if(i)setTimeout(()=>i.focus({preventScroll:true}),30);}
+function curBlanks(){return plan(S.cur).filter(b=>!b.done);}
+function check(){
+  if(!S||S.state!=="answer")return;
+  const c=P.chunks[S.cur],pl=plan(S.cur);let allOk=true,msgs=[];
+  const inputs=[...document.querySelectorAll("#line input")];
+  if(inputs.every(i=>!i.value.trim())){$("fb").innerHTML=`<span class="tip">Avval so'zni yozing. Eshitmagan bo'lsangiz “⟲ Gapni qayta”ni bosing.</span>`;focusFirst();return;}
+  const newPlan=[];
+  inputs.forEach(inp=>{
+    const b=pl[+inp.dataset.b];const words=b.ids.map(i=>c.words[i]);
+    const typed=inp.value.trim();b.typed.push(typed);
+    if(b.ids.length===1){
+      const tgt=words[0].t, ok=canon(typed)===canon(tgt)||(canon(typed)===canon(tgt).replace(/^£/,""));
+      if(ok){b.done=true;logBlank(b,words);}
+      else{allOk=false;b.miss++;inp.closest(".blank").classList.add("wrong");msgs.push((inputs.length>1?`<b>${+inp.dataset.b+1}-joy:</b> `:"")+feedback(typed,words[0],b));}
+    }else{ // phrase
+      const tw=typed.split(/\s+/).map(canon),gw=words.map(w=>canon(w.t));
+      if(tw.join(" ")===gw.join(" ")){b.done=true;logBlank(b,words);}
+      else{allOk=false;b.miss++;
+        // LCS alignment: reveal matched words, split remaining into single blanks
+        const L=lcs(tw,gw);const keep=new Set(L);
+        b.done=true;b.partial=true;b.ids=b.ids.filter((id,k)=>keep.has(k));logBlank(b,words,true);
+        words.forEach((w,k)=>{if(!keep.has(k)){const nb={ids:[w.wi],q:w.q,miss:1,done:false,shown:false,typed:[],fromPhrase:true};newPlan.push(nb);}});
+        msgs.push(`Iborada ${gw.length-keep.size} ta so'z xato yoki tushib qolgan. To'g'ri yozganlaringiz ochildi, qolganini yozing.`);
+      }
+    }
+  });
+  if(newPlan.length){S.plans[S.cur]=pl.filter(b=>!b.partial||b.ids.length).concat(newPlan).sort((a,b)=>a.ids[0]-b.ids[0]);}
+  if(allOk||curBlanks().length===0&&!newPlan.length){
+    S.state="ok";ding(true);render(S.cur);
+    const firstTry=plan(S.cur).every(b=>b.miss===0);
+    $("fb").innerHTML=`<b style="color:#7fd8ae">✓ To'g'ri!</b>`+(firstTry?"":` <span class="tip">Keyingi gapga o'tamiz.</span>`);
+    if(V===4&&!S.remed) adapt(firstTry);
+    setTimeout(()=>next(),firstTry?650:1100);
+    return;}
+  ding(false);S.state="answer";
+  render(S.cur);
+  // keep typed text in still-wrong inputs
+  document.querySelectorAll("#line input").forEach(inp=>{const b=plan(S.cur)[+inp.dataset.b];if(b&&!b.done&&b.typed.length&&!b.fromPhrase)inp.value=b.typed[b.typed.length-1];inp.closest(".blank").classList.add("wrong");});
+  $("fb").innerHTML=msgs.join("<br>");
+  const mx=Math.max(...curBlanks().map(b=>b.miss));
+  $("bGive").hidden=mx<2;
+  if(mx>=5) curBlanks().forEach(b=>{if(b.miss>=5){b.shown=true;}}),render(S.cur),$("fb").innerHTML+=`<span class="tip">Javob kulrang bilan ko'rsatildi — endi uni o'zingiz yozing.</span>`;
+  // auto replay from a bit earlier (V1–V4)
+  setTimeout(()=>replay(mx>=2?"word":"back",true),450);
+}
+function lcs(a,b){const m=a.length,n=b.length,d=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)d[i][j]=a[i]===b[j]?d[i+1][j+1]+1:Math.max(d[i+1][j],d[i][j+1]);
+  const out=[];let i=0,j=0;while(i<m&&j<n){if(a[i]===b[j]){out.push(j);i++;j++;}else if(d[i+1][j]>=d[i][j+1])i++;else j++;}return out;}
+function feedback(typed,w,b){
+  const tgt=w.t,ct=canon(typed),cg=canon(tgt);
+  let s="",tip="";
+  const dist=lev(ct,cg)[ct.length][cg.length];
+  if(V===2||V===4||S.remed){s=`<span class="diff">${diffHTML(typed,tgt.replace(/-/g,"").length<tgt.length&&w.spelled?tgt.replace(/-/g,""):tgt)}</span><br>`;}
+  if(cg===ct+"s") tip="Ko'plik -s tushib qoldi. IELTS'da bu xato hisoblanadi — oxirgi tovushga quloq soling.";
+  else if(ct===cg+"s") tip="Ortiqcha -s. So'z birlikda aytilgan.";
+  else if(dist<=2&&cg.length>3&&!(V===3&&!S.remed)) tip=`Juda yaqin! ${dist} ta harf farq qiladi — imlo.`;
+  else if(V===3&&!S.remed){const f=FUNC[cg];const m=cg.match(/'(d|ll|ve|re|s|m)$|n't$/);tip=f?f[1]:(m?CONTR[m[0]]:"Boshqa so'z eshitildi. Gapni sekin qayta eshiting.");}
+  else tip="Boshqa so'z. Yana eshiting.";
+  if(V===2&&w.name&&ct===cg&&typed[0]!==typed[0].toUpperCase()) tip="Ism/nom bosh harf bilan yoziladi.";
+  return s+`<span class="tip">${tip}</span>`;}
+function logBlank(b,words,partial){
+  const first=b.miss===0&&!partial;
+  S.log.push({ci:S.cur,ans:words.map(w=>w.t).join(" "),typed:b.typed.slice(),miss:b.miss+(partial?1:0),first,shown:b.shown,q:b.q,s:words[0].s,e:words[words.length-1].e,phrase:words.length>1});}
+function give(){curBlanks().forEach(b=>{b.shown=true;b.miss=Math.max(b.miss,5);});render(S.cur);$("fb").innerHTML=`<span class="tip">Javob ko'rsatildi. Uni o'zingiz yozing va Enter bosing.</span>`;focusFirst();}
+function adapt(firstTry){
+  if(firstTry){S.streak++;S.hard=0;if(S.streak>=3&&S.level<4){S.level++;S.streak=0;toast(`Daraja oshdi: ${S.level}`);}}
+  else{S.streak=0;const m=Math.max(...plan(S.cur).map(b=>b.miss));if(m>=2){S.hard++;if(S.hard>=2&&S.level>1){S.level--;S.hard=0;toast(`Daraja pasaydi: ${S.level}`);}}}
+  S.levelHist.push(S.level);}
+function toast(t){$("fb").innerHTML+=` <span class="tag ok">${t}</span>`;}
+function next(){
+  pushHist(S.cur);
+  let ni;
+  if(S.remed){ni=S.remed.list[++S.remed.k];if(ni==null){finish();return;}}
+  else{ni=S.cur+1;if(ni>S.to){finish();return;}}
+  $("fb").innerHTML="";
+  const c=P.chunks[ni];
+  if(V===2&&!S.remed&&stops(ni)&&!S.plans[ni].predDone){S.cur=ni;S.state="predict";render(ni);enterPredict();return;}
+  // V2 continues flowing from where audio is; others jump to chunk start
+  playFrom(ni,c.s);
+}
+function replay(kind,auto){
+  if(!S||S.state!=="answer")return;
+  if(!auto) S.replays++;
+  const c=P.chunks[S.cur],b=curBlanks()[0];const w=b?c.words[b.ids[0]]:c.words[0];
+  const r=rate;
+  if(kind==="chunk") playSeg(c.s,c.stopAt,focusFirst);
+  else if(kind==="back") playSeg(Math.max(c.s,w.s-3),c.stopAt,focusFirst);
+  else { const prev=c.words[w.wi-1]; const from=Math.max(c.s, prev? prev.s : w.s-0.15); const wl=c.words[(b?b.ids[b.ids.length-1]:0)];
+    const old=rate;rate=Math.min(rate,0.85);playSeg(from,wl.e+0.18,()=>{rate=old;audio.playbackRate=rate;focusFirst();});}
+}
+function togglePause(){if(!S)return;if(audio.paused){audio.play();$("bPause").textContent="⏸ To'xtat";loop();}else{audio.pause();$("bPause").textContent="▶ Davom";}}
+
+/* ---------- V2 prediction ---------- */
+function enterPredict(){
+  const c=P.chunks[S.cur],b=plan(S.cur)[0],w=c.words[b.ids[0]];
+  const right=wordType(w);
+  $("fb").innerHTML=`<span class="tip">Audio shu gapdan oldin to'xtadi. Matnni o'qing: bo'sh joyga qanday so'z keladi?</span>`;
+  $("chips").hidden=false;
+  $("chips").innerHTML=Object.entries(WT).map(([k,v])=>`<button class="btn" data-k="${k}">${v}</button>`).join("");
+  setCtrl(["bEnd"]);
+  $("chips").onclick=e=>{const bt=e.target.closest("button");if(!bt)return;const ok=bt.dataset.k===right;S.pred.n++;if(ok)S.pred.ok++;
+    bt.classList.add(ok?"sel-ok":"sel-bad");if(!ok)$("chips").querySelector(`[data-k="${right}"]`).classList.add("sel-ok");
+    $("fb").innerHTML=ok?`<b style="color:#7fd8ae">Taxmin to'g'ri.</b> Endi eshiting.`:`<span class="tip">Bu yerda: ${WT[right]}. Endi eshiting.</span>`;
+    $("chips").onclick=null;S.plans[S.cur].predDone=true;
+    setTimeout(()=>{$("chips").hidden=true;playFrom(S.cur,c.s);},ok?700:1300);};
+}
+
+/* ---------- V5 cards ---------- */
+function addCard(ci){
+  const pl=plan(ci);if(!pl.length)return;
+  const c=P.chunks[ci],b=pl[0];
+  const words=b.ids.map(i=>c.words[i]);
+  const card={ci,b,words,locked:false,deadline:null,id:"pc_"+ci};
+  S.cards.forEach(k=>{if(!k.locked&&k.deadline==null)k.deadline=Math.max(c.stopAt,k.minDl);});
+  card.minDl=c.stopAt+7;card.deadline=null;
+  S.cards.push(card);
+  const t=c.words.map(w=>b.ids.includes(w.wi)?(w.wi===b.ids[0]?`<span class="blank"><input id="${card.id}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:${b.ids.length>1?14:8}ch" aria-label="Bo'sh joy"></span>`:""):`<span>${esc(w.t)}</span>`).join(" ");
+  $("pending").insertAdjacentHTML("afterbegin",`<div class="pcard" id="w_${card.id}"><div class="t">${t}</div><div class="tl"><i></i></div></div>`);
+  const pc=$("pending");while(pc.children.length>3)pc.lastChild.remove();
+  setTimeout(()=>$(card.id)&&$(card.id).focus({preventScroll:true}),20);
+}
+function cardsTick(t){
+  S.cards.forEach(k=>{if(k.locked)return;
+    const dl=k.deadline??Math.max(k.minDl, P.chunks[k.ci].stopAt+7);
+    const el=document.querySelector(`#w_${k.id} .tl i`);const span=dl-P.chunks[k.ci].s;
+    if(el) el.style.width=Math.max(0,(dl-t)/span*100)+"%";
+    if(t>=dl) lockCard($(k.id),true);});
+}
+function lockCard(inp,timeout){
+  if(!inp)return;const k=S.cards.find(x=>x.id===inp.id);if(!k||k.locked)return;
+  k.locked=true;inp.disabled=true;inp.closest(".blank").classList.add("locked");
+  const typed=inp.value.trim(),tgt=k.words.map(w=>w.t).join(" ");
+  const ok=canon(typed)===canon(tgt)||typed.split(/\s+/).map(canon).join(" ")===k.words.map(w=>canon(w.t)).join(" ");
+  S.log.push({ci:k.ci,ans:tgt,typed:[typed],miss:ok?0:1,first:ok,shown:false,q:k.b.q,s:k.words[0].s,e:k.words[k.words.length-1].e,timeout:timeout&&!typed});
+  const box=$("w_"+k.id);if(box)box.style.opacity=.55;
+  const nxt=S.cards.find(x=>!x.locked);if(nxt&&$(nxt.id))$(nxt.id).focus({preventScroll:true});
+  render(S.cur);
+}
+
+/* ---------- sound ---------- */
+let AC;function ding(ok){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type="sine";o.frequency.value=ok?880:220;g.gain.setValueAtTime(.0001,AC.currentTime);g.gain.exponentialRampToValueAtTime(.12,AC.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+(ok?.25:.35));o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+.4);}catch(e){}}
+
+/* ---------- finish ---------- */
+function finish(){
+  if(!S||S.state==="end")return;
+  if(V===5&&!S.remed) S.cards.forEach(k=>{if(!k.locked)lockCard($(k.id),true);});
+  stopLoop();audio.pause();S.state="end";setCtrl([]);
+  $("splash").hidden=false;$("spT").textContent="Tugadi";$("spP").textContent="Natijalar pastda.";
+  const L=S.log,n=L.length,first=L.filter(l=>l.first).length,mins=((Date.now()-S.t0)/60000).toFixed(1);
+  const wrong=L.filter(l=>!l.first);
+  const cat=l=>{const t=canon(l.typed[0]||""),g=canon(l.ans);if(!t)return l.timeout?"ulgurmadi":"bo'sh";if(g===t+"s"||t===g+"s")return "-s qo'shimcha";const d=lev(t,g)[t.length][g.length];return d<=2&&g.length>3?"imlo":"boshqa so'z";};
+  const cats={};wrong.forEach(l=>{const c=cat(l);cats[c]=(cats[c]||0)+1;});
+  const prev=store("ad_hist")||[];const rec={v:V,part:P.id,n,first,date:new Date().toISOString().slice(0,16),mins};
+  store("ad_hist",[rec].concat(prev).slice(0,20));
+  const pct=n?Math.round(first/n*100):0;
+  let h=`<h2>Natija · ${VERS[V-1].name}${S.remed?" (xatolar ustida)":""}</h2>
+  <div class="stats">
+   <div class="stat"><b>${first}/${n}</b><span>birinchi urinishda to'g'ri (${pct}%)</span></div>
+   <div class="stat"><b>${L.reduce((s,l)=>s+l.miss,0)}</b><span>jami xato urinish</span></div>
+   <div class="stat"><b>${S.replays}</b><span>o'zi bosgan qayta eshitish</span></div>
+   <div class="stat"><b>${mins}</b><span>daqiqa</span></div>
+   ${V===2?`<div class="stat"><b>${S.pred.ok}/${S.pred.n}</b><span>so'z turi to'g'ri taxmin</span></div>`:""}
+   ${V===4?`<div class="stat"><b>${Math.max(1,...S.levelHist,S.level)}</b><span>eng yuqori daraja</span></div>`:""}
+  </div>`;
+  if(Object.keys(cats).length) h+=`<p class="note">Xato turlari: ${Object.entries(cats).map(([k,v])=>`<span class="tag bad">${k}: ${v}</span>`).join(" ")}</p>`;
+  if(wrong.length){
+    h+=`<div class="tbl"><table><thead><tr><th>So'z</th><th>Siz yozdingiz</th><th>Turi</th><th></th></tr></thead><tbody>`+
+    wrong.map((l,i)=>`<tr><td><b>${esc(l.ans)}</b>${l.q?` <span class="tag">Q${l.q}</span>`:""}</td><td class="m">${l.typed.map(esc).join(" → ")||"—"}</td><td><span class="tag bad">${cat(l)}</span></td><td><button class="btn sm" data-play="${i}">▶</button></td></tr>`).join("")+`</tbody></table></div>`;
+  } else h+=`<p class="note">Xato yo'q. Keyingi qismni yoki qiyinroq versiyani sinab ko'ring.</p>`;
+  h+=`<div class="pick">`+(wrong.length?`<button class="btn primary" id="bRem">Xatolarni mashq qilish (${new Set(wrong.map(l=>l.ci)).size} gap)</button>`:"")+`<button class="btn" id="bCopy">Natijani nusxalash</button><button class="btn" id="bAgain">Qaytadan</button></div>`;
+  if(prev.length) h+=`<p class="note">Oldingi urinishlar: ${prev.slice(0,5).map(r=>`V${r.v} ${r.part}: ${r.first}/${r.n}`).join(" · ")}</p>`;
+  h+=`<p class="note" id="sendSt">Natija ustozga yuborilmoqda…</p>`;
+  $("res").innerHTML=h;$("res").hidden=false;
+  if(n) sendLog({v:V,part:P.id,r:S.remed?1:0,rg:S.remed?"":(S.from+1)+"-"+(S.to+1),n,first,miss:L.reduce((s,l)=>s+l.miss,0),rep:S.replays,min:+mins,
+    pred:V===2?S.pred.ok+"/"+S.pred.n:"",lvl:V===4?Math.max(1,...S.levelHist,S.level):"",
+    wrong:wrong.slice(0,20).map(l=>l.ans+"="+(l.typed[0]||"-"))},$("sendSt"));
+  else $("sendSt").textContent="";
+  $("res").onclick=e=>{const p=e.target.closest("[data-play]");if(p){const l=wrong[+p.dataset.play];audio.currentTime=Math.max(0,l.s-1.5);stopTime=l.e+0.5;onStop=null;audio.play();loop();}};
+  if($("bRem")) $("bRem").onclick=()=>remediate([...new Set(wrong.map(l=>l.ci))].sort((a,b)=>a-b));
+  $("bAgain").onclick=start;
+  $("bCopy").onclick=()=>{const txt=`Auto Dictation · ${VERS[V-1].name} · ${P.set} ${P.title}\n1-urinishda: ${first}/${n} (${pct}%), qayta eshitish: ${S.replays}, ${mins} daq.\nXatolar: `+wrong.map(l=>`${l.ans} (${l.typed.join(" → ")||"—"})`).join("; ");
+    const done=()=>{$("bCopy").textContent="Nusxa olindi";};navigator.clipboard?.writeText(txt).then(done,()=>{$("res").insertAdjacentHTML("beforeend",`<textarea style="width:100%;height:90px">${esc(txt)}</textarea>`);});};
+  $("res").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function remediate(list){
+  const v=V;S={...S,remed:{list,k:0},plans:{},log:[],replays:0,state:"idle",t0:Date.now()};
+  $("splash").hidden=true;$("res").hidden=true;$("pending").hidden=true;$("hist").innerHTML="";
+  S.from=0;S.to=list.length-1;
+  const ci=list[0];S.cur=ci;
+  // progress counter uses remed index
+  playFrom(ci,P.chunks[ci].s);
+}
+fetch("data.json?v=1").then(r=>r.json()).then(d=>{DATA=d;DATA.forEach(prepPart);P=DATA[0];initUI();}).catch(()=>{$("spT").textContent="Yuklanmadi";$("spP").textContent="Internetni tekshirib, sahifani yangilang.";});
+</script>
+
+</body></html>

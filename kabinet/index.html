@@ -396,6 +396,14 @@
       <div class="sl">${sl.join("")}</div>${K.yel ? `<div class="mt" style="margin-bottom:8px">🟨 ${K.yel} ta sariq bor. Yana bitta sariq = 1 qizil.</div>` : ""}<div class="kb ${K.level}">${msg}</div>
       ${it ? `<ul>${it}</ul>` : ""}${cl}${K.demo ? '<div class="mt" style="margin-top:6px">🧪 Test kaliti: bu namuna.</div>' : ""}${K.at && !K.demo ? `<div class="mt" style="margin-top:6px">🔄 Oxirgi hisob: ${dt(K.at)}</div>` : ""}${rules}</div>`;
   }
+  // 🧩 Self Study (27.11): ixtiyoriy umumiy mashqlar; hozircha 🎧 Auto Dictation —, alohida sahifa (dictation/). Ball va kartochka yo'q; natija ustozga boradi.
+  function dictCard() {
+    const DICT_ALL = true;   // 27.11: hammaga ochildi (false = faqat Test guruhi)
+    const dk = encodeURIComponent(D.k || ""), dcard = !(DICT_ALL || D.test) ? "" : `<h3>🧩 Self Study · ixtiyoriy</h3><div class="card"><div class="row"><div class="ic">🎧</div><div style="flex:1;min-width:0">
+      <div class="tt">Auto Dictation</div><span class="chip ok">🎧 ixtiyoriy · ball yo'q</span><div class="mt">Audio subtitr bilan ketadi, bo'sh joyga eshitgan so'zingizni yozasiz. 5 xil usul, quloqchin bilan.</div></div></div>
+      <div class="act"><a class="btn" href="../dictation/?k=${dk}${TV ? "&tv=1" : ""}">🎧 Ochish</a></div></div>`;
+    return dcard;
+  }
   function renderTasks() {
     // darsdagi test (🏫): natija bor, vazifa = error log (muddat ustoz belgilagan)
     const elOpen = x => x.klass && !(x.log >= 100) && left(x.deadline);
@@ -421,7 +429,7 @@
         ${can && !(TV && !x.done) ? `<div class="act"><a class="btn${x.done ? " sec" : ""}" href="${esc(x.url)}">${btn}</a></div>` : ""}</div>`;
     };
     $("tasks").innerHTML =
-      `<div class="stats"><div class="stat"><b>${todo.length}</b><span>bajarilishi kerak</span></div><div class="stat"><b>${done.length}</b><span>topshirilgan</span></div><div class="stat"><b>${T.length ? Math.round(100 * done.length / T.length) : 0}%</b><span>bajarilish</span></div></div>` + kkHtml(D.kk) +
+      `<div class="stats"><div class="stat"><b>${todo.length}</b><span>bajarilishi kerak</span></div><div class="stat"><b>${done.length}</b><span>topshirilgan</span></div><div class="stat"><b>${T.length ? Math.round(100 * done.length / T.length) : 0}%</b><span>bajarilish</span></div></div>` + kkHtml(D.kk) + dictCard() +
       (T.length ? `<h3>Hamma vazifalar</h3>` + T.map(card).join("") : `<div class="empty">Hozircha vazifa yo'q. Ustoz yuborganda shu yerda chiqadi.</div>`);
   }
   function renderNotes() {
@@ -465,10 +473,10 @@
   function renderMat() {
     const M = D.mats || [];
     const sz = b => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round((b || 0) / 1024)) + " KB";
-    $("mat").innerHTML = M.length ? `<h3>Dars materiallari</h3>` + M.map(m => `<div class="card"><div class="row"><div class="ic">📄</div><div style="flex:1;min-width:0">
+    $("mat").innerHTML = (M.length ? `<h3>Dars materiallari</h3>` + M.map(m => `<div class="card"><div class="row"><div class="ic">📄</div><div style="flex:1;min-width:0">
       <div class="tt">${esc(m.title)}</div><div class="mt">📨 ${dt(m.at)} · ${sz(m.size)}</div></div></div>
       <div class="act"><button class="btn" data-pdf="${esc(m.url)}" data-title="${esc(m.title)}">📄 Ochish</button></div></div>`).join("")
-      : `<div class="empty">Hozircha material yo'q. Ustoz dars prezentatsiyasini yuborganda shu yerda chiqadi.</div>`;
+      : `<div class="empty">Hozircha material yo'q. Ustoz dars prezentatsiyasini yuborganda shu yerda chiqadi.</div>`);
   }
   function render() { renderTasks(); renderNotes(); renderRes(); renderMat(); badge(); sozTab(); }
   function show(t) {
