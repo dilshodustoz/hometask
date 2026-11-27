@@ -1892,7 +1892,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       if (hwCur !== id) return;
       if (S && r.prep) return drawPrep(r);   // Speaking preparation (yozma)
       const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
-      const keys = Array.from(new Set(C ? info.sent : info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
+      const keys = Array.from(new Set(C ? info.sent : info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group && sub[k]))))   // faqat vazifa yuborilganlar (+ yuborilmagan bo'lsa ham topshirganlar)
         .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
       const late = CLS.now() > new Date(info.deadline).getTime();
       let n = 0, sum = 0, trN = 0, ansN = 0, gN = 0, gSum = 0, sentN = 0, lgN = 0;
@@ -1959,7 +1959,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       $("hwStHead").innerHTML = `<tr><th>#</th><th>O'quvchi</th><th>Holat</th><th>To'liqlik</th><th>To'liq gap · paste</th><th>Daqiqa</th><th>Qachon</th><th></th></tr>`;
       const sub = {}; r.rows.forEach(x => { sub[x.k] = x; });
       const dr = r.drafts || {};
-      const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group))))
+      const keys = Array.from(new Set(info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group && sub[k]))))
         .sort((a, b) => ((roster[a] || {}).name || "").localeCompare((roster[b] || {}).name || ""));
       const late = CLS.now() > new Date(info.deadline).getTime();
       let n = 0, sum = 0, full = 0;
@@ -2012,7 +2012,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
         if (!r.ok || !hwLog) return;
         const c = $("hwc_" + h.id), info = (hwLog[h.id] || { chats: {} }).chats[String(CLS.GROUPS[group].chat)];
         if (!c || !info || h.skill === "speaking") return;
-        const ks = new Set(h.cls ? info.sent : info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group)));
+        const subK = new Set(r.rows.map(x => x.k));
+        const ks = new Set(h.cls ? info.sent : info.sent.concat(Object.keys(roster).filter(k => roster[k].group === group && subK.has(k))));
         c.textContent = r.rows.filter(x => ks.has(x.k)).length + " / " + ks.size;
       }).catch(() => {});
     });
