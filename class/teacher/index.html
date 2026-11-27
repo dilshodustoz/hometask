@@ -1311,8 +1311,38 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   });
 
   // ---------- Apps Script ----------
+  // 27.11: bo'limlar tez ochilsin. (1) Sahifa ochilgach asosiy ro'yxatlar orqada oldindan yuklanadi (apiPre);
+  // bo'lim birinchi bosilganda tayyor javob shu zahotiyoq beriladi. (2) O'quvchilar va Materiallar ro'yxati
+  // oxirgi nusxasi qurilmada saqlanadi: darhol ko'rsatiladi, yangisi kelgach jimgina almashtiriladi (cls-fresh).
+  const AP_STALE = { st_list: 1, mat_list: 1 }, apPre = {};
+  const apKey = b => JSON.stringify(b);
+  const apPlain = b => b && b.admin && Object.keys(b).every(k => k === "admin" || k === "days");
   function api(body) {
-    const done = busyStart(body);
+    if (apPlain(body)) {
+      const k = apKey(body), p = apPre[k];
+      if (p && Date.now() - p.at < 5 * 60000) { delete apPre[k]; return p.pr; }   // oldindan yuklangan javob (bir marta)
+      if (AP_STALE[body.admin]) {
+        let c = null; try { c = JSON.parse(localStorage.getItem("apc_" + k) || "null"); } catch (e) {}
+        const net = apNet(body).then(r => { apSave(k, r); return r; });
+        if (c && c.r && c.r.ok) {
+          net.then(r => { if (r && r.ok && JSON.stringify(r) !== JSON.stringify(c.r)) window.dispatchEvent(new CustomEvent("cls-fresh", { detail: { admin: body.admin, r: r } })); }).catch(() => {});
+          return Promise.resolve(Object.assign({}, c.r, { _c: 1 }));
+        }
+        return net;
+      }
+    } else if (!body.dry) { Object.keys(apPre).forEach(k => delete apPre[k]); }   // o'zgartirish bo'ldi: oldindan yuklanganlar eskirdi
+    return apNet(body);
+  }
+  function apSave(k, r) { if (r && r.ok) try { localStorage.setItem("apc_" + k, JSON.stringify({ at: Date.now(), r: r })); } catch (e) {} }
+  function apPrefetch(list) {
+    list.forEach((b, i) => setTimeout(() => {
+      const k = apKey(b); if (apPre[k]) return;
+      const pr = apNet(b, 1).then(r => { if (AP_STALE[b.admin]) apSave(k, r); return r; });
+      apPre[k] = { at: Date.now(), pr: pr }; pr.catch(() => { delete apPre[k]; });
+    }, 1200 + i * 700));
+  }
+  function apNet(body, bg) {
+    const done = bg ? () => {} : busyStart(body);
     return fetch(admin.api || DEFAULT_API, { method: "POST", body: JSON.stringify(Object.assign({ secret: admin.secret }, body)),
       headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow" }).then(r => r.json())
       .then(r => { done(r && r.ok); return r; }, e => { done(false); throw e; });
@@ -2147,7 +2177,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   function auLoad() { if (!admin.verified) return; api({ admin: "auto_get" }).then(r => { if (r.ok) { auDraw(r); limLoad(r); } else $("auBox").textContent = $("limBox").textContent = "⚠️ " + r.error; }).catch(e => { $("auBox").textContent = $("limBox").textContent = "⚠️ " + e.message; }); }
   $("auReload").onclick = auLoad;
   let ticked = false;
-  function tickOnce() { if (ticked || !admin.verified) return; ticked = true; setTimeout(limTopLoad, 2500); setInterval(() => { if (!document.hidden) limTopLoad(); }, 10 * 60000); setTimeout(() => api({ admin: "tick" }).catch(() => {}), 4000); setTimeout(() => fbBackup(false).catch(() => {}), 15000); }
+  function tickOnce() { if (ticked || !admin.verified) return; ticked = true; apPrefetch([{ admin: "hw_list" }, { admin: "st_list" }, { admin: "kk_get" }, { admin: "mat_list" }]); setTimeout(limTopLoad, 2500); setInterval(() => { if (!document.hidden) limTopLoad(); }, 10 * 60000); setTimeout(() => api({ admin: "tick" }).catch(() => {}), 4000); setTimeout(() => fbBackup(false).catch(() => {}), 15000); }
   // Firebase zaxirasi: kuniga bir marta ustoz sahifasi (ustoz bo'lib kirgan) Firebase ma'lumotini LC Panel'ga yuboradi -> Drive -> kunlik arxiv
   function fbBackup(force) {
     const day = new Date().toISOString().slice(0, 10);
@@ -2207,6 +2237,7 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     if (!CLS.GROUPS[group]) { group = "test"; setGroup(group); }
     drawGroupSeg();
     stDraw();
+    if (r._c) return Promise.resolve(n);   // qurilmadagi nusxa: Firebase'ga yozmaymiz, yangisi kelganda yoziladi
     return Promise.all([db.ref("roster").set(out), db.ref("admin/groups").set(r.groups)]).then(() => n);
   }
   function stLoad() {
@@ -2216,6 +2247,12 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
       return stApply(r);
     }).catch(e => { $("stBody").innerHTML = `<tr><td colspan="7">⚠️ ${CLS.esc(e.message)}</td></tr>`; return 0; });
   }
+  // orqada kelgan yangi ro'yxat qurilmadagi nusxadan farq qilsa — jimgina almashtiramiz
+  window.addEventListener("cls-fresh", e => {
+    const d = e.detail;
+    if (d.admin === "st_list" && stData) stApply(d.r).catch(() => {});
+    if (d.admin === "mat_list" && matData) { matData = d.r.list; matDraw(); }
+  });
   function stCall(body, msgEl, busy) {
     $(msgEl).textContent = busy || "Bajarilmoqda…";
     return api(body).then(r => {
