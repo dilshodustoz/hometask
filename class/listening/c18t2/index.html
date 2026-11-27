@@ -2959,6 +2959,8 @@ font:700 16px system-ui;text-align:center;padding:12px 16px;box-shadow:0 4px 16p
       LO.restored = true;
       if (v.ans && Object.keys(v.ans).length) toast("✅ Oldin kiritgan javoblaringiz tiklandi (" + Object.keys(v.ans).length + " ta).");
       if (!v.joined) L.child("joined").set(CLS.TS);
+      // eski oyna (sahifa yangilanganda) uzilishi kechikib "online:false" yozib qo'yishi mumkin — har 20 s da qayta tasdiqlaymiz
+      setInterval(() => { if (!LO.done && !document.hidden) L.child("online").set(true).catch(() => {}); }, 20000);
       CLS.db.ref(".info/connected").on("value", c => {
         if (!c.val() || LO.done) return;
         L.child("online").onDisconnect().set(false);
