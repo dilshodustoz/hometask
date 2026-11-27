@@ -35,7 +35,7 @@
         if (open[o.k]) h += o.list.slice().sort((a, b) => a.at < b.at ? 1 : -1).slice(0, 12).map(r => `<tr class="dc-sub"><td colspan="7"><span class="muted">${dt(r.at)}</span> · <b>${esc(r.v)}</b> · ${esc(PART(r.part))}${r.rg ? " · " + esc(r.rg) + "-gaplar" : ""} · ${r.first}/${r.n} (${r.pct}%) · qayta eshitish ${r.rep} · ${r.min} daq${r.extra ? " · " + esc(r.extra) : ""}${r.wrong ? `<br><span class="muted">${esc(r.wrong)}</span>` : ""}</td></tr>`).join("");
         return h; }).join("")}</tbody></table></div>
       <div class="hm-note">Ism ustiga bosing — mashqlar tafsiloti. Xatolar: to'g'ri so'z = o'quvchi yozgani. Bu mashq ixtiyoriy, ball va kartochka yo'q.</div>`
-      : `<div class="hm-empty">Bu guruhda hali hech kim dictation qilmagan. O'quvchilar uni kabinet → 📚 Materiallar → 🎧 Auto Dictation orqali ochadi.</div>`}</div>`;
+      : `<div class="hm-empty">Bu guruhda hali hech kim dictation qilmagan. O'quvchilar uni kabinet → 📋 Vazifalar → 🧩 Self Study → 🎧 Auto Dictation orqali ochadi.</div>`}</div>`;
     box.querySelectorAll("[data-dck]").forEach(a => a.onclick = () => { const k = a.dataset.dck; open[k] = !open[k]; draw(); });
   }
   function load() {
