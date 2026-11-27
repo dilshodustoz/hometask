@@ -624,7 +624,7 @@ function remediate(list){
   playFrom(ci,P.chunks[ci].s);
 }
 // 27.11: faqat ochiq to'plamlar (boshqasini ochish uchun shu ro'yxatga qo'shing, masalan "ms23")
-const OPEN_SETS = ["ms21", "ms22"];
+const OPEN_SETS = ["ms21"];
 fetch("data.json?v=1").then(r=>r.json()).then(d=>{DATA=d.filter(p=>OPEN_SETS.includes(String(p.id).split("_")[0]));DATA.forEach(prepPart);P=DATA[0];initUI();}).catch(()=>{$("spT").textContent="Yuklanmadi";$("spP").textContent="Internetni tekshirib, sahifani yangilang.";});
 </script>
 
