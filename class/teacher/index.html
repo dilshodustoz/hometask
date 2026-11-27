@@ -776,7 +776,8 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
   <img src="logo.png" alt="">
   <h2 class="card-title" style="font-size:1.1rem;margin-bottom:6px">IELTS Practice</h2>
   <p class="muted" style="margin:0 0 16px">Boshqaruv sahifasiga faqat ustoz kiradi.</p>
-  <button class="btn btn-primary" id="btnLogin">Google bilan kirish</button>
+  <div class="muted" id="authWait" style="margin:4px 0 8px"><i class="at-sp" aria-hidden="true"></i> Kirish tekshirilmoqda…</div>
+  <button class="btn btn-primary hide" id="btnLogin">Google bilan kirish</button>
   <div class="msg" id="loginMsg"></div>
 </div>
 
@@ -1258,8 +1259,15 @@ html[data-th=glass] .tb-right .seg button.active{background:rgba(255,255,255,.9)
     const p = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(p).catch(e => { $("loginMsg").textContent = "Kirib bo'lmadi: " + e.message; });
   };
+  // 27.11: Firebase sahifa ochilganda kirish yozuvini tekshirib, tokenni yangilaydi (internet sekin bo'lsa bir necha soniya).
+  // Shu vaqtda "Google bilan kirish" tugmasi ko'rinib, kirish so'ralayotgandek tuyulardi. Endi javob kelguncha faqat "tekshirilmoqda" ko'rinadi.
+  let authKnown = false;
+  const showLoginBtn = () => { $("authWait").classList.add("hide"); $("btnLogin").classList.remove("hide"); };
+  setTimeout(() => { if (!authKnown) { showLoginBtn(); if (!$("loginMsg").textContent) $("loginMsg").textContent = "Internet sekin, kirish tekshirilmoqda… Kuting yoki qayta kiring."; } }, 20000);
   auth.onAuthStateChanged(u => {
+    authKnown = true;
     if (!u) {
+      showLoginBtn();
       let was = false; try { was = localStorage.getItem("cls_in") === "1"; } catch (e) {}
       if (was && !$("loginMsg").textContent) $("loginMsg").textContent = "Brauzer kirishni eslab qolmadi. iPhone'da sahifani Safari'da oching (Telegram yoki boshqa ilova ichidagi brauzerda emas) yoki Safari → Ulashish → \"Bosh ekranga qo'shish\".";
       $("login").classList.remove("hide"); ["app", "tabs", "tbRight"].forEach(i => $(i).classList.add("hide")); return; }
