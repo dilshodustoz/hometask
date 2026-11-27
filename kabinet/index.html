@@ -396,10 +396,10 @@
       <div class="sl">${sl.join("")}</div>${K.yel ? `<div class="mt" style="margin-bottom:8px">🟨 ${K.yel} ta sariq bor. Yana bitta sariq = 1 qizil.</div>` : ""}<div class="kb ${K.level}">${msg}</div>
       ${it ? `<ul>${it}</ul>` : ""}${cl}${K.demo ? '<div class="mt" style="margin-top:6px">🧪 Test kaliti: bu namuna.</div>' : ""}${K.at && !K.demo ? `<div class="mt" style="margin-top:6px">🔄 Oxirgi hisob: ${dt(K.at)}</div>` : ""}${rules}</div>`;
   }
-  // 🎧 Auto Dictation (27.11): ixtiyoriy listening mashqi, alohida sahifa (dictation/). Ball va kartochka yo'q; natija ustozga boradi.
+  // 🧩 Self Study (27.11): ixtiyoriy umumiy mashqlar; hozircha 🎧 Auto Dictation —, alohida sahifa (dictation/). Ball va kartochka yo'q; natija ustozga boradi.
   function dictCard() {
     const DICT_ALL = false;   // false = faqat Test guruhi (D.test) ko'radi; hammaga ochish uchun true
-    const dk = encodeURIComponent(D.k || ""), dcard = !(DICT_ALL || D.test) ? "" : `<div class="card"><div class="row"><div class="ic">🎧</div><div style="flex:1;min-width:0">
+    const dk = encodeURIComponent(D.k || ""), dcard = !(DICT_ALL || D.test) ? "" : `<h3>🧩 Self Study · ixtiyoriy</h3><div class="card"><div class="row"><div class="ic">🎧</div><div style="flex:1;min-width:0">
       <div class="tt">Auto Dictation</div><span class="chip ok">🎧 ixtiyoriy · ball yo'q</span><div class="mt">Audio subtitr bilan ketadi, bo'sh joyga eshitgan so'zingizni yozasiz. 5 xil usul, quloqchin bilan.</div></div></div>
       <div class="act"><a class="btn" href="../dictation/?k=${dk}${TV ? "&tv=1" : ""}">🎧 Ochish</a></div></div>`;
     return dcard;

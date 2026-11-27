@@ -1,4 +1,4 @@
-// 🎧 Auto Dictation (27.11): Bosh sahifadagi karta — kim ixtiyoriy dictation mashqini qilgani (LC Panel dict_get, faqat o'qish).
+// 🎧 Auto Dictation (27.11): 🧩 Self Study bo'limidagi karta — kim ixtiyoriy dictation mashqini qilgani (LC Panel dict_get, faqat o'qish).
 (function () {
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -13,6 +13,7 @@
     if (err && !data) { box.innerHTML = `<div class="card hm-card"><div class="hm-ch"><b>🎧 Auto Dictation</b></div><div class="msg">⚠️ ${esc(err)}</div></div>`; return; }
     if (!data) { box.innerHTML = ""; return; }
     const g = T().group(), gname = (T().groups[g] || {}).name || "";
+    if ($("ssGroup")) $("ssGroup").textContent = gname;
     const rows = data.rows.filter(r => data.groups[r.k] === g), wk = Date.now() - 7 * 86400000;
     const by = {};
     rows.forEach(r => {
@@ -43,7 +44,7 @@
     T().api({ admin: "dict_get", days: 60 }).then(r => { busy = false; if (r && r.ok) data = r; else err = (r && r.error) || "o'qilmadi"; draw(); })
       .catch(e => { busy = false; err = e.message || String(e); draw(); });
   }
-  window.addEventListener("cls-tab", e => { if (e.detail === "home") { if (!data) load(); else draw(); } });
+  window.addEventListener("cls-tab", e => { if (e.detail === "self") { if (!data) load(); else draw(); } });
   window.addEventListener("cls-group", () => { if (!data) load(); else draw(); });
-  document.addEventListener("click", e => { if (e.target && e.target.closest && e.target.closest("#hmReload")) { data = null; load(); } });
+  document.addEventListener("click", e => { if (e.target && e.target.closest && e.target.closest("#ssReload")) { data = null; load(); } });
 })();
